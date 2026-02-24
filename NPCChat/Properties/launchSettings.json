@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "NPCChat (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "NPCChat (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

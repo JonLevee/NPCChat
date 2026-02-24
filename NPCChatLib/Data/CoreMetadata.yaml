@@ -1,0 +1,20 @@
+# yaml-language-server: $schema=
+traits:
+  warmth: 
+    cold: 3
+    neutral: 4
+    warm: 3
+  confidence:
+    unsure: 3
+    neutral: 4
+    sure: 3
+    
+        
+        
+  
+archetypes:
+  craftsman:
+    description: "The Craftsman."
+    traits:
+      warmth: +3
+      confidence: +3

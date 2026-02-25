@@ -1,15 +1,27 @@
 # yaml-language-server: $schema=
+# https://github.com/aaubry/YamlDotNet
+#
+# https://en.wikipedia.org/wiki/Emotion_classification
+
+# trait quantifiers are integer weights, converted to -1 to 1 range
 traits:
   warmth: 
-    cold: 3
-    neutral: 4
-    warm: 3
-  confidence:
-    unsure: 3
-    neutral: 4
-    sure: 3
-    
-        
+    cold:       10
+    cool:       30
+    neutral:    50
+    warm:       30
+    effusive:   10
+  confidence: 
+    insecure:       10
+    cool:       30
+    neutral:    50
+    warm:       30
+    effusive:   10
+  - formality
+  - chattiness
+  - honesty
+  - patience
+  - haggling
         
   
 archetypes:
@@ -18,3 +30,15 @@ archetypes:
     traits:
       warmth: +3
       confidence: +3
+      formality: +2
+      haggling: +2
+      patience: +3
+      chattiness: -2
+
+npc_predefined:
+  blacksmith:
+    archetype: craftsman
+    traits:
+      honesty: +3
+      
+npc_generation:

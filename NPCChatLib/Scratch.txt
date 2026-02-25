@@ -1,0 +1,173 @@
+﻿
+     Mood shifts based on:
+        time of day
+        recent events
+        player actions
+        shop traffic
+        NPC personality bias
+
+    Give each NPC a few sliders:
+        Talkative ↔ Quiet
+        Formal ↔ Casual
+        Honest ↔ Shady
+        Patient ↔ Impatient
+
+    These modify:
+        line length
+        chance to add extra comments
+        blunt vs polite phrasing
+
+    Track small flags:
+        first meeting
+        frequent customer
+        haggler
+        helped NPC before
+        caused trouble in town
+
+    5) Context Awareness
+        React to the world:
+            raining → “Bad weather for travel.”
+            war nearby → “Steel prices are up.”
+            shop is busy → shorter lines
+            late night → “Make it quick, I’m closing.”
+
+    weight preferences
+    carry state
+
+    8) Optional Flavor Add-Ons
+
+Sometimes append a small extra:
+personal comment
+rumor
+complaint
+compliment
+Example:
+“What can I do for you? Shipment’s late again…”
+Low chance, big payoff.
+
+9) Imperfection & Subtext
+
+Humans don’t speak optimally.
+
+Occasionally:
+be vague
+dodge questions
+trail off
+repeat phrases
+contradict themselves slightly
+Not often — just enough to avoid robotic perfection.
+
+10) Dialogue Templates with Slots
+
+Templates:
+“If you’re looking for {item_type}, I’ve got {quality} stock.”
+Slots pull from context.
+Cheap, powerful variety.
+
+   public enum PersonalityTrait
+    {
+        Talkative,
+        Quiet,
+        Formal,
+        Casual,
+        Honest,
+        Shady,
+        Patient,
+        Impatient
+    }
+
+
+
+        public enum DialogEmotion
+    {
+        Happy,
+        Sad,
+        Angry,
+        Neutral,
+        Excited,
+        Anxious,
+        Confused,
+        Bored,
+
+        Curious,
+        Rushed,
+        Sarcastic,
+        Tired,
+    }
+
+    public enum DialogMood
+    {
+        Stress, // calm -> frazzled
+        Energy, // tired -> lively
+        Warmth, // cold -> warm
+        Confidence, // unsure -> confident
+    }
+
+    /*
+     Mood shifts based on:
+        time of day
+        recent events
+        player actions
+        shop traffic
+        NPC personality bias
+
+    Give each NPC a few sliders:
+        Talkative ↔ Quiet
+        Formal ↔ Casual
+        Honest ↔ Shady
+        Patient ↔ Impatient
+
+    These modify:
+        line length
+        chance to add extra comments
+        blunt vs polite phrasing
+
+    Track small flags:
+        first meeting
+        frequent customer
+        haggler
+        helped NPC before
+        caused trouble in town
+
+    5) Context Awareness
+        React to the world:
+            raining → “Bad weather for travel.”
+            war nearby → “Steel prices are up.”
+            shop is busy → shorter lines
+            late night → “Make it quick, I’m closing.”
+
+    weight preferences
+    carry state
+
+    8) Optional Flavor Add-Ons
+
+Sometimes append a small extra:
+personal comment
+rumor
+complaint
+compliment
+Example:
+“What can I do for you? Shipment’s late again…”
+Low chance, big payoff.
+
+9) Imperfection & Subtext
+
+Humans don’t speak optimally.
+
+Occasionally:
+be vague
+dodge questions
+trail off
+repeat phrases
+contradict themselves slightly
+Not often — just enough to avoid robotic perfection.
+
+10) Dialogue Templates with Slots
+
+Templates:
+“If you’re looking for {item_type}, I’ve got {quality} stock.”
+Slots pull from context.
+Cheap, powerful variety.
+
+     */
+

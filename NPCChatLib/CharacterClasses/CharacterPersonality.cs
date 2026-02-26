@@ -1,8 +1,7 @@
-﻿using System.Collections.Generic;
-using System.IO;
-using System.Linq;
+﻿using Microsoft.Extensions.DependencyInjection;
+using NPCChatLib.Attributes;
+using System.Collections.Generic;
 using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace NPChat.CharacterClasses
 {
@@ -32,7 +31,7 @@ namespace NPChat.CharacterClasses
     {
         public string Name { get; set; } = string.Empty;
         public string Description { get; set; } = string.Empty;
-        [YamlMember(Alias = "foo", )]
+        [YamlMember(Alias = "foo")]
         public List<TraitModifier> TraitModifiers { get; set; } = new List<TraitModifier>();
     }
 
@@ -42,18 +41,24 @@ namespace NPChat.CharacterClasses
         public Dictionary<string, CharacterPersonality> Archetypes { get; set; } = new Dictionary<string, CharacterPersonality>();
     }
 
-    public class CharacterCoreMetadataProvider
+    public class Character
     {
-        public CharacterCoreMetadata GetCharacterCoreMetadata()
+
+    }
+
+    [Transient]
+    public class  CharacterCreator
+    {
+        private readonly Character character = new();
+
+        public CharacterCreator FromArchetype(string archetypeName = "Default")
         {
-            var files = Directory.GetFiles(Directory.GetCurrentDirectory(), "CoreMetadata.yaml", SearchOption.AllDirectories);
-            var file = files.First();
-            var deserializer = new DeserializerBuilder()
-                .WithNamingConvention(PascalCaseNamingConvention.Instance)
-                .Build();
-            var instance = deserializer.Deserialize<CharacterCoreMetadata>(File.ReadAllText(file));
-            return instance;
+            return this;
         }
 
+        public Character Build() 
+        { 
+            return character; 
+        }
     }
 }

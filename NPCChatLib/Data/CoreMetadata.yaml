@@ -17,11 +17,11 @@ traits:
     neutral:    50
     warm:       30
     effusive:   10
-  - formality
-  - chattiness
-  - honesty
-  - patience
-  - haggling
+  # - formality
+  # - chattiness
+  # - honesty
+  # - patience
+  # - haggling
         
   
 archetypes:

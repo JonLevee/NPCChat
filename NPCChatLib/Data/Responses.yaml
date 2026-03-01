@@ -1,0 +1,154 @@
+StockResponses:
+
+  - text: "Do you need any [armor] today?"
+    context: shop
+    role: blacksmith
+    speaker_target: pc
+    activation:
+      friendliness: { min: 40, max: 70 }
+      irritability: { min: 0, max: 40 }
+
+  - text: "If you're buying, speak up. I'm busy."
+    context: shop
+    role: blacksmith
+    speaker_target: pc
+    activation:
+      friendliness: { min: 0, max: 35 }
+      irritability: { min: 60, max: 100 }
+
+  - text: "For you? I might have something special in the back."
+    context: shop
+    role: blacksmith
+    speaker_target: pc
+    activation:
+      friendliness: { min: 70, max: 100 }
+      trust: { min: 60, max: 100 }
+
+  - text: "Steel's been scarce lately. Prices went up."
+    context: shop
+    role: blacksmith
+    speaker_target: pc
+    activation:
+      greed: { min: 50, max: 100 }
+      honesty: { min: 0, max: 60 }
+
+  - text: "Morning. Weather's turning again."
+    context: town
+    role: villager
+    speaker_target: npc
+    activation:
+      sociability: { min: 40, max: 80 }
+
+  - text: "You hear about the caravan?"
+    context: gossip
+    role: villager
+    speaker_target: npc
+    activation:
+      curiosity: { min: 50, max: 100 }
+      secrecy: { min: 0, max: 60 }
+
+  - text: "Keep your voice down. Not here."
+    context: gossip
+    role: villager
+    speaker_target: npc
+    activation:
+      paranoia: { min: 60, max: 100 }
+      secrecy: { min: 70, max: 100 }
+
+  - text: "Stand aside. Official business."
+    context: town
+    role: guard
+    speaker_target: pc
+    activation:
+      authority: { min: 60, max: 100 }
+      friendliness: { min: 0, max: 40 }
+
+  - text: "Move along. No trouble today."
+    context: town
+    role: guard
+    speaker_target: pc
+    activation:
+      authority: { min: 40, max: 80 }
+      irritability: { min: 30, max: 70 }
+
+  - text: "You've done this town a service."
+    context: reward
+    role: guard
+    speaker_target: pc
+    activation:
+      gratitude: { min: 60, max: 100 }
+
+  - text: "We can't keep losing men like this."
+    context: combat
+    role: guard
+    speaker_target: npc
+    activation:
+      morale: { min: 0, max: 40 }
+      stress: { min: 60, max: 100 }
+
+  - text: "Stay sharp. They're watching."
+    context: combat
+    role: guard
+    speaker_target: npc
+    activation:
+      vigilance: { min: 70, max: 100 }
+
+  - text: "Care to share a drink?"
+    context: tavern
+    role: villager
+    speaker_target: pc
+    activation:
+      sociability: { min: 70, max: 100 }
+      friendliness: { min: 60, max: 100 }
+
+  - text: "I'd rather drink alone."
+    context: tavern
+    role: villager
+    speaker_target: pc
+    activation:
+      sociability: { min: 0, max: 30 }
+      irritability: { min: 40, max: 100 }
+
+  - text: "This town used to mean something."
+    context: tavern
+    role: elder
+    speaker_target: npc
+    activation:
+      nostalgia: { min: 60, max: 100 }
+
+  - text: "Gold talks. Everything else walks."
+    context: shop
+    role: merchant
+    speaker_target: pc
+    activation:
+      greed: { min: 70, max: 100 }
+
+  - text: "Between us... I don't trust the new captain."
+    context: gossip
+    role: guard
+    speaker_target: npc
+    activation:
+      trust: { min: 40, max: 100 }
+      loyalty: { min: 0, max: 50 }
+
+  - text: "You've changed since last time."
+    context: relationship
+    role: any
+    speaker_target: pc
+    activation:
+      familiarity: { min: 60, max: 100 }
+
+  - text: "I remember what you did."
+    context: relationship
+    role: any
+    speaker_target: pc
+    activation:
+      resentment: { min: 60, max: 100 }
+
+  - text: "Let's keep this civil."
+    context: tension
+    role: any
+    speaker_target: any
+    activation:
+      irritability: { min: 40, max: 70 }
+      diplomacy: { min: 50, max: 100 }

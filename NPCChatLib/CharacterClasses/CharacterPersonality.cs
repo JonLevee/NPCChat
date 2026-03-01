@@ -1,8 +1,11 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using NPCChatLib.Attributes;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.UI.Xaml;
+using NPCChatLib.Attributes;
 using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace NPChat.CharacterClasses
 {
@@ -147,5 +150,4 @@ namespace NPChat.CharacterClasses
         }
 
     }
-
 }

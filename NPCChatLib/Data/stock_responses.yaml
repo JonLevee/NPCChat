@@ -1,0 +1,485 @@
+
+stock_responses:
+
+  - id: shop_blacksmith_greet_01
+    text: "Do you need any [armor] today?"
+    context: shop
+    role: blacksmith
+    speaker_target: pc
+    intent: [greet, sell, help]
+    mood:
+      friendliness: 0.8
+      irritability: -0.2
+      trust: 0.2
+      sociability: 0.2
+      greed: 0.1
+      diplomacy: 0.2
+      familiarity: 0.1
+      resentment: -0.1
+    requires:
+      # Hard gates: only allow if the NPC isn't in a terrible state
+      stress: { max: 0.75 }
+      irritability: { max: 0.80 }
+    forbids:
+      # Example: if the NPC is actively hostile, don't use a polite shop opener
+      resentment: { min: 0.85 }
+    min_affinity: 0.25
+    weight: 1.0
+    cooldown:
+      self_seconds: 12
+      group: shop_greeting
+      group_seconds: 6
+
+  - id: shop_blacksmith_busy_01
+    text: "If you're buying, speak up. I'm busy."
+    context: shop
+    role: blacksmith
+    speaker_target: pc
+    intent: [sell, dismiss, hurry]
+    mood:
+      friendliness: -0.3
+      irritability: 0.9
+      trust: -0.2
+      sociability: -0.2
+      authority: 0.2
+      greed: 0.2
+      vigilance: 0.2
+      morale: -0.2
+      stress: 0.6
+      diplomacy: -0.4
+      resentment: 0.2
+      paranoia: 0.1
+    requires:
+      irritability: { min: 0.55 }
+      stress: { min: 0.35 }
+    forbids:
+      diplomacy: { min: 0.80 } # too diplomatic to bark
+    min_affinity: 0.35
+    weight: 1.1
+    cooldown:
+      self_seconds: 20
+      group: shop_hurry
+      group_seconds: 10
+
+  - id: shop_blacksmith_special_01
+    text: "For you? I might have something special in the back."
+    context: shop
+    role: blacksmith
+    speaker_target: pc
+    intent: [sell, reward, ally]
+    mood:
+      friendliness: 0.9
+      irritability: -0.4
+      trust: 0.7
+      secrecy: 0.2
+      diplomacy: 0.2
+      gratitude: 0.3
+      resentment: -0.4
+      familiarity: 0.4
+      greed: 0.1
+    requires:
+      trust: { min: 0.55 }
+      familiarity: { min: 0.40 }
+    forbids:
+      resentment: { min: 0.50 }
+    min_affinity: 0.45
+    weight: 1.2
+    cooldown:
+      self_seconds: 90
+      group: special_offer
+      group_seconds: 45
+
+  - id: shop_blacksmith_prices_01
+    text: "Steel's been scarce lately. Prices went up."
+    context: shop
+    role: blacksmith
+    speaker_target: pc
+    intent: [sell, justify_price]
+    mood:
+      greed: 0.8
+      stress: 0.3
+      friendliness: -0.1
+      trust: -0.1
+      diplomacy: -0.1
+      curiosity: 0.1
+    requires:
+      greed: { min: 0.40 }
+    forbids:
+      friendliness: { min: 0.85 } # overly friendly NPCs won't lean into price hikes
+    min_affinity: 0.25
+    weight: 1.0
+    cooldown:
+      self_seconds: 45
+      group: price_talk
+      group_seconds: 20
+
+  - id: town_villager_weather_01
+    text: "Morning. Weather's turning again."
+    context: town
+    role: villager
+    speaker_target: npc
+    intent: [greet, smalltalk]
+    mood:
+      sociability: 0.6
+      friendliness: 0.4
+      curiosity: 0.2
+      nostalgia: 0.1
+    requires:
+      sociability: { min: 0.25 }
+    forbids:
+      stress: { min: 0.90 } # too stressed for chit-chat
+    min_affinity: 0.20
+    weight: 1.0
+    cooldown:
+      self_seconds: 18
+      group: smalltalk
+      group_seconds: 8
+
+  - id: gossip_villager_caravan_01
+    text: "You hear about the caravan?"
+    context: gossip
+    role: villager
+    speaker_target: npc
+    intent: [gossip, probe]
+    mood:
+      curiosity: 0.9
+      sociability: 0.4
+      secrecy: 0.2
+      friendliness: 0.2
+    requires:
+      curiosity: { min: 0.50 }
+    forbids:
+      secrecy: { min: 0.90 } # super secretive won't bring it up
+    min_affinity: 0.30
+    weight: 1.0
+    cooldown:
+      self_seconds: 25
+      group: caravan_rumor
+      group_seconds: 15
+
+  - id: gossip_villager_whisper_01
+    text: "Keep your voice down. Not here."
+    context: gossip
+    role: villager
+    speaker_target: npc
+    intent: [gossip, warn, hush]
+    mood:
+      secrecy: 0.9
+      paranoia: 0.8
+      stress: 0.3
+      sociability: -0.2
+      trust: -0.2
+      vigilance: 0.2
+    requires:
+      secrecy: { min: 0.55 }
+    forbids:
+      friendliness: { min: 0.85 } # too friendly to snap "not here"
+    min_affinity: 0.45
+    weight: 1.05
+    cooldown:
+      self_seconds: 35
+      group: hush
+      group_seconds: 20
+
+  - id: town_guard_stand_aside_01
+    text: "Stand aside. Official business."
+    context: town
+    role: guard
+    speaker_target: pc
+    intent: [command, control, dismiss]
+    mood:
+      authority: 0.9
+      irritability: 0.3
+      friendliness: -0.2
+      sociability: -0.2
+      secrecy: 0.2
+      vigilance: 0.2
+      stress: 0.2
+      diplomacy: -0.4
+      paranoia: 0.1
+    requires:
+      authority: { min: 0.55 }
+    forbids:
+      diplomacy: { min: 0.80 } # highly diplomatic guard will phrase it softer
+    min_affinity: 0.40
+    weight: 1.0
+    cooldown:
+      self_seconds: 30
+      group: guard_command
+      group_seconds: 12
+
+  - id: town_guard_move_along_01
+    text: "Move along. No trouble today."
+    context: town
+    role: guard
+    speaker_target: pc
+    intent: [dismiss, warn]
+    mood:
+      authority: 0.6
+      irritability: 0.5
+      vigilance: 0.3
+      stress: 0.2
+      friendliness: -0.1
+      diplomacy: -0.2
+    requires:
+      authority: { min: 0.40 }
+    forbids:
+      friendliness: { min: 0.80 }
+    min_affinity: 0.35
+    weight: 1.0
+    cooldown:
+      self_seconds: 25
+      group: guard_dismiss
+      group_seconds: 10
+
+  - id: reward_guard_service_01
+    text: "You've done this town a service."
+    context: reward
+    role: guard
+    speaker_target: pc
+    intent: [praise, reward]
+    mood:
+      gratitude: 0.9
+      friendliness: 0.4
+      trust: 0.3
+      diplomacy: 0.3
+      resentment: -0.3
+    requires:
+      gratitude: { min: 0.50 }
+    forbids:
+      resentment: { min: 0.40 }
+    min_affinity: 0.35
+    weight: 1.15
+    cooldown:
+      self_seconds: 120
+      group: praise
+      group_seconds: 60
+
+  - id: combat_guard_losses_01
+    text: "We can't keep losing men like this."
+    context: combat
+    role: guard
+    speaker_target: npc
+    intent: [lament, motivate]
+    mood:
+      morale: -0.7
+      stress: 0.8
+      vigilance: 0.3
+      paranoia: 0.2
+      friendliness: -0.1
+    requires:
+      stress: { min: 0.55 }
+    forbids:
+      morale: { min: 0.60 } # high morale wouldn't say this
+    min_affinity: 0.40
+    weight: 1.0
+    cooldown:
+      self_seconds: 40
+      group: combat_lament
+      group_seconds: 20
+
+  - id: combat_guard_stay_sharp_01
+    text: "Stay sharp. They're watching."
+    context: combat
+    role: guard
+    speaker_target: npc
+    intent: [warn, motivate]
+    mood:
+      vigilance: 0.9
+      paranoia: 0.5
+      authority: 0.2
+      stress: 0.2
+      diplomacy: -0.2
+    requires:
+      vigilance: { min: 0.55 }
+    forbids:
+      sociability: { min: 0.90 } # party-buddy type doesn't bark this
+    min_affinity: 0.45
+    weight: 1.05
+    cooldown:
+      self_seconds: 20
+      group: combat_warn
+      group_seconds: 8
+
+  - id: tavern_villager_drink_01
+    text: "Care to share a drink?"
+    context: tavern
+    role: villager
+    speaker_target: pc
+    intent: [invite, befriend]
+    mood:
+      sociability: 0.9
+      friendliness: 0.7
+      trust: 0.2
+      nostalgia: 0.1
+    requires:
+      sociability: { min: 0.60 }
+    forbids:
+      irritability: { min: 0.75 }
+    min_affinity: 0.35
+    weight: 1.0
+    cooldown:
+      self_seconds: 45
+      group: tavern_invite
+      group_seconds: 20
+
+  - id: tavern_villager_alone_01
+    text: "I'd rather drink alone."
+    context: tavern
+    role: villager
+    speaker_target: pc
+    intent: [dismiss, avoid]
+    mood:
+      sociability: -0.8
+      irritability: 0.6
+      friendliness: -0.4
+      stress: 0.2
+      paranoia: 0.1
+    requires:
+      sociability: { max: 0.35 }
+    forbids:
+      friendliness: { min: 0.75 }
+    min_affinity: 0.35
+    weight: 1.0
+    cooldown:
+      self_seconds: 35
+      group: tavern_avoid
+      group_seconds: 15
+
+  - id: tavern_elder_meaning_01
+    text: "This town used to mean something."
+    context: tavern
+    role: elder
+    speaker_target: npc
+    intent: [lament, reminisce]
+    mood:
+      nostalgia: 0.9
+      resentment: 0.2
+      morale: -0.2
+      sociability: 0.2
+      friendliness: 0.1
+    requires:
+      nostalgia: { min: 0.55 }
+    forbids:
+      stress: { min: 0.90 }
+    min_affinity: 0.30
+    weight: 1.0
+    cooldown:
+      self_seconds: 90
+      group: elder_reminisce
+      group_seconds: 45
+
+  - id: shop_merchant_gold_01
+    text: "Gold talks. Everything else walks."
+    context: shop
+    role: merchant
+    speaker_target: pc
+    intent: [sell, threaten_price]
+    mood:
+      greed: 0.95
+      diplomacy: -0.3
+      friendliness: -0.2
+      trust: -0.2
+      authority: 0.1
+    requires:
+      greed: { min: 0.65 }
+    forbids:
+      friendliness: { min: 0.80 }
+    min_affinity: 0.45
+    weight: 1.1
+    cooldown:
+      self_seconds: 60
+      group: merchant_greed
+      group_seconds: 25
+
+  - id: gossip_guard_captain_01
+    text: "Between us... I don't trust the new captain."
+    context: gossip
+    role: guard
+    speaker_target: npc
+    intent: [gossip, confide]
+    mood:
+      secrecy: 0.6
+      trust: -0.6
+      resentment: 0.4
+      paranoia: 0.3
+      sociability: 0.1
+    requires:
+      secrecy: { min: 0.35 }
+      resentment: { min: 0.25 }
+    forbids:
+      authority: { min: 0.90 } # very loyal/authoritarian guard won't say this
+    min_affinity: 0.30
+    weight: 1.0
+    cooldown:
+      self_seconds: 120
+      group: captain_rumor
+      group_seconds: 60
+
+  - id: rel_any_changed_01
+    text: "You've changed since last time."
+    context: relationship
+    role: any
+    speaker_target: pc
+    intent: [reflect, probe]
+    mood:
+      familiarity: 0.9
+      curiosity: 0.2
+      trust: 0.2
+      nostalgia: 0.1
+    requires:
+      familiarity: { min: 0.55 }
+    forbids:
+      stress: { min: 0.95 }
+    min_affinity: 0.35
+    weight: 1.0
+    cooldown:
+      self_seconds: 80
+      group: relationship_observe
+      group_seconds: 40
+
+  - id: rel_any_remember_01
+    text: "I remember what you did."
+    context: relationship
+    role: any
+    speaker_target: pc
+    intent: [accuse, threaten]
+    mood:
+      resentment: 0.95
+      trust: -0.4
+      friendliness: -0.4
+      irritability: 0.4
+      paranoia: 0.1
+    requires:
+      resentment: { min: 0.60 }
+    forbids:
+      diplomacy: { min: 0.80 }
+    min_affinity: 0.45
+    weight: 1.1
+    cooldown:
+      self_seconds: 140
+      group: relationship_grudge
+      group_seconds: 70
+
+  - id: tension_any_civil_01
+    text: "Let's keep this civil."
+    context: tension
+    role: any
+    speaker_target: any
+    intent: [deescalate, warn]
+    mood:
+      diplomacy: 0.9
+      irritability: 0.5
+      friendliness: 0.1
+      authority: 0.1
+      stress: 0.2
+    requires:
+      diplomacy: { min: 0.55 }
+    forbids:
+      resentment: { min: 0.90 }
+    min_affinity: 0.35
+    weight: 1.0
+    cooldown:
+      self_seconds: 25
+      group: deescalation
+      group_seconds: 10

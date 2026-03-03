@@ -19,7 +19,8 @@ namespace UnitTestApp1
             var services = new ServiceCollection();
             ConfigureServices.Configure(services);
             _serviceProvider = services.BuildServiceProvider();
-            Services.Get<LoadingProviders>().Load();
+            var factory = Services.Get<LoadingProviderFactory>();
+            factory.LoadAll();
         }
     }
 }

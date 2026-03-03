@@ -1,15 +1,17 @@
-﻿using System;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NPCChatLib.Attributes;
+using NPCChatLib.Extensions;
+using NPChat.CharacterClasses;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Extensions.DependencyInjection;
-using NPCChatLib.Attributes;
-using NPCChatLib.Extensions;
-using NPChat.CharacterClasses;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
+using static NPCChatLib.LoadingProviderClasses.LoadingProviderFactory;
 
 namespace NPCChatLib.LoadingProviderClasses
 {
@@ -34,21 +36,21 @@ namespace NPCChatLib.LoadingProviderClasses
     [Singleton]
     public class LoadingProviderFactory
     {
-        private class LoadDataInfo
-        {
-            public string Name { get; set; } = string.Empty;
-            public Action LoadAction { get; set; } = () => { };
-        }
         private delegate void LoadData();
-        private readonly Lazy<IEnumerable<LoadData>> _loaders;
+        private readonly LoadDataInfo[] _loadDataInfos;
         private readonly IServiceProvider services;
         private readonly IDeserializer deserializer;
         private GlobalDataContainer globalDataContainer;
 
         public LoadingProviderFactory(IServiceProvider services)
         {
-            _loaders = new Lazy<IEnumerable<LoadData>>(GetLoaders, false);
+            _loadDataInfos =
+                [
+                    new LoadDataInfo("mood_axes.yaml", typeof(MoodAxesYaml), LoadMoodData),
+                ];
+
             this.services = services;
+            globalDataContainer = services.Get<GlobalDataContainer>() ?? throw new InvalidOperationException("GlobalDataContainer not registered in service provider");
             deserializer = new DeserializerBuilder()
                 .WithNamingConvention(UnderscoredNamingConvention.Instance)
                 .IgnoreUnmatchedProperties()
@@ -57,28 +59,41 @@ namespace NPCChatLib.LoadingProviderClasses
 
         public void LoadAll()
         {
-            foreach (var load in _loaders.Value)
+            foreach (var loadDataInfo in _loadDataInfos)
             {
-                load();
+                var file = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", loadDataInfo.YamlFileName);
+                if (!File.Exists(file))
+                {
+                    throw new FileNotFoundException($"data file not found: {file}");
+                }
+                var yaml = File.ReadAllText(file);
+                var info = deserializer.Deserialize(yaml, loadDataInfo.TargetType);
+                var temp = deserializer.Deserialize(yaml);
+                Function<Dictionary<string, byte>> getStringDictionary = () =>
+                {
+                    var dict = new Dictionary<string, byte>();
+                    if (info is MoodAxesYaml moodAxesInfo)
+                    {
+                        foreach (var axis in moodAxesInfo.MoodAxes)
+                        {
+                            dict[axis] = 0;
+                        }
+                    }
+                    return dict;
+                };
+                globalDataContainer.MoodAxes = getStringDictionary(); 
+
             }
         }
-        private IEnumerable<LoadData> GetLoaders()
+
+        private IEnumerable<string> GetStrings()
         {
-            yield return LoadMoodData;
+
         }
 
+        
         private void LoadMoodData()
         {
-            var file = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "mood_axes.yaml");
-            if (!File.Exists(file))
-            {
-                throw new FileNotFoundException($"Mood axes data file not found: {file}");
-            }
-            var yaml = File.ReadAllText(file);
-            var root = deserializer.Deserialize<MoodAxesYaml>(yaml);
-
-            var loader = services.GetService<LoadingProviderBase<CharacterCoreMetadata>>()!;
-            loader.Load(loader.Instance);
         }
 
         public sealed class MoodAxesYaml
@@ -87,11 +102,24 @@ namespace NPCChatLib.LoadingProviderClasses
             public List<string> MoodAxes { get; set; } = new();
         }
 
+        private class LoadDataInfo
+        {
+            public string YamlFileName { get; set; } = string.Empty;
+            public Type TargetType { get; set; } = typeof(object);
+            public Action LoadAction { get; set; } = () => { };
+            public LoadDataInfo(string yamlFileName, Type targetType, Action loadAction)
+            {
+                YamlFileName = yamlFileName;
+                TargetType = targetType;
+                LoadAction = loadAction;
+            }
+        }
 
     }
 
     [Singleton]
     public class GlobalDataContainer
     {
+        public Dictionary<string,byte> MoodAxes { get; set; } = [];
     }
 }

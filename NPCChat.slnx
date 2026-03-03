@@ -10,11 +10,10 @@
     <Platform Solution="*|x86" Project="x86" />
     <Deploy />
   </Project>
-  <Project Path="NPCChatLib/NPCChatLib.csproj" Id="4fcd83f4-acda-4e70-b6d3-d603fdd43afd" />
-  <Project Path="UnitTestApp1/UnitTestApp1.csproj">
-    <Platform Solution="*|ARM64" Project="ARM64" />
-    <Platform Solution="*|x64" Project="x64" />
-    <Platform Solution="*|x86" Project="x86" />
-    <Deploy />
+  <Project Path="NPCChatLib/NPCChatLib.csproj" Id="4fcd83f4-acda-4e70-b6d3-d603fdd43afd">
+    <Platform Solution="Debug|x64" Project="x64" />
+  </Project>
+  <Project Path="TestProject/TestProject.csproj" Id="9c5219f3-e29c-4442-b2fc-8565d918be77">
+    <Platform Solution="Debug|x64" Project="x64" />
   </Project>
 </Solution>

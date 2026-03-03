@@ -1,12 +1,15 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using NPCChatLib.Attributes;
-using NPCChatLib.Extensions;
-using NPChat.CharacterClasses;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using NPCChatLib.Attributes;
+using NPCChatLib.Extensions;
+using NPChat.CharacterClasses;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace NPCChatLib.LoadingProviderClasses
 {
@@ -29,44 +32,66 @@ namespace NPCChatLib.LoadingProviderClasses
     }
 
     [Singleton]
-    public class LoadingProviders
+    public class LoadingProviderFactory
     {
-        private readonly List<ILoadingProvider> providers;
+        private class LoadDataInfo
+        {
+            public string Name { get; set; } = string.Empty;
+            public Action LoadAction { get; set; } = () => { };
+        }
+        private delegate void LoadData();
+        private readonly Lazy<IEnumerable<LoadData>> _loaders;
         private readonly IServiceProvider services;
+        private readonly IDeserializer deserializer;
+        private GlobalDataContainer globalDataContainer;
 
-        public LoadingProviders(IServiceProvider services)
+        public LoadingProviderFactory(IServiceProvider services)
         {
+            _loaders = new Lazy<IEnumerable<LoadData>>(GetLoaders, false);
             this.services = services;
-            providers = [.. services.GetServices<ILoadingProvider>()];
+            deserializer = new DeserializerBuilder()
+                .WithNamingConvention(UnderscoredNamingConvention.Instance)
+                .IgnoreUnmatchedProperties()
+                .Build();
         }
 
-        public void Load()
+        public void LoadAll()
         {
-            for (int i = 0; i < providers.Count; i++)
+            foreach (var load in _loaders.Value)
             {
-                ILoadingProvider provider = providers[i];
-                provider.Load(services);
+                load();
             }
-
         }
+        private IEnumerable<LoadData> GetLoaders()
+        {
+            yield return LoadMoodData;
+        }
+
+        private void LoadMoodData()
+        {
+            var file = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "mood_axes.yaml");
+            if (!File.Exists(file))
+            {
+                throw new FileNotFoundException($"Mood axes data file not found: {file}");
+            }
+            var yaml = File.ReadAllText(file);
+            var root = deserializer.Deserialize<MoodAxesYaml>(yaml);
+
+            var loader = services.GetService<LoadingProviderBase<CharacterCoreMetadata>>()!;
+            loader.Load(loader.Instance);
+        }
+
+        public sealed class MoodAxesYaml
+        {
+            [YamlMember(Alias = "mood_axes")]
+            public List<string> MoodAxes { get; set; } = new();
+        }
+
+
     }
 
-    [Transient]
-    public class CharacterCoreMetadataLoadingProvider : LoadingProviderBase<CharacterCoreMetadata>
+    [Singleton]
+    public class GlobalDataContainer
     {
-        public override void Load(CharacterCoreMetadata instance)
-        {
-            throw new NotImplementedException();
-            // Load CharacterCoreMetadata from YAML or other source
-        }
-    }
-
-    [Transient]
-    public class CharacterArchetypesLoadingProvider : LoadingProviderBase<CharacterArchetypes>
-    {
-        public override void Load(CharacterArchetypes instance)
-        {
-            throw new NotImplementedException();
-        }
     }
 }

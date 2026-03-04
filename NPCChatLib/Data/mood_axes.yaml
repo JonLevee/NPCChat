@@ -1,18 +1,21 @@
 mood_axes:
-  - friendliness
-  - irritability
-  - trust
-  - sociability
-  - authority
-  - greed
-  - curiosity
-  - secrecy
-  - vigilance
-  - morale
-  - stress
-  - diplomacy
-  - gratitude
-  - resentment
-  - familiarity
-  - nostalgia
-  - paranoia
+  gates:
+    - irritability
+    - trust
+    - greed
+    - secrecy
+    - stress
+    - diplomacy
+    - resentment
+    - familiarity
+
+  moods:
+    - friendliness
+    - sociability
+    - authority
+    - curiosity
+    - vigilance
+    - morale
+    - gratitude
+    - nostalgia
+    - paranoia

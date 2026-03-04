@@ -37,18 +37,12 @@ namespace NPCChatLib.LoadingProviderClasses
     public class LoadingProviderFactory
     {
         private delegate void LoadData();
-        private readonly LoadDataInfo[] _loadDataInfos;
         private readonly IServiceProvider services;
         private readonly IDeserializer deserializer;
         private GlobalDataContainer globalDataContainer;
 
         public LoadingProviderFactory(IServiceProvider services)
         {
-            _loadDataInfos =
-                [
-                    new LoadDataInfo("mood_axes.yaml", typeof(MoodAxesYaml), LoadMoodData),
-                ];
-
             this.services = services;
             globalDataContainer = services.Get<GlobalDataContainer>() ?? throw new InvalidOperationException("GlobalDataContainer not registered in service provider");
             deserializer = new DeserializerBuilder()
@@ -59,67 +53,57 @@ namespace NPCChatLib.LoadingProviderClasses
 
         public void LoadAll()
         {
-            foreach (var loadDataInfo in _loadDataInfos)
-            {
-                var file = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", loadDataInfo.YamlFileName);
-                if (!File.Exists(file))
-                {
-                    throw new FileNotFoundException($"data file not found: {file}");
-                }
-                var yaml = File.ReadAllText(file);
-                var info = deserializer.Deserialize(yaml, loadDataInfo.TargetType);
-                var temp = deserializer.Deserialize(yaml);
-                Function<Dictionary<string, byte>> getStringDictionary = () =>
-                {
-                    var dict = new Dictionary<string, byte>();
-                    if (info is MoodAxesYaml moodAxesInfo)
-                    {
-                        foreach (var axis in moodAxesInfo.MoodAxes)
-                        {
-                            dict[axis] = 0;
-                        }
-                    }
-                    return dict;
-                };
-                globalDataContainer.MoodAxes = getStringDictionary(); 
+            // Load("mood_axes.yaml", d => SetDictionary(globalDataContainer.MoodAxes, d["mood_axes"] as List<object>));
+            Load("mood_axes.yaml", s => s as List<object>, g => g.MoodAxes, SetDictionary);
+        }
 
+        private void Load<SType, TType>(
+            string yamlFile,
+            Func<object, SType> getSource,
+            Func<GlobalDataContainer, TType> getTarget,
+            Action<SType, TType> loader,
+            string yamlStartTag = null)
+        {
+            yamlStartTag = yamlStartTag ?? Path.GetFileNameWithoutExtension(yamlFile);
+            var file = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", yamlFile);
+            if (!File.Exists(file))
+            {
+                throw new FileNotFoundException($"data file not found: {file}");
+            }
+            var yaml = File.ReadAllText(file);
+            var yamlObject = deserializer.Deserialize(yaml) as Dictionary<object, object>;
+            var startingObject = yamlObject[yamlStartTag];
+            var source = getSource(startingObject);
+            var target = getTarget(globalDataContainer);
+            loader(source, target);
+        }
+
+        //private void Load(string yamlFile, Action<Dictionary<object, object>> loader)
+        //{
+        //    var file = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", yamlFile);
+        //    if (!File.Exists(file))
+        //    {
+        //        throw new FileNotFoundException($"data file not found: {file}");
+        //    }
+        //    var yaml = File.ReadAllText(file);
+        //    var rawYamlObject = deserializer.Deserialize(yaml);
+        //    var yamlObject = rawYamlObject as Dictionary<object, object>;
+        //    loader(yamlObject);
+        //}
+
+        private void SetDictionary<T>(List<object> source, Dictionary<string, T> target)
+        {
+            for (int i = 0; i < source.Count; i++)
+            {
+                var axis = source[i] as string;
+                target[axis] = (T)Convert.ChangeType(i, typeof(T));
             }
         }
-
-        private IEnumerable<string> GetStrings()
-        {
-
-        }
-
-        
-        private void LoadMoodData()
-        {
-        }
-
-        public sealed class MoodAxesYaml
-        {
-            [YamlMember(Alias = "mood_axes")]
-            public List<string> MoodAxes { get; set; } = new();
-        }
-
-        private class LoadDataInfo
-        {
-            public string YamlFileName { get; set; } = string.Empty;
-            public Type TargetType { get; set; } = typeof(object);
-            public Action LoadAction { get; set; } = () => { };
-            public LoadDataInfo(string yamlFileName, Type targetType, Action loadAction)
-            {
-                YamlFileName = yamlFileName;
-                TargetType = targetType;
-                LoadAction = loadAction;
-            }
-        }
-
     }
 
     [Singleton]
     public class GlobalDataContainer
     {
-        public Dictionary<string,byte> MoodAxes { get; set; } = [];
+        public Dictionary<string, byte> MoodAxes { get; set; } = [];
     }
 }

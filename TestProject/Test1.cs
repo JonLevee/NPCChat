@@ -10,6 +10,7 @@ namespace TestProject
     {
         private IServiceProvider? _serviceProvider;
         protected IServiceProvider Services => _serviceProvider.NonNull();
+        protected GlobalDataContainer Data { get; private set; } = null!;
 
         [TestInitialize]
         public void TestInitializeBase()
@@ -19,6 +20,7 @@ namespace TestProject
             _serviceProvider = services.BuildServiceProvider();
             var factory = Services.Get<LoadingProviderFactory>();
             factory.LoadAll();
+            Data = Services.Get<GlobalDataContainer>();
         }
     }
 
@@ -34,13 +36,43 @@ namespace TestProject
         [TestMethod]
         public void TestMethod1()
         {
+            Assert.IsNotNull(Data);
+            var expected = new Dictionary<string, byte>();
+            var expectedGates = new List<byte>();
+            var expectedMoods = new List<byte>();
+            List<byte> expectedDisposition = [];
+            var dispositionText = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "dispositions.yaml"));
+            foreach (var line in dispositionText.Split(Environment.NewLine).Select(t => t.Trim()))
+            {
+                if (line.Equals("dispositions:")) continue;
+                if (line.Equals("gates:"))
+                {
+                    expectedDisposition = expectedGates;
+                    continue;
+                }
+                if (line.Equals("moods:"))
+                {
+                    expectedDisposition = expectedMoods;
+                    continue;
+                }
+                if (line.StartsWith("- "))
+                {
+                    var disposition = line.Substring(2).Trim();
+                    var id = (byte)(expected.Count + 1);
+                    expected.Add(disposition, id);
+                    expectedDisposition.Add(id);
+                    continue;
+                }
 
-            var character = Services
-                .GetService<CharacterCreator>()?
-                .FromArchetype()
-                .Build();
-            Assert.IsNotNull(character);
+                Assert.IsTrue(string.IsNullOrWhiteSpace(line));
+            }
+            Assert.HasCount(expected.Count, Data.DispositionIds);
+            expected.Keys.IsEquivalentTo(Data.DispositionIds.Keys);
+            expected.Values.IsEquivalentTo(Data.DispositionIds.Values);
+            expectedGates.IsEquivalentTo(Data.GateIds);
+            expectedMoods.IsEquivalentTo(Data.MoodIds);
         }
+
 
         // Use the UITestMethod attribute for tests that need to run on the UI thread.
         // [UITestMethod]
@@ -48,6 +80,16 @@ namespace TestProject
         {
             var metadata = Services!.GetRequiredService<CharacterCoreMetadata>();
             Assert.IsNotNull(metadata);
+        }
+    }
+
+    public static class UnitTestExtensions
+    {
+        public static void IsEquivalentTo<T1, T2>(this IEnumerable<T1> left, IEnumerable<T2> right)
+        {
+            var sortedLeft = left.Order().ToArray();
+            var sortedRight = right.Order().ToArray();
+            CollectionAssert.AreEquivalent(sortedLeft, sortedRight);
         }
     }
 

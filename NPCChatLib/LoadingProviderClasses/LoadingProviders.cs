@@ -1,14 +1,16 @@
-﻿using Microsoft.Extensions.DependencyInjection;
-using Microsoft.VisualStudio.TestTools.UnitTesting;
-using NPCChatLib.Attributes;
-using NPCChatLib.Extensions;
-using NPChat.CharacterClasses;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
+using NPCChatLib.Attributes;
+using NPCChatLib.Extensions;
+using NPCChatLib.YamlImport;
+using NPChat.CharacterClasses;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 using static NPCChatLib.LoadingProviderClasses.LoadingProviderFactory;
@@ -54,7 +56,40 @@ namespace NPCChatLib.LoadingProviderClasses
         public void LoadAll()
         {
             // Load("mood_axes.yaml", d => SetDictionary(globalDataContainer.MoodAxes, d["mood_axes"] as List<object>));
-            Load("mood_axes.yaml", s => s as List<object>, g => g.MoodAxes, SetDictionary);
+            //Load("mood_axes.yaml", s => s as List<object>, g => g.MoodAxes, SetDictionary);
+            using (var moodAxesImport = GetImportedYaml<YamlImportMoodAxes>("dispositions.yaml"))
+            {
+                var dispositionIds = new Dictionary<string, byte>();
+                var moodIds = new List<byte>();
+                var gateIds = new List<byte>();
+                foreach (var gate in moodAxesImport.Dispositions["gates"])
+                {
+                    var id = (byte)(dispositionIds.Count + 1);
+                    gateIds.Add(id);
+                    dispositionIds.Add(gate, id);
+                }
+                foreach (var mood in moodAxesImport.Dispositions["moods"])
+                {
+                    var id = (byte)dispositionIds.Count;
+                    moodIds.Add(id);
+                    dispositionIds.Add(mood, id);
+                }
+                globalDataContainer.DispositionIds = dispositionIds;
+                globalDataContainer.MoodIds = moodIds.ToArray();
+                globalDataContainer.GateIds = gateIds.ToArray();
+            }
+        }
+
+        private T GetImportedYaml<T>(string yamlFile) where T : YamlImportable
+        {
+            var file = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", yamlFile);
+            if (!File.Exists(file))
+            {
+                throw new FileNotFoundException($"data file not found: {file}");
+            }
+            var yaml = File.ReadAllText(file);
+            var yamlObject = deserializer.Deserialize<T>(yaml);
+            return yamlObject;
         }
 
         private void Load<SType, TType>(
@@ -99,11 +134,5 @@ namespace NPCChatLib.LoadingProviderClasses
                 target[axis] = (T)Convert.ChangeType(i, typeof(T));
             }
         }
-    }
-
-    [Singleton]
-    public class GlobalDataContainer
-    {
-        public Dictionary<string, byte> MoodAxes { get; set; } = [];
     }
 }

@@ -1,6 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using NPCChatLib.CharacterClasses.Builders;
 using NPCChatLib.Extensions;
 using NPCChatLib.LoadingProviderClasses;
+using NPCChatLib.YamlImport;
 using NPChat;
 using NPChat.CharacterClasses;
 
@@ -73,6 +75,18 @@ namespace TestProject
             expectedMoods.IsEquivalentTo(Data.MoodIds);
         }
 
+        [TestMethod]
+        public void TestMethod2()
+        {
+            var character = Services
+                .Get<NPCBuilder>()
+                .CreateBuilding(new YamlBuilding
+                {
+                    Name = "Blacksmith Shop"
+                })
+                .Build();
+            Assert.IsNotNull(character);
+        }
 
         // Use the UITestMethod attribute for tests that need to run on the UI thread.
         // [UITestMethod]

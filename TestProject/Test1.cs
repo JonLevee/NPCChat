@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using System.Drawing;
+using Microsoft.Extensions.DependencyInjection;
+using NPCChatLib.Builders;
 using NPCChatLib.CharacterClasses.Builders;
 using NPCChatLib.Extensions;
 using NPCChatLib.LoadingProviderClasses;
@@ -78,19 +80,17 @@ namespace TestProject
         [TestMethod]
         public void TestMethod2()
         {
-            var character = Services
-                .Get<NPCBuilder>()
-                .CreateBuilding(new YamlBuilding
-                {
-                    Name = "Blacksmith Shop"
-                })
-                .Build();
-            Assert.IsNotNull(character);
+            var worldYaml = Services
+                .Get<WorldGenerator>()
+                .SetWorldSize(new Size(20, 20))
+                .GenerateDefault()
+                .Builder.Build();
+            Assert.IsNotNull(worldYaml);
         }
 
         // Use the UITestMethod attribute for tests that need to run on the UI thread.
         // [UITestMethod]
-        public void TestMethod2()
+        public void TestMethod3()
         {
             var metadata = Services!.GetRequiredService<CharacterCoreMetadata>();
             Assert.IsNotNull(metadata);

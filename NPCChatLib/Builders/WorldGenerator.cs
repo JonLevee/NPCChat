@@ -20,12 +20,19 @@ namespace NPCChatLib.Builders
 
         public WorldGenerator GenerateDefault()
         {
+            GenerateArchetypes();
             GenerateShops(
                 ("Weapon Shop", 2, Size.Empty),
                 ("Armor Shop", -1, Size.Empty)
                 );
             return this;
         }
+
+        public WorldGenerator GenerateArchetypes()
+        {
+            return this;
+        }
+
         public WorldGenerator GenerateShops(params (string, int, Size)[] shopInfos)
         {
             foreach (var shopInfo in shopInfos)

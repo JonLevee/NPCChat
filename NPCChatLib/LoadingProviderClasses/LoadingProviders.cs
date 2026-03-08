@@ -80,7 +80,7 @@ namespace NPCChatLib.LoadingProviderClasses
             }
         }
 
-        private T GetImportedYaml<T>(string yamlFile) where T : YamlImportable
+        private T GetImportedYaml<T>(string yamlFile) where T
         {
             var file = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", yamlFile);
             if (!File.Exists(file))

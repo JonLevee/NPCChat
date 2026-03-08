@@ -7,14 +7,7 @@ using YamlDotNet.Serialization;
 
 namespace NPCChatLib.YamlImport
 {
-    public abstract class YamlImportable : IDisposable
-    {
-        public void Dispose()
-        {
-        }
-
-    }
-    public class YamlImportMoodAxes : YamlImportable
+    public class YamlImportMoodAxes
     {
         [YamlMember]
         public Dictionary<string, List<string>> Dispositions { get; set; } = new Dictionary<string, List<string>>();

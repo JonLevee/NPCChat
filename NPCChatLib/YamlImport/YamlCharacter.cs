@@ -4,12 +4,20 @@ using YamlDotNet.Serialization;
 
 namespace NPCChatLib.YamlImport
 {
-    public class YamlCharacter : YamlImportable
+    public class YamlCharacter : YamlObject
+    {
+    }
+
+    public class YamlArchetype
     {
         [Required]
         [YamlMember]
-        public string Name { get; set; } = string.Empty;
-        public Point Location { get; set; } = new Point();
-        public Size Size { get; set; } = new Size();
+        public string Name { get; }
+
+        public YamlArchetype(string name) 
+        {
+            Name = name;
+        }
+
     }
 }

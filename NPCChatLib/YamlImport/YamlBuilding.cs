@@ -4,12 +4,7 @@ using YamlDotNet.Serialization;
 
 namespace NPCChatLib.YamlImport
 {
-    public class YamlBuilding : YamlImportable
+    public class YamlBuilding : YamlObject
     {
-        [Required]
-        [YamlMember]
-        public string Name { get; set; } = string.Empty;
-        public Point Location { get; set; } = new Point();
-        public Size Size { get; set; } = new Size();
     }
 }

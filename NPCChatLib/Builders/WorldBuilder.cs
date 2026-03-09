@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.UI.Xaml.Data;
+using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NPCChatLib.Attributes;
 using NPCChatLib.YamlImport;
 
@@ -15,12 +16,15 @@ namespace NPCChatLib.Builders
     public class WorldBuilder
     {
         public YamlWorld World { get; private set; }
-
+        public WorldBuilderStrategies BuilderStrategies { get; set; }
+        public NextOpenSpaceLocator SpaceLocator { get; }
         public Dictionary<Point, YamlBuilding> Occupied { get; private set; } = [];
 
-        public WorldBuilder()
+        public WorldBuilder(WorldBuilderStrategies builderStrategies, NextOpenSpaceLocator spaceLocator)
         {
             World = new YamlWorld();
+            BuilderStrategies = builderStrategies;
+            SpaceLocator = spaceLocator;
         }
 
         public WorldBuilder SetWorldSize(Size size)
@@ -77,9 +81,19 @@ namespace NPCChatLib.Builders
             throw new NotImplementedException();
         }
 
-        internal void Add(IYamlObject yamlObject, List<Point> locations = null)
+        internal void Add(IYamlObject yamlObject, List<Point> points = null)
         {
-            locations ??= locat;
+            Assert.AreNotEqual(Size.Empty, yamlObject.Size);
+            if (points == null)
+            {
+                if (IsLocationOccupied(yamlObject.Location, yamlObject.Size, out var overlapInfo, out points))
+                {
+                    throw new Exception($"Object {yamlObject.Name} at " + overlapInfo);
+                }
+                yamlObject.Location = points.First();
+            }
+            Assert.IsNotNull(points);
+
         }
     }
 }

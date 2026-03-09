@@ -82,9 +82,9 @@ namespace TestProject
         {
             var worldYaml = Services
                 .Get<WorldGenerator>()
-                .SetStrategies(new WorldGeneratorStrategies
+                .SetStrategies(new WorldBuilderStrategies
                 {
-                    BuildingLocatorStrategy = BuildingLocatorStrategy.Clockwise,
+                    BuildingLocatorStrategy = NextOpenSpaceLocator.Clockwise,
                     WorldSize = new Size(20, 20),
                     DefaultShopSize = new Size(3, 3),
                     DefaultPeoplePerShop = 2

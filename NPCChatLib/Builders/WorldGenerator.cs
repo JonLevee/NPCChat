@@ -11,18 +11,11 @@ namespace NPCChatLib.Builders
     public class WorldGenerator
     {
         public WorldBuilder Builder { get; private set; }
-        public WorldGeneratorStrategies GeneratorStrategies { get; set; }
         public YamlWorld World => Builder.World;
-        public WorldGenerator(WorldGeneratorStrategies generatorStrategies = null)
+        public WorldBuilderStrategies Strategies => Builder.BuilderStrategies;
+        public WorldGenerator(WorldBuilder builder)
         {
-            GeneratorStrategies ??= new WorldGeneratorStrategies();
-            this.Builder = new WorldBuilder();
-        }
-
-        public WorldGenerator SetStrategies(WorldGeneratorStrategies strategies)
-        {
-            GeneratorStrategies = strategies;
-            return this;
+            this.Builder = builder;
         }
 
         public WorldGenerator GenerateDefault()
@@ -44,18 +37,21 @@ namespace NPCChatLib.Builders
         {
             foreach (var shopInfo in shopInfos)
             {
+                var characterCount = shopInfo.Item2 == -1 ? Strategies.DefaultPeoplePerShop : shopInfo.Item2;
                 var building = new YamlBuilding
                 {
                     Name = shopInfo.Item1,
+                    Size = shopInfo.Item3 == Size.Empty ? Strategies.DefaultShopSize : shopInfo.Item3,
                 };
-                var shopSize = shopInfo.Item3 == Size.Empty ? GeneratorStrategies.DefaultShopSize : shopInfo.Item3;
-                if (!GeneratorStrategies.BuildingLocatorStrategy.TryFindNextOpenLocation(World, shopSize, out List<Point> locations))
-                    throw new InvalidOperationException($"No open building locations found for shop {shopInfo.Item1} with size {shopSize}");
-                building.Location = new Rectangle(locations[0], shopSize);
-                Builder.Add(building, locations);
-                (building.Location, List<Point> points) = FindNextOpenBuildingLocation(GeneratorStrategies.BuildingLocatorStrategy, building.Size);
+
+                stopped here
+                if (!Builder.SpaceLocator.TryFindNextOpenLocation(World, building.Size, out List<Point> points))
+                    throw new InvalidOperationException($"No open building locations found for shop {building.Name} with size {building.Size}");
+
+                Builder.Add(building, points);
+                (building.Location, List<Point> points) = FindNextOpenBuildingLocation(BuilderStrategies.BuildingLocatorStrategy, building.Size);
                 Builder.CreateShop(building, points);
-                var npcCount = shopInfo.Item2 < 0 ? GeneratorStrategies.DefaultPeoplePerShop : shopInfo.Item2;
+                var npcCount = shopInfo.Item2 < 0 ? BuilderStrategies.DefaultPeoplePerShop : shopInfo.Item2;
                 if (--npcCount >= 0)
                 {
                     Builder.CreateShopkeeper(building);
@@ -68,11 +64,11 @@ namespace NPCChatLib.Builders
             return this;
         }
 
-        public (Point, List<Point>) FindNextOpenBuildingLocation(BuildingLocatorStrategy strategy, Size size)
+        public (Point, List<Point>) FindNextOpenBuildingLocation(NextOpenSpaceLocator strategy, Size size)
         {
             switch (strategy)
             {
-                case BuildingLocatorStrategy.Clockwise:
+                case NextOpenSpaceLocator.Clockwise:
                     var corners = new Point[]
                     {
                         new Point(0, 0),

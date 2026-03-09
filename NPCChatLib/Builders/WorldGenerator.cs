@@ -12,10 +12,17 @@ namespace NPCChatLib.Builders
     {
         public WorldBuilder Builder { get; private set; }
         public WorldGeneratorStrategies GeneratorStrategies { get; set; }
+        public YamlWorld World => Builder.World;
         public WorldGenerator(WorldGeneratorStrategies generatorStrategies = null)
         {
-            GeneratorStrategies = generatorStrategies ?? new WorldGeneratorStrategies();
+            GeneratorStrategies ??= new WorldGeneratorStrategies();
             this.Builder = new WorldBuilder();
+        }
+
+        public WorldGenerator SetStrategies(WorldGeneratorStrategies strategies)
+        {
+            GeneratorStrategies = strategies;
+            return this;
         }
 
         public WorldGenerator GenerateDefault()
@@ -40,10 +47,14 @@ namespace NPCChatLib.Builders
                 var building = new YamlBuilding
                 {
                     Name = shopInfo.Item1,
-                    Size = shopInfo.Item3 == Size.Empty ? GeneratorStrategies.DefaultShopSize : shopInfo.Item3,
                 };
+                var shopSize = shopInfo.Item3 == Size.Empty ? GeneratorStrategies.DefaultShopSize : shopInfo.Item3;
+                if (!GeneratorStrategies.BuildingLocatorStrategy.TryFindNextOpenLocation(World, shopSize, out List<Point> locations))
+                    throw new InvalidOperationException($"No open building locations found for shop {shopInfo.Item1} with size {shopSize}");
+                building.Location = new Rectangle(locations[0], shopSize);
+                Builder.Add(building, locations);
                 (building.Location, List<Point> points) = FindNextOpenBuildingLocation(GeneratorStrategies.BuildingLocatorStrategy, building.Size);
-                Builder.CreateShop(building,points);
+                Builder.CreateShop(building, points);
                 var npcCount = shopInfo.Item2 < 0 ? GeneratorStrategies.DefaultPeoplePerShop : shopInfo.Item2;
                 if (--npcCount >= 0)
                 {
@@ -57,7 +68,7 @@ namespace NPCChatLib.Builders
             return this;
         }
 
-        public (Point,List<Point>) FindNextOpenBuildingLocation(BuildingLocatorStrategy strategy, Size size)
+        public (Point, List<Point>) FindNextOpenBuildingLocation(BuildingLocatorStrategy strategy, Size size)
         {
             switch (strategy)
             {
@@ -69,7 +80,7 @@ namespace NPCChatLib.Builders
                         new Point(Builder.World.WorldSize.Height - size.Height, Builder.World.WorldSize.Width - size.Width),
                         new Point(Builder.World.WorldSize.Height - size.Height, 0)
                     };
-                    while (corners[0].X < Builder.World.WorldSize.Width/2 && corners[0].Y < Builder.World.WorldSize.Height/2)
+                    while (corners[0].X < Builder.World.WorldSize.Width / 2 && corners[0].Y < Builder.World.WorldSize.Height / 2)
                     {
                         if (!Builder.IsLocationOccupied(corners[0], size, out string errorMessage, out List<Point> points))
                         {

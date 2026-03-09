@@ -80,9 +80,15 @@ namespace TestProject
         [TestMethod]
         public void TestMethod2()
         {
-            var generator = Services.Get<WorldGenerator>();
-            generator.GeneratorStrategies.WorldSize = new Size(20, 20);
-            var worldYaml = generator
+            var worldYaml = Services
+                .Get<WorldGenerator>()
+                .SetStrategies(new WorldGeneratorStrategies
+                {
+                    BuildingLocatorStrategy = BuildingLocatorStrategy.Clockwise,
+                    WorldSize = new Size(20, 20),
+                    DefaultShopSize = new Size(3, 3),
+                    DefaultPeoplePerShop = 2
+                })
                 .GenerateDefault()
                 .Builder.Build();
             Assert.IsNotNull(worldYaml);

@@ -57,30 +57,31 @@ namespace NPCChatLib.LoadingProviderClasses
         {
             // Load("mood_axes.yaml", d => SetDictionary(globalDataContainer.MoodAxes, d["mood_axes"] as List<object>));
             //Load("mood_axes.yaml", s => s as List<object>, g => g.MoodAxes, SetDictionary);
-            using (var moodAxesImport = GetImportedYaml<YamlImportMoodAxes>("dispositions.yaml"))
-            {
-                var dispositionIds = new Dictionary<string, byte>();
-                var moodIds = new List<byte>();
-                var gateIds = new List<byte>();
-                foreach (var gate in moodAxesImport.Dispositions["gates"])
-                {
-                    var id = (byte)(dispositionIds.Count + 1);
-                    gateIds.Add(id);
-                    dispositionIds.Add(gate, id);
-                }
-                foreach (var mood in moodAxesImport.Dispositions["moods"])
-                {
-                    var id = (byte)dispositionIds.Count;
-                    moodIds.Add(id);
-                    dispositionIds.Add(mood, id);
-                }
-                globalDataContainer.DispositionIds = dispositionIds;
-                globalDataContainer.MoodIds = moodIds.ToArray();
-                globalDataContainer.GateIds = gateIds.ToArray();
-            }
+            throw new NotImplementedException();
+            //using (var moodAxesImport = GetImportedYaml<YamlImportMoodAxes>("dispositions.yaml"))
+            //{
+            //    var dispositionIds = new Dictionary<string, byte>();
+            //    var moodIds = new List<byte>();
+            //    var gateIds = new List<byte>();
+            //    foreach (var gate in moodAxesImport.Dispositions["gates"])
+            //    {
+            //        var id = (byte)(dispositionIds.Count + 1);
+            //        gateIds.Add(id);
+            //        dispositionIds.Add(gate, id);
+            //    }
+            //    foreach (var mood in moodAxesImport.Dispositions["moods"])
+            //    {
+            //        var id = (byte)dispositionIds.Count;
+            //        moodIds.Add(id);
+            //        dispositionIds.Add(mood, id);
+            //    }
+            //    globalDataContainer.DispositionIds = dispositionIds;
+            //    globalDataContainer.MoodIds = moodIds.ToArray();
+            //    globalDataContainer.GateIds = gateIds.ToArray();
+            //}
         }
 
-        private T GetImportedYaml<T>(string yamlFile) where T
+        private T GetImportedYaml<T>(string yamlFile) where T : class
         {
             var file = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", yamlFile);
             if (!File.Exists(file))

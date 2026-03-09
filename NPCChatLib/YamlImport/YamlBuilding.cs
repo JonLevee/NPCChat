@@ -4,7 +4,7 @@ using YamlDotNet.Serialization;
 
 namespace NPCChatLib.YamlImport
 {
-    public class YamlBuilding : YamlObject
+    public class YamlBuilding : YamlObjectBase
     {
     }
 }

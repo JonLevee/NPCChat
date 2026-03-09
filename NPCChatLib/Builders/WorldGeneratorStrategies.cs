@@ -6,7 +6,7 @@ namespace NPCChatLib.Builders
     [Transient]
     public class WorldGeneratorStrategies
     {
-        public BuildingLocatorStrategy BuildingLocatorStrategy = BuildingLocatorStrategy.Clockwise;
+        public IBuildingLocatorStrategy BuildingLocatorStrategy = BuildingLocatorStrategyFactory.Clockwise;
         public Size WorldSize { get; set; } = new Size(10, 10);
         public Size DefaultShopSize { get; set; } = new Size(2, 2);
         public int DefaultPeoplePerShop { get; set; } = 2;

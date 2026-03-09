@@ -4,19 +4,24 @@ using YamlDotNet.Serialization;
 
 namespace NPCChatLib.YamlImport
 {
-    public class YamlObject
+    public interface IYamlObject
     {
         [Required]
         [YamlMember]
-        public string Name { get; set; } = string.Empty;
+        public string Name { get; set; };
 
         [Required]
         [YamlMember]
-        public Point Location { get; set; } = new Point();
+        public Rectangle Location { get; set; }
+    }
 
+    public abstract class YamlObjectBase : IYamlObject
+    {
         [Required]
         [YamlMember]
-        public Size Size { get; set; } = new Size();
-
+        public string Name { get; set; }
+        [Required]
+        [YamlMember]
+        public Rectangle Location { get; set; }
     }
 }

@@ -1,23 +1,8 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.Drawing;
-using YamlDotNet.Serialization;
+﻿using System.Drawing;
 
 namespace NPCChatLib.YamlImport
 {
-    public class YamlCharacter : YamlObject
+    public class YamlCharacter : YamlObjectBase
     {
-    }
-
-    public class YamlArchetype
-    {
-        [Required]
-        [YamlMember]
-        public string Name { get; }
-
-        public YamlArchetype(string name) 
-        {
-            Name = name;
-        }
-
     }
 }

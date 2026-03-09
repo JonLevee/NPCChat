@@ -14,13 +14,13 @@ namespace NPCChatLib.Builders
     [Transient]
     public class WorldBuilder
     {
-        public WorldYaml World { get; private set; }
+        public YamlWorld World { get; private set; }
 
         public Dictionary<Point, YamlBuilding> Occupied { get; private set; } = [];
 
         public WorldBuilder()
         {
-            World = new WorldYaml();
+            World = new YamlWorld();
         }
 
         public WorldBuilder SetWorldSize(Size size)
@@ -29,12 +29,12 @@ namespace NPCChatLib.Builders
             return this;
         }
 
-        public WorldYaml Build()
+        public YamlWorld Build()
         {
             return World;
         }
 
-        public WorldBuilder CreateShop(YamlBuilding building, List<Point> points = null)
+        public WorldBuilder CreateShop(YamlBuilding building)
         {
             if (points == null && IsLocationOccupied(building.Location, building.Size, out var overlapInfo, out points))
             {
@@ -69,12 +69,17 @@ namespace NPCChatLib.Builders
 
         internal void CreateShopkeeper(YamlBuilding building)
         {
-            
+
         }
 
         internal void CreateShopkeeperAssistant(YamlBuilding building)
         {
             throw new NotImplementedException();
+        }
+
+        internal void Add(IYamlObject yamlObject, List<Point> locations = null)
+        {
+            locations ??= locat;
         }
     }
 }

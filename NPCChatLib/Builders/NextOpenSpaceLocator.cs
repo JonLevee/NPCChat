@@ -46,15 +46,12 @@ namespace NPCChatLib.Builders
         private IEnumerable<Point> GetNextClockwiseStartingPoint(YamlWorld world, Size size)
         {
             var outerBounds = new Rectangle(Point.Empty, world.WorldSize);
-            while (outerBounds.Height < outerBounds.X + outerBounds.Height / 2 &&
-                outerBounds.Width < outerBounds.Y + outerBounds.Width / 2)
+            do
             {
-                yield return new Point(outerBounds.X, outerBounds.Y); // Top-left
-                yield return new Point(outerBounds.X, outerBounds.Y + outerBounds.Width - size.Width - 1); // Top-right
-                yield return new Point(outerBounds.X + outerBounds.Height - size.Height - 1, outerBounds.Y + outerBounds.Width - size.Width - 1); // Bottom-right
-                yield return new Point(outerBounds.X + outerBounds.Height - size.Height - 1, outerBounds.Y); // Bottom-left
-                outerBounds.Inflate(-size.Height - world.SpacingOffset, -size.Height - world.SpacingOffset);
-            }
+                yield return new Point(outerBounds.X, outerBounds.Y); 
+                outerBounds.X += size.Width + world.SpacingOffset;
+            } while (outerBounds.Height < outerBounds.X + outerBounds.Height / 2 &&
+                outerBounds.Width < outerBounds.Y + outerBounds.Width / 2);
         }
     }
 }

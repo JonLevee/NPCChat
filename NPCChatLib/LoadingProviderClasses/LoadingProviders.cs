@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -41,7 +42,11 @@ namespace NPCChatLib.LoadingProviderClasses
         private delegate void LoadData();
         private readonly IServiceProvider services;
         private readonly IDeserializer deserializer;
+        private readonly ISerializer serializer;
         private GlobalDataContainer globalDataContainer;
+        private string[] persistanceLocations = [
+            @"C:\Users\jonle\My Drive\Games\YamlData"
+            ];
 
         public LoadingProviderFactory(IServiceProvider services)
         {
@@ -50,6 +55,9 @@ namespace NPCChatLib.LoadingProviderClasses
             deserializer = new DeserializerBuilder()
                 .WithNamingConvention(UnderscoredNamingConvention.Instance)
                 .IgnoreUnmatchedProperties()
+                .Build();
+            serializer = new SerializerBuilder()
+                .WithNamingConvention(UnderscoredNamingConvention.Instance)
                 .Build();
         }
 
@@ -79,6 +87,18 @@ namespace NPCChatLib.LoadingProviderClasses
             //    globalDataContainer.MoodIds = moodIds.ToArray();
             //    globalDataContainer.GateIds = gateIds.ToArray();
             //}
+        }
+
+        public void Save<T>(
+            T item,
+            [CallerMemberName]
+            string callerName = null
+            )
+        {
+            var name = typeof(T).Name;
+            var outputFile = Path.Combine(persistanceLocations.First(Directory.Exists), name + ".yaml");
+            var text = serializer.Serialize(item);
+            File.WriteAllText(outputFile, text);
         }
 
         private T GetImportedYaml<T>(string yamlFile) where T : class

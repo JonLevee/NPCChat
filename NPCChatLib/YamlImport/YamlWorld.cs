@@ -11,7 +11,6 @@ namespace NPCChatLib.YamlImport
     public class YamlWorld
     {
         public event EventHandler<ChangeEventArgs<Size>> WorldSizeChanged;
-        public event EventHandler<ChangeEventArgs<int>> SpacingOffsetChanged;
 
         private Size worldSize = new(10, 10);
         [YamlMember(Alias = "world_size")]
@@ -21,13 +20,8 @@ namespace NPCChatLib.YamlImport
             set => ChangeEventArgUpdator.Update(WorldSizeChanged, ref worldSize, value);
         }
 
-        private int spacingOffset;
         [YamlMember(Alias = "spacing_offset")]
-        public int SpacingOffset
-        {
-            get => spacingOffset;
-            set => ChangeEventArgUpdator.Update(SpacingOffsetChanged, ref spacingOffset, value);
-        }
+        public int SpacingOffset { get; set; }
 
         [YamlMember(Alias = "occupied")]
         public YamlOccupied Occupied { get; set; } = new();

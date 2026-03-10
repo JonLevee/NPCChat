@@ -13,18 +13,14 @@ namespace NPCChatLib.Builders
     public class WorldGenerator
     {
         public WorldBuilder Builder { get; }
-        public YamlWorld World { get; }
-        public BuildingOptions Strategies { get; }
-        public WorldGenerator(IServiceScope scope)
+        public WorldGenerator(WorldBuilder builder)
         {
-            this.Strategies = scope.Get<BuildingOptions>();
-            this.Builder = scope.Get<WorldBuilder>();
-            this.World = scope.Get<YamlWorld>();
+            Builder = builder;
         }
 
         public WorldGenerator SetOptions(Action<BuildingOptions> setFunc)
         {
-            setFunc(Strategies);
+            setFunc(Builder.Options);
             return this;
         }
 
@@ -49,10 +45,10 @@ namespace NPCChatLib.Builders
             foreach (var shopInfo in shopInfos)
             {
                 var name = shopInfo.Item1;
-                var npcCount = shopInfo.Item2 == -1 ? Strategies.DefaultPeoplePerShop : shopInfo.Item2;
-                var size = shopInfo.Item3 == Size.Empty ? Strategies.DefaultShopSize : shopInfo.Item3;
+                var npcCount = shopInfo.Item2 == -1 ? Builder.Options.DefaultPeoplePerShop : shopInfo.Item2;
+                var size = shopInfo.Item3 == Size.Empty ? Builder.Options.DefaultShopSize : shopInfo.Item3;
 
-                if (!Builder.SpaceLocator.TryFindNextOpenLocation(World, size, out Point point))
+                if (!Builder.SpaceLocator.TryFindNextOpenLocation(Builder.World, size, out Point point))
                     throw new InvalidOperationException($"No open building locations found for shop {name} with size {size}");
                 var building = new YamlBuilding
                 {
@@ -60,7 +56,7 @@ namespace NPCChatLib.Builders
                     Size = size,
                     Location = point,
                 };
-                World.Occupied.Add(building);
+                Builder.World.Occupied.Add(building);
                 GenerateShopCharacters(building, npcCount);
                 if (--npcCount >= 0)
                 {

@@ -15,6 +15,7 @@ namespace TestProject
         private IServiceProvider? _serviceProvider;
         protected IServiceProvider Services => _serviceProvider.NonNull();
         protected GlobalDataContainer Data { get; private set; } = null!;
+        protected LoadingProviderFactory LoadingFactory { get; private set; } = null!;
 
         [TestInitialize]
         public void TestInitializeBase()
@@ -22,9 +23,7 @@ namespace TestProject
             IServiceCollection services = new ServiceCollection();
             ConfigureServices.Configure(services);
             _serviceProvider = services.BuildServiceProvider();
-            var factory = Services.Get<LoadingProviderFactory>();
-            factory.LoadAll();
-            Data = Services.Get<GlobalDataContainer>();
+            LoadingFactory = Services.Get<LoadingProviderFactory>();
         }
     }
 
@@ -83,7 +82,6 @@ namespace TestProject
             using (var scope = Services.CreateScope())
             {
                 var worldYaml = scope
-                    .ServiceProvider
                     .Get<WorldGenerator>()
                     .SetOptions(s =>
                     {
@@ -96,6 +94,7 @@ namespace TestProject
                     .Builder
                     .Build();
                 Assert.IsNotNull(worldYaml);
+                LoadingFactory.Save(worldYaml);
             }
         }
 

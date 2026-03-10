@@ -10,6 +10,7 @@ using Microsoft.UI.Xaml.Data;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NPCChatLib.Attributes;
 using NPCChatLib.Extensions;
+using NPCChatLib.LocalEventArgs;
 using NPCChatLib.YamlImport;
 
 namespace NPCChatLib.Builders

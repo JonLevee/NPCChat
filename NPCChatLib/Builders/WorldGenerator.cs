@@ -1,22 +1,33 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Controls.Primitives;
 using NPCChatLib.Attributes;
+using NPCChatLib.Extensions;
 using NPCChatLib.YamlImport;
 
 namespace NPCChatLib.Builders
 {
-    [Transient]
+    [Scoped]
     public class WorldGenerator
     {
-        public WorldBuilder Builder { get; private set; }
-        public YamlWorld World => Builder.World;
-        public WorldBuilderStrategies Strategies => Builder.BuilderStrategies;
-        public WorldGenerator(WorldBuilder builder)
+        public WorldBuilder Builder { get; }
+        public YamlWorld World { get; }
+        public BuildingOptions Strategies { get; }
+        public WorldGenerator(IServiceScope scope)
         {
-            this.Builder = builder;
+            this.Strategies = scope.Get<BuildingOptions>();
+            this.Builder = scope.Get<WorldBuilder>();
+            this.World = scope.Get<YamlWorld>();
         }
+
+        public WorldGenerator SetOptions(Action<BuildingOptions> setFunc)
+        {
+            setFunc(Strategies);
+            return this;
+        }
+
 
         public WorldGenerator GenerateDefault()
         {
@@ -37,21 +48,20 @@ namespace NPCChatLib.Builders
         {
             foreach (var shopInfo in shopInfos)
             {
-                var characterCount = shopInfo.Item2 == -1 ? Strategies.DefaultPeoplePerShop : shopInfo.Item2;
+                var name = shopInfo.Item1;
+                var npcCount = shopInfo.Item2 == -1 ? Strategies.DefaultPeoplePerShop : shopInfo.Item2;
+                var size = shopInfo.Item3 == Size.Empty ? Strategies.DefaultShopSize : shopInfo.Item3;
+
+                if (!Builder.SpaceLocator.TryFindNextOpenLocation(World, size, out Point point))
+                    throw new InvalidOperationException($"No open building locations found for shop {name} with size {size}");
                 var building = new YamlBuilding
                 {
-                    Name = shopInfo.Item1,
-                    Size = shopInfo.Item3 == Size.Empty ? Strategies.DefaultShopSize : shopInfo.Item3,
+                    Name = name,
+                    Size = size,
+                    Location = point,
                 };
-
-                stopped here
-                if (!Builder.SpaceLocator.TryFindNextOpenLocation(World, building.Size, out List<Point> points))
-                    throw new InvalidOperationException($"No open building locations found for shop {building.Name} with size {building.Size}");
-
-                Builder.Add(building, points);
-                (building.Location, List<Point> points) = FindNextOpenBuildingLocation(BuilderStrategies.BuildingLocatorStrategy, building.Size);
-                Builder.CreateShop(building, points);
-                var npcCount = shopInfo.Item2 < 0 ? BuilderStrategies.DefaultPeoplePerShop : shopInfo.Item2;
+                World.Occupied.Add(building);
+                GenerateShopCharacters(building, npcCount);
                 if (--npcCount >= 0)
                 {
                     Builder.CreateShopkeeper(building);
@@ -64,45 +74,17 @@ namespace NPCChatLib.Builders
             return this;
         }
 
-        public (Point, List<Point>) FindNextOpenBuildingLocation(NextOpenSpaceLocator strategy, Size size)
+        public WorldGenerator GenerateShopCharacters(YamlBuilding building, int characterCount)
         {
-            switch (strategy)
+            if (--characterCount >= 0)
             {
-                case NextOpenSpaceLocator.Clockwise:
-                    var corners = new Point[]
-                    {
-                        new Point(0, 0),
-                        new Point(0, Builder.World.WorldSize.Width - size.Width),
-                        new Point(Builder.World.WorldSize.Height - size.Height, Builder.World.WorldSize.Width - size.Width),
-                        new Point(Builder.World.WorldSize.Height - size.Height, 0)
-                    };
-                    while (corners[0].X < Builder.World.WorldSize.Width / 2 && corners[0].Y < Builder.World.WorldSize.Height / 2)
-                    {
-                        if (!Builder.IsLocationOccupied(corners[0], size, out string errorMessage, out List<Point> points))
-                        {
-                            return (corners[0], points);
-                        }
-                        if (!Builder.IsLocationOccupied(corners[1], size, out errorMessage, out points))
-                        {
-                            return (corners[1], points);
-                        }
-                        if (!Builder.IsLocationOccupied(corners[2], size, out errorMessage, out points))
-                        {
-                            return (corners[2], points);
-                        }
-                        if (!Builder.IsLocationOccupied(corners[3], size, out errorMessage, out points))
-                        {
-                            return (corners[3], points);
-                        }
-                        corners[0] = new Point(corners[0].X + size.Height, corners[0].Y);
-                        corners[1] = new Point(corners[1].X + size.Height, corners[1].Y);
-                        corners[2] = new Point(corners[2].X - size.Height, corners[2].Y);
-                        corners[3] = new Point(corners[3].X - size.Height, corners[3].Y);
-                    }
-                    throw new InvalidOperationException("No open building locations found using Clockwise strategy");
-                default:
-                    throw new InvalidOperationException($"{strategy} not handled");
+                Builder.CreateShopkeeper(building);
+                if (--characterCount >= 0)
+                {
+                    Builder.CreateShopkeeper(building);
+                }
             }
+            return this;
         }
     }
 }

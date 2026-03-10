@@ -80,18 +80,23 @@ namespace TestProject
         [TestMethod]
         public void TestMethod2()
         {
-            var worldYaml = Services
-                .Get<WorldGenerator>()
-                .SetStrategies(new WorldBuilderStrategies
-                {
-                    BuildingLocatorStrategy = NextOpenSpaceLocator.Clockwise,
-                    WorldSize = new Size(20, 20),
-                    DefaultShopSize = new Size(3, 3),
-                    DefaultPeoplePerShop = 2
-                })
-                .GenerateDefault()
-                .Builder.Build();
-            Assert.IsNotNull(worldYaml);
+            using (var scope = Services.CreateScope())
+            {
+                var worldYaml = scope
+                    .ServiceProvider
+                    .Get<WorldGenerator>()
+                    .SetOptions(s =>
+                    {
+                        s.LocatorStrategy = NextOpenSpaceLocatorStrategy.Clockwise;
+                        s.WorldSize = new Size(20, 20);
+                        s.DefaultShopSize = new Size(3, 3);
+                        s.DefaultPeoplePerShop = 2;
+                    })
+                    .GenerateDefault()
+                    .Builder
+                    .Build();
+                Assert.IsNotNull(worldYaml);
+            }
         }
 
         // Use the UITestMethod attribute for tests that need to run on the UI thread.

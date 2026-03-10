@@ -2,6 +2,9 @@
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
+using Microsoft.Extensions.DependencyInjection;
+using NPCChatLib.Attributes;
+using NPCChatLib.Extensions;
 using NPCChatLib.YamlImport;
 
 namespace NPCChatLib.Builders
@@ -10,52 +13,35 @@ namespace NPCChatLib.Builders
     {
         Clockwise,
     }
+
+    [Scoped]
     public class NextOpenSpaceLocator
     {
         private delegate IEnumerable<Point> GetNextStartingPoint(YamlWorld world, Size size);
         private Dictionary<NextOpenSpaceLocatorStrategy, GetNextStartingPoint> strategyMap;
-        public NextOpenSpaceLocatorStrategy Strategy { get; set; }
+        private readonly BuildingOptions options;
 
-        public NextOpenSpaceLocator(NextOpenSpaceLocatorStrategy strategy = NextOpenSpaceLocatorStrategy.Clockwise)
+        public NextOpenSpaceLocator(BuildingOptions options)
         {
-            Strategy = strategy;
             strategyMap = new()
             {
                 [NextOpenSpaceLocatorStrategy.Clockwise] = GetNextClockwiseStartingPoint
             };
+            this.options = options;
         }
 
-        public bool TryFindNextOpenLocation(YamlWorld world, Size buildingSize, out List<Point> openPoints)
+        public bool TryFindNextOpenLocation(YamlWorld world, Size buildingSize, out Point nextLocation)
         {
-            foreach (var startingPoint in strategyMap[Strategy](world, buildingSize))
+            foreach (var startingPoint in strategyMap[options.LocatorStrategy](world, buildingSize))
             {
-                openPoints = [];
-                foreach (var point in GetAllObjectPoints(startingPoint, buildingSize))
+                if (!world.Occupied.IsLocationOccupied(startingPoint, buildingSize, out _))
                 {
-                    if (world.Occupied.ContainsKey(point))
-                    {
-                        openPoints.Clear();
-                        break;
-                    }
-                }
-                if (openPoints.Any())
-                {
+                    nextLocation = startingPoint;
                     return true;
                 }
             }
-            openPoints = [];
+            nextLocation = Point.Empty;
             return false;
-        }
-
-        public IEnumerable<Point> GetAllObjectPoints(Point point, Size size)
-        {
-            for (var y = point.Y; y < point.Y + size.Width; ++y)
-            {
-                for (var x = point.X; x < point.X + size.Height; ++x)
-                {
-                    yield return new Point(x, y);
-                }
-            }
         }
         private IEnumerable<Point> GetNextClockwiseStartingPoint(YamlWorld world, Size size)
         {

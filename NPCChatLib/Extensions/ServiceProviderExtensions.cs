@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Runtime.CompilerServices;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace NPCChatLib.Extensions
 {
@@ -20,6 +21,7 @@ namespace NPCChatLib.Extensions
         }
 #pragma warning disable CS8632 // null parameter reference.
         public static T Get<T>(this IServiceProvider? serviceProvider) => (T)serviceProvider?.GetService(typeof(T));
+        public static T Get<T>(this IServiceScope? scope) => (T)scope?.ServiceProvider?.GetService(typeof(T));
     }
 #pragma warning restore CS8632 
 }

@@ -9,7 +9,7 @@ namespace NPCChatLib.Attributes
 {
     public abstract class InjectionAttribute : Attribute
     {
-        public InjectionAttribute(ServiceLifetime lifetime) 
+        public InjectionAttribute(ServiceLifetime lifetime)
         {
             Lifetime = lifetime;
         }
@@ -27,5 +27,11 @@ namespace NPCChatLib.Attributes
     public class TransientAttribute : InjectionAttribute
     {
         public TransientAttribute() : base(ServiceLifetime.Transient) { }
+    }
+
+    [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
+    public class ScopedAttribute : InjectionAttribute
+    {
+        public ScopedAttribute() : base(ServiceLifetime.Scoped) { }
     }
 }

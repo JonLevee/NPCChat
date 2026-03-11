@@ -24,6 +24,8 @@ namespace NPCChatLib.YamlImport
             return overlapObject != null;
         }
 
+        public bool ContainsKey(Point point) => occupied.ContainsKey(point);
+
         public void Add(IYamlObject o)
         {
             if (!InternalTryAdd(o, out string errorMessage))

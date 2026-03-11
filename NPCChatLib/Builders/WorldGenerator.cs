@@ -48,7 +48,7 @@ namespace NPCChatLib.Builders
                 var npcCount = shopInfo.Item2 == -1 ? Builder.Options.DefaultPeoplePerShop : shopInfo.Item2;
                 var size = shopInfo.Item3 == Size.Empty ? Builder.Options.DefaultShopSize : shopInfo.Item3;
 
-                if (!Builder.SpaceLocator.TryFindNextOpenLocation(Builder.World, size, out Point point))
+                if (!Builder.SpaceLocator.TryFindNextOpenLocation(size, out Point point))
                     throw new InvalidOperationException($"No open building locations found for shop {name} with size {size}");
                 var building = new YamlBuilding
                 {

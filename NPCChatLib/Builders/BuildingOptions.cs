@@ -21,13 +21,14 @@ namespace NPCChatLib.Builders
         private Size worldSize = new Size(10, 10);
         private Size defaultShopSize = new Size(2, 2);
         private int defaultPeoplePerShop = 2;
-        private int spacingOffset;
+        private int spacingOffset = 3;
 
         public BuildingOptions(YamlWorld yamlWorld)
         {
             this.yamlWorld = yamlWorld;
             yamlWorld.WorldSizeChanged += WorldSizeChanged;
             WorldSizeChanged += (sender, args) => yamlWorld.WorldSize = args.NewValue;
+            SpacingOffsetChanged += (sender, args) => yamlWorld.SpacingOffset = args.NewValue;
         }
 
         public NextOpenSpaceLocatorStrategy LocatorStrategy

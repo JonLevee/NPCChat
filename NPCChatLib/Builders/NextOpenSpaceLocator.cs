@@ -59,7 +59,7 @@ namespace NPCChatLib.Builders
                         x < yamlWorld.WorldSize.Width &&
                         y >= 0 &&
                         y < yamlWorld.WorldSize.Height &&
-                        yamlWorld.Occupied.ContainsKey(new Point(x, y))
+                        yamlWorld.Occupied.ContainsKey(new Point(x, y)))
                         return false;
                 }
             }
@@ -69,8 +69,10 @@ namespace NPCChatLib.Builders
         private bool MoveUntilEmpty(ref Point point, int xDelta = 0, int yDelta = 0)
         {
             Assert.IsTrue(xDelta + yDelta > 0 && (xDelta > 0 || yDelta > 0), $"one must be non-zero: xDelta:{xDelta}, yDelta: {yDelta}");
-            if (!yamlWorld.Occupied.ContainsKey(nextPoint))
+            //if (!yamlWorld.Occupied.ContainsKey(nextPoint))
+            throw new NotImplementedException();
         }
+
         private IEnumerable<Point> GetNextClockwiseStartingPoint(Size size)
         {
             var nextPoint = new Point();

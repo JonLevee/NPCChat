@@ -7,20 +7,10 @@ using System.Threading.Tasks;
 
 namespace NPCChatLib.WorldClasses
 {
-    public record WorldOptions(int ChunkSize);
-    public readonly record struct ChunkCoord(int X, int Y);
-    public readonly record struct Int2(int X, int Y);
-    public readonly record struct IntRect(int X, int Y, int Width, int Height)
-    {
-        public int Left => X;
-        public int Top => Y;
-        public int Right => X + Width;
-        public int Bottom => Y + Height;
-    }
 
-    public class WorldData(WorldOptions options)
+    public class WorldData(WorldOptions options = null)
     {
-        public WorldOptions Options { get; private set; } = options;
+        public WorldOptions Options { get; private set; } = options ?? new();
 
         public Dictionary<ChunkCoord, List<int>> StaticIndex { get; } = [];
         public Dictionary<ChunkCoord, List<int>> DynamicIndex { get; } = [];

@@ -3,32 +3,16 @@ using Microsoft.Extensions.DependencyInjection;
 using NPCChatLib.Builders;
 using NPCChatLib.CharacterClasses.Builders;
 using NPCChatLib.Extensions;
-using NPCChatLib.LoadingProviderClasses;
+using NPCChatLib.WorldClasses;
 using NPCChatLib.YamlImport;
-using NPChat;
 using NPChat.CharacterClasses;
+using static NPCChatLib.WorldClasses.WorldData;
 
 namespace TestProject
 {
-    public class UnitTestBase
-    {
-        private IServiceProvider? _serviceProvider;
-        protected IServiceProvider Services => _serviceProvider.NonNull();
-        protected GlobalDataContainer Data { get; private set; } = null!;
-        protected LoadingProviderFactory LoadingFactory { get; private set; } = null!;
-
-        [TestInitialize]
-        public void TestInitializeBase()
-        {
-            IServiceCollection services = new ServiceCollection();
-            ConfigureServices.Configure(services);
-            _serviceProvider = services.BuildServiceProvider();
-            LoadingFactory = Services.Get<LoadingProviderFactory>();
-        }
-    }
 
     [TestClass]
-    public partial class UnitTest1 : UnitTestBase
+    public class UnitTest1 : UnitTestBase
     {
         [TestInitialize]
         public void TestInitialize()
@@ -105,15 +89,12 @@ namespace TestProject
             var metadata = Services!.GetRequiredService<CharacterCoreMetadata>();
             Assert.IsNotNull(metadata);
         }
-    }
 
-    public static class UnitTestExtensions
-    {
-        public static void IsEquivalentTo<T1, T2>(this IEnumerable<T1> left, IEnumerable<T2> right)
+        [TestMethod]
+        public void TestMethod4()
         {
-            var sortedLeft = left.Order().ToArray();
-            var sortedRight = right.Order().ToArray();
-            CollectionAssert.AreEquivalent(sortedLeft, sortedRight);
+            var worldData = new WorldData(new(ChunkSize: 16));
+            Assert.IsNotNull(worldData);
         }
     }
 

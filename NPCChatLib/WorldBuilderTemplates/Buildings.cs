@@ -18,7 +18,12 @@ namespace NPCChatLib.WorldBuilderTemplates
             {
                 public static WorldObject SmallShop()
                 {
-                    throw new NotImplementedException();
+                    var shop = new WorldObject
+                    {
+                        Type = WorldObjectType.Building,
+                        Size = new(5, 3)
+                    };
+                    return shop;
                 }
             }
         }

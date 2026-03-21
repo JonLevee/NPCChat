@@ -7,6 +7,7 @@ using NPCChatLib.WorldBuilderTemplates;
 using NPCChatLib.WorldClasses;
 using NPCChatLib.YamlImport;
 using NPChat.CharacterClasses;
+using static NPCChatLib.WorldBuilderTemplates.Templates.Buildings;
 using static NPCChatLib.WorldClasses.WorldData;
 
 namespace TestProject
@@ -81,10 +82,10 @@ namespace TestProject
                 Assert.IsNotNull(builder);
                 Assert.IsNotNull(builder.World);
                 Assert.IsNotNull(builder.Options);
-                builder.Add(Templates.Buildings.Shops.SmallShop(), 5, 5);
-                builder.Add(Templates.Buildings.Shops.SmallShop(), 5, 10);
+                world.Add(Shops.SmallShop(), 5, 5);
+                world.Add(Shops.SmallShop(), 5, 10);
             }
-
+            
         }
     }
 

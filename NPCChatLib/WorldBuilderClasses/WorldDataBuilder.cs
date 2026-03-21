@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,13 +23,10 @@ namespace NPCChatLib.Builders
         BuildingOptions options,
         WorldData world)
     {
+
         public BuildingOptions Options { get; } = options;
         public WorldData World { get; } = world;
 
-        public void Add(WorldObject wObject, int x, int y)
-        {
-            throw new NotImplementedException();
-        }
 
         public WorldData Build()
         {

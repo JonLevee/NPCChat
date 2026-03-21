@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 namespace NPCChatLib.WorldClasses
 {
-    public record WorldOptions(int ChunkSize = 16);
     public readonly record struct WorldCoord(int X, int Y);
     public readonly record struct ChunkCoord(int X, int Y);
     public readonly record struct Bounds(int X, int Y, int Width, int Height)

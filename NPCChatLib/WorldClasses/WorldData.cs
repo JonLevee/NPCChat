@@ -4,14 +4,15 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NPCChatLib.Attributes;
 
 namespace NPCChatLib.WorldClasses
 {
 
-    public class WorldData(WorldOptions options = null)
+    [Scoped]
+    public class WorldData(IWorldDataOptions options)
     {
-        public WorldOptions Options { get; private set; } = options ?? new();
-
+        public IWorldDataOptions Options { get; } = options;
         public Dictionary<ChunkCoord, List<int>> StaticIndex { get; } = [];
         public Dictionary<ChunkCoord, List<int>> DynamicIndex { get; } = [];
         public Dictionary<int, WorldObject> Objects { get; } = [];

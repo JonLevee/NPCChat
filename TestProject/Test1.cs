@@ -3,6 +3,7 @@ using Microsoft.Extensions.DependencyInjection;
 using NPCChatLib.Builders;
 using NPCChatLib.CharacterClasses.Builders;
 using NPCChatLib.Extensions;
+using NPCChatLib.WorldBuilderTemplates;
 using NPCChatLib.WorldClasses;
 using NPCChatLib.YamlImport;
 using NPChat.CharacterClasses;
@@ -60,28 +61,6 @@ namespace TestProject
             expectedMoods.IsEquivalentTo(Data.MoodIds);
         }
 
-        [TestMethod]
-        public void TestMethod2()
-        {
-            using (var scope = Services.CreateScope())
-            {
-                var worldYaml = scope
-                    .Get<WorldGenerator>()
-                    .SetOptions(s =>
-                    {
-                        s.LocatorStrategy = NextOpenSpaceLocatorStrategy.Clockwise;
-                        s.WorldSize = new Size(20, 20);
-                        s.DefaultShopSize = new Size(3, 3);
-                        s.DefaultPeoplePerShop = 2;
-                    })
-                    .GenerateDefault()
-                    .Builder
-                    .Build();
-                Assert.IsNotNull(worldYaml);
-                LoadingFactory.Save(worldYaml);
-            }
-        }
-
         // Use the UITestMethod attribute for tests that need to run on the UI thread.
         // [UITestMethod]
         public void TestMethod3()
@@ -91,10 +70,21 @@ namespace TestProject
         }
 
         [TestMethod]
-        public void TestMethod4()
+        public void CreateSmallMap()
         {
-            var worldData = new WorldData(new(ChunkSize: 16));
-            Assert.IsNotNull(worldData);
+            using (IServiceScope scope = Services.CreateScope())
+            {
+                var options = scope.ServiceProvider.Get<WorldDataOptions>();
+                options.ChunkSize = 8;
+                var world = scope.ServiceProvider.Get<WorldData>();
+                var builder = scope.ServiceProvider.Get<WorldDataBuilder>();
+                Assert.IsNotNull(builder);
+                Assert.IsNotNull(builder.World);
+                Assert.IsNotNull(builder.Options);
+                builder.Add(Templates.Buildings.Shops.SmallShop(), 5, 5);
+                builder.Add(Templates.Buildings.Shops.SmallShop(), 5, 10);
+            }
+
         }
     }
 

@@ -7,31 +7,30 @@ using System.Threading.Tasks;
 
 namespace NPCChatLib.Attributes
 {
-    public abstract class InjectionAttribute : Attribute
+    public abstract class InjectionAttribute(ServiceLifetime lifetime, Type serviceType) : Attribute
     {
-        public InjectionAttribute(ServiceLifetime lifetime)
+        public ServiceLifetime Lifetime { get; } = lifetime;
+        public Type ServiceType { get; } = serviceType;
+        public IEnumerable<ServiceDescriptor> GetServiceDescriptors(Type implementationType)
         {
-            Lifetime = lifetime;
+            yield return new(implementationType, Lifetime);
+            if (ServiceType != null)
+                yield return new(ServiceType, implementationType, Lifetime);
         }
-
-        public ServiceLifetime Lifetime { get; }
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-    public class SingletonAttribute : InjectionAttribute
+    public class SingletonAttribute(Type serviceType = null) : InjectionAttribute(ServiceLifetime.Singleton, serviceType)
     {
-        public SingletonAttribute() : base(ServiceLifetime.Singleton) { }
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-    public class TransientAttribute : InjectionAttribute
+    public class TransientAttribute(Type serviceType = null) : InjectionAttribute(ServiceLifetime.Transient, serviceType)
     {
-        public TransientAttribute() : base(ServiceLifetime.Transient) { }
     }
 
     [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
-    public class ScopedAttribute : InjectionAttribute
+    public class ScopedAttribute(Type serviceType = null) : InjectionAttribute(ServiceLifetime.Scoped, serviceType)
     {
-        public ScopedAttribute() : base(ServiceLifetime.Scoped) { }
     }
 }

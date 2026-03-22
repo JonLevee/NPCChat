@@ -75,6 +75,7 @@ namespace TestProject
         {
             using (IServiceScope scope = Services.CreateScope())
             {
+                scope.ServiceProvider.GetKeyedService
                 var options = scope.ServiceProvider.Get<WorldDataOptions>();
                 options.ChunkSize = 8;
                 var world = scope.ServiceProvider.Get<WorldData>();
@@ -82,10 +83,11 @@ namespace TestProject
                 Assert.IsNotNull(builder);
                 Assert.IsNotNull(builder.World);
                 Assert.IsNotNull(builder.Options);
+                builder.Add();
                 world.Add(Shops.SmallShop(), 5, 5);
                 world.Add(Shops.SmallShop(), 5, 10);
             }
-            
+
         }
     }
 

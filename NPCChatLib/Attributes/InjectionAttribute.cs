@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 
 namespace NPCChatLib.Attributes
 {
+    [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = true, AllowMultiple = false)]
     public abstract class InjectionAttribute(ServiceLifetime lifetime, Type serviceType) : Attribute
     {
         public ServiceLifetime Lifetime { get; } = lifetime;
@@ -19,17 +20,14 @@ namespace NPCChatLib.Attributes
         }
     }
 
-    [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
     public class SingletonAttribute(Type serviceType = null) : InjectionAttribute(ServiceLifetime.Singleton, serviceType)
     {
     }
 
-    [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
     public class TransientAttribute(Type serviceType = null) : InjectionAttribute(ServiceLifetime.Transient, serviceType)
     {
     }
 
-    [AttributeUsage(AttributeTargets.Class, Inherited = false, AllowMultiple = false)]
     public class ScopedAttribute(Type serviceType = null) : InjectionAttribute(ServiceLifetime.Scoped, serviceType)
     {
     }

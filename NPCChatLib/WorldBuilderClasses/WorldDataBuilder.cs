@@ -27,10 +27,5 @@ namespace NPCChatLib.Builders
         public BuildingOptions Options { get; } = options;
         public WorldData World { get; } = world;
 
-
-        public WorldData Build()
-        {
-            return World;
-        }
     }
 }

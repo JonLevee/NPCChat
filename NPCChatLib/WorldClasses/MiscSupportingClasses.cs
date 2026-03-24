@@ -10,8 +10,9 @@ namespace NPCChatLib.WorldClasses
     public readonly record struct ChunkPosition(int X, int Y);
     public readonly record struct BoundInfo(int Id, Bounds Bounds);
 
-    public partial class BoundInfos(ChunkPosition Position) : List<BoundInfo>
+    public partial class BoundInfos(ChunkPosition position) : List<BoundInfo>
     {
+        public ChunkPosition Position { get; private set; } = position;
     }
 
 }

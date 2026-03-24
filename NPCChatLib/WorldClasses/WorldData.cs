@@ -20,22 +20,12 @@ namespace NPCChatLib.WorldClasses
     {
         public Dictionary<int, WorldObject> Objects { get; } = [];
 
-        public IEnumerable<WorldChunkIndex> Indexes => new WorldChunkIndex[] { StaticChunkIndex, DynamicChunkIndex };
-        public WorldChunkIndex GetPrimaryIndex(WorldObject o) => o.IsStatic() ? StaticChunkIndex : DynamicChunkIndex;
-        public WorldChunkIndex GetNonPrimaryIndex(WorldObject o) => o.IsDynamic() ? StaticChunkIndex : DynamicChunkIndex;
-
-        public void Add(WorldObject o, int x, int y)
+        public (ChunkPosition chunkPos, WorldChunkIndex primary, WorldChunkIndex nonPrimary) GetChunkAndIndexes(WorldObject o)
         {
-            o.Bounds = new(X: x, Y: y, Width: o.Bounds.Width, Height: o.Bounds.Height);
-            if (o.Id == -1)
-                o.Id = Options.GetNextId();
-            var nonPrimaryIndex = GetNonPrimaryIndex(o);
-            if (nonPrimaryIndex.TryGet(o.Bounds, out List<WorldObject> conflicts))
-            {
-                throw new WorldGenerationException();
-            }
-            var primary = GetPrimaryIndex(o);
-
+            var chunkPosition = Options.ToChunk(o.Bounds);
+            return o.IsStatic()
+                ? (chunkPosition, StaticChunkIndex, DynamicChunkIndex)
+                : (chunkPosition, DynamicChunkIndex, StaticChunkIndex);
         }
     }
 }

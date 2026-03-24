@@ -62,16 +62,6 @@ namespace TestProject
             expectedMoods.IsEquivalentTo(Data.MoodIds);
         }
 
-        // Use the UITestMethod attribute for tests that need to run on the UI thread.
-        // [UITestMethod]
-        [TestMethod]
-        public void TestMethod3()
-        {
-            var o = new WorldObject();
-            var text = o.GetAutoDebugDisplayText();
-            Assert.IsNotNull(text);
-        }
-
         [TestMethod]
         public void CreateSmallMap()
         {
@@ -84,9 +74,22 @@ namespace TestProject
                 Assert.IsNotNull(builder);
                 Assert.IsNotNull(builder.World);
                 Assert.IsNotNull(builder.Options);
-                throw new InvalidOperationException();
-                world.Add(Shops.SmallShop(), 5, 5);
-                world.Add(Shops.SmallShop(), 5, 10);
+                using (var template = scope.Get<Templates>())
+                {
+                    using (var buildings = template.Buildings)
+                    {
+                        using (var shops = buildings.Shops)
+                        {
+                        }
+                    }
+                }
+                builder
+                    .Templates
+                        .Buildings
+                            .Shops
+                                .AddSmallShop(5, 2);
+                builder.Add(Shops.SmallShop(5, 2));
+                builder.Add(Shops.SmallShop(25, 2));
             }
 
         }

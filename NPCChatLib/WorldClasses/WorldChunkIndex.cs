@@ -11,16 +11,9 @@ namespace NPCChatLib.WorldClasses
         WorldDataOptions Options,
         string Name) : Dictionary<Position, BoundInfos>
     {
-        public bool TryGet(Bounds bounds, out List<WorldObject> conflicts)
+        public bool TryGetConflicts(Bounds bounds, out List<WorldObject> conflicts)
         {
             throw new NotImplementedException();
-        }
-        private ChunkPosition ToChunk(Position position)
-        {
-            return new ChunkPosition(
-                (int)Math.Floor((double)(position.X / Options.ChunkSize)),
-                (int)Math.Floor((double)(position.Y / Options.ChunkSize))
-                );
         }
 
     }

@@ -10,6 +10,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.UI.Xaml.Data;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using NPCChatLib.Attributes;
+using NPCChatLib.Exceptions;
 using NPCChatLib.Extensions;
 using NPCChatLib.LocalEventArgs;
 using NPCChatLib.WorldBuilderTemplates;
@@ -20,12 +21,12 @@ namespace NPCChatLib.Builders
 {
     [Scoped]
     public class WorldDataBuilder(
-        BuildingOptions options,
+        WorldDataOptions options,
         WorldData world)
     {
 
-        public BuildingOptions Options { get; } = options;
+        public WorldDataOptions Options { get; } = options;
         public WorldData World { get; } = world;
-
+        public Templates GetTemplates() => new(this);
     }
 }

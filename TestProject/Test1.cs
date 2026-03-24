@@ -64,10 +64,12 @@ namespace TestProject
 
         // Use the UITestMethod attribute for tests that need to run on the UI thread.
         // [UITestMethod]
+        [TestMethod]
         public void TestMethod3()
         {
-            var metadata = Services!.GetRequiredService<CharacterCoreMetadata>();
-            Assert.IsNotNull(metadata);
+            var o = new WorldObject();
+            var text = o.GetAutoDebugDisplayText();
+            Assert.IsNotNull(text);
         }
 
         [TestMethod]
@@ -75,7 +77,6 @@ namespace TestProject
         {
             using (IServiceScope scope = Services.CreateScope())
             {
-                scope.ServiceProvider.GetKeyedService
                 var options = scope.ServiceProvider.Get<WorldDataOptions>();
                 options.ChunkSize = 8;
                 var world = scope.ServiceProvider.Get<WorldData>();
@@ -83,7 +84,7 @@ namespace TestProject
                 Assert.IsNotNull(builder);
                 Assert.IsNotNull(builder.World);
                 Assert.IsNotNull(builder.Options);
-                builder.Add();
+                throw new InvalidOperationException();
                 world.Add(Shops.SmallShop(), 5, 5);
                 world.Add(Shops.SmallShop(), 5, 10);
             }

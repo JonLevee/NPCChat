@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using NPCChatLib.WorldClasses;
 
 namespace NPCChatLib.Extensions
@@ -8,37 +10,31 @@ namespace NPCChatLib.Extensions
     {
         public static bool IsStatic(this WorldObject wObject) => wObject.Type < WorldObjectType.Player;
         public static bool IsDynamic(this WorldObject wObject) => wObject.Type >= WorldObjectType.Player;
-        public static ChunkCoord ToChunkCoord(this WorldCoord point, WorldDataOptions options)
+
+        public static string GetAutoDebugDisplayText(this IAutoDebugDisplay instance)
         {
-            return new ChunkCoord(
-                (int)Math.Floor((double)(point.X / options.ChunkSize)),
-                (int)Math.Floor((double)(point.Y / options.ChunkSize))
-                );
-        }
-        public static WorldCoord ToWorldCoord(this ChunkCoord point, WorldDataOptions options)
-        {
-            return new WorldCoord(
-                point.X * options.ChunkSize,
-                point.Y * options.ChunkSize
-                );
+            var text = string.Join(", ", GetDebugDisplayItems(instance));
+            return text;
         }
 
-
-        public static bool TryAdd(this WorldData world, WorldObject o, out WorldObject conflict)
+        private static IEnumerable<string> GetDebugDisplayItems(IAutoDebugDisplay instance)
         {
-
-        }
-        public static BoundInfos GetBounds(this WorldData world, WorldObject o)
-        {
-            var index = (o.IsStatic() ? world.StaticIndex : world.DynamicIndex);
-
-            if (!index.TryGetValue(o.ChunkCoord, out BoundInfos list))
+            var members = instance
+                .GetType()
+                .GetMembers(BindingFlags.Public | BindingFlags.Public | BindingFlags.Instance)
+                .Where(member => member.GetCustomAttribute<DebugDisplayAttribute>() != null);
+            foreach (var member in members)
             {
-                list = [];
-                index[o.ChunkCoord] = list;
+                var value = member is PropertyInfo propertyInfo
+                    ? propertyInfo.GetValue(instance)
+                    : member is FieldInfo fieldInfo
+                        ? fieldInfo.GetValue(instance)
+                        : throw new InvalidOperationException($"Member [{member.Name}] is a {member.MemberType} but should be either Field or Property");
+                var text = value is IAutoDebugDisplay autoDisplay ? GetAutoDebugDisplayText(autoDisplay) : value.ToString();
+                if (text.Contains(' ') || text == string.Empty)
+                    text = "[" + text + "]";
+                yield return $"{member.Name}: {text}";
             }
-            return list;
         }
-
     }
 }

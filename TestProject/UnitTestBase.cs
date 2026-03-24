@@ -8,7 +8,7 @@ namespace TestProject
     public class UnitTestBase
     {
         private IServiceProvider? _serviceProvider;
-        protected IServiceProvider Services => _serviceProvider.NonNull();
+        protected IServiceProvider Services { get; private set; } = null!;
         protected GlobalDataContainer Data { get; private set; } = null!;
         protected LoadingProviderFactory LoadingFactory { get; private set; } = null!;
 

@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,7 +22,7 @@ namespace NPCChatLib.WorldBuilderTemplates
                     var shop = new WorldObject
                     {
                         Type = WorldObjectType.Building,
-                        Size = new(5, 3)
+                        Bounds = new(new Size(5, 3)),
                     };
                     return shop;
                 }

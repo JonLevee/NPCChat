@@ -1,18 +1,12 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using NPCChatLib.Extensions;
 
 namespace NPCChatLib.WorldClasses
 {
     public readonly record struct Position(int X, int Y);
-    public readonly record struct ChunkPosition(int X, int Y);
-    public readonly record struct BoundInfo(int Id, Bounds Bounds);
-
-    public partial class BoundInfos(ChunkPosition position) : List<BoundInfo>
-    {
-        public ChunkPosition Position { get; private set; } = position;
-    }
-
 }

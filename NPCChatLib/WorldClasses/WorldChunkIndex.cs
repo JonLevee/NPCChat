@@ -3,28 +3,42 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using NPCChatLib.Attributes;
+using NPCChatLib.Extensions;
 
 namespace NPCChatLib.WorldClasses
 {
-    [DebuggerDisplay("Name=[{Name}]")]
-    public abstract partial class WorldChunkIndex(
-        WorldDataOptions Options,
-        string Name) : Dictionary<Position, BoundInfos>
+    public readonly record struct ChunkPosition(int X, int Y);
+    public readonly record struct BoundInfo(int Id, Bounds Bounds);
+    public record struct ChunkInfo(int Id, Bounds Bounds);
+    public record struct ChunkData(ChunkPosition ChunkPosition)
     {
-        public bool TryGetConflicts(Bounds bounds, out List<WorldObject> conflicts)
+        public List<ChunkInfo> StaticChunkInfos = [];
+        public List<ChunkInfo> DynamicChunkInfos = [];
+
+        foobar
+        public readonly IEnumerable<(bool isPrimary, ChunkInfo)> GetChunkInfos(WorldObject o)
         {
-            throw new NotImplementedException();
+            List<ChunkInfo>[] lists = o.IsStatic() ? [StaticChunkInfos, DynamicChunkInfos] : [DynamicChunkInfos, StaticChunkInfos];
+            foreach (var list in lists)
+            {
+                foreach (var info in list)
+                    yield return (list == lists[0], info);
+            }
         }
-
     }
 
     [Scoped]
-    public class StaticWorldChunkIndex(WorldDataOptions options) : WorldChunkIndex(options, "Static")
+    public class WorldChunkIndex
     {
-    }
+        private readonly Dictionary<ChunkPosition, ChunkData> ChunkData = [];
 
-    [Scoped]
-    public class DynamicWorldChunkIndex(WorldDataOptions options) : WorldChunkIndex(options, "Dynamic")
-    {
+        public ChunkData GetOrAdd(ChunkPosition chunkPosition)
+        {
+            if (!ChunkData.TryGetValue(chunkPosition, out ChunkData chunkData))
+            {
+                chunkData = ChunkData[chunkPosition] = new(chunkPosition);
+            }
+            return chunkData;
+        }
     }
 }

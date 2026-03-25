@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.UI.Xaml.Documents;
 using NPCChatLib.Attributes;
 using NPCChatLib.Builders;
+using NPCChatLib.Exceptions;
 using NPCChatLib.Extensions;
 using NPCChatLib.WorldClasses;
 using Windows.Media.Devices;
@@ -32,15 +33,11 @@ namespace NPCChatLib.WorldBuilderTemplates
                 Type = type,
                 Bounds = new(X: x, Y: y, Width: width, Height: height),
             };
-            (var chunkPos, var primary, var nonPrimary) = builder.World.GetChunkAndIndexes(o);
-            if (nonPrimary.TryGetConflicts(o.Bounds, out var conflicts))
-            {
-                var confictText = string.Join("\r\n", conflicts.Select(c => c.GetDescription()));
-                throw new InvalidOperationException($"new object {o.GetDescription()} conflicts with:\r\n{confictText}");
-            }
-            // todo
-            if (primary.)
-                return this;
+            var chunkPos = builder.Options.ToChunk(o.Bounds);
+            if (builder.World.TryGetConflicts(chunkPos, o, out string message))
+                throw new WorldGenerationException(message);
+            builder.World.Objects.Add(o.Id, o);
+            throw new NotImplementedException();
         }
     }
 }

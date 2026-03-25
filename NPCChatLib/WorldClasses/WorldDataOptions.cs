@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -20,10 +21,15 @@ namespace NPCChatLib.WorldClasses
         public ChunkPosition ToChunk(Bounds bounds) => new(ToChunkValue(bounds.Left), ToChunkValue(bounds.Top));
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ChunkPosition ToChunk(Position position) => new(ToChunkValue(position.X), ToChunkValue(position.Y));
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public ChunkPosition ToChunk(int x, int y) => new(ToChunkValue(x), ToChunkValue(y));
+        public IEnumerable<ChunkPosition> GetRelatedChunkPositions(Bounds bounds)
+        {
+            var chunk = ToChunk(bounds);
+            yield return chunk;
+            if (bounds.Right > chunk.X * ChunkSize)
+                yield return new ChunkPosition(chunk.X + 1, chunk.Y);
+            if (bounds.Bottom > chunk.Y * ChunkSize)
+                yield return new ChunkPosition(chunk.X, chunk.Y + 1);
+        }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private int ToChunkValue(int value) => (int)Math.Floor((double)(value / ChunkSize));

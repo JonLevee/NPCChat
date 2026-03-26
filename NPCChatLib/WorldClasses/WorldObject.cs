@@ -1,18 +1,20 @@
 ﻿using System;
-using System.ComponentModel.DataAnnotations;
-using System.Diagnostics;
-using System.Drawing;
-using NPCChatLib.Attributes;
-using NPCChatLib.Extensions;
 
 namespace NPCChatLib.WorldClasses
 {
     public class WorldObject
     {
-        public int Id { get; set; } = -1;
-        public WorldObjectType Type { get; init; }
-        public Bounds Bounds { get; set; }
+        public static readonly WorldObject None = new()
+        {
+            Kind = WorldObjectKind.None,
+            Category = WorldObjectCategory.None,
+            Handle = ObjectHandle.None,
+            Bounds = Bounds.None
+        };
+
+        public WorldObjectKind Kind { get; init; }
+        public WorldObjectCategory Category { get; init; }
+        public ObjectHandle Handle { get; set; } = ObjectHandle.None;
+        public Bounds Bounds { get; set; } = Bounds.None;
     }
-
-
 }

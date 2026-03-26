@@ -61,23 +61,25 @@ namespace TestProject
         {
             using (IServiceScope scope = Services.CreateScope())
             {
-                var options = scope.ServiceProvider.Get<WorldDataOptions>();
+                var options = scope.ServiceProvider.Get<WorldOptions>();
                 options.ChunkSize = 16;
                 var world = scope.ServiceProvider.Get<WorldData>();
                 var builder = scope.ServiceProvider.Get<WorldDataBuilder>();
+                var handleManager = scope.ServiceProvider.Get<ObjectHandleManager>();
                 Assert.IsNotNull(builder);
                 Assert.IsNotNull(builder.World);
                 Assert.IsNotNull(builder.Options);
+                Assert.IsNotNull(handleManager);
+
                 using (var template = scope.Get<Templates>())
                 {
                     template
                         .AddShop(3, 2, BuildingSize.Small)
                         .AddShop(10, 2, BuildingSize.Small);
                 }
-                Assert.HasCount(2, world.Objects);
-                Assert.AreEqual(2, world.WorldIndex.Count);
-                Assert.AreEqual(2, world.WorldIndex.StaticCount);
-                Assert.AreEqual(0, world.WorldIndex.DynamicCount);
+                Assert.HasCount(2, handleManager.ActiveHandles);
+                Assert.HasCount(2, handleManager.Slots);
+                Assert.HasCount(0, handleManager.FreeSlotIds);
             }
         }
     }

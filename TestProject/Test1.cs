@@ -1,14 +1,8 @@
-﻿using System.Drawing;
-using Microsoft.Extensions.DependencyInjection;
+﻿using Microsoft.Extensions.DependencyInjection;
 using NPCChatLib.Builders;
-using NPCChatLib.CharacterClasses.Builders;
 using NPCChatLib.Extensions;
 using NPCChatLib.WorldBuilderTemplates;
 using NPCChatLib.WorldClasses;
-using NPCChatLib.YamlImport;
-using NPChat.CharacterClasses;
-using static NPCChatLib.WorldBuilderTemplates.Templates.Buildings;
-using static NPCChatLib.WorldClasses.WorldData;
 
 namespace TestProject
 {
@@ -68,7 +62,7 @@ namespace TestProject
             using (IServiceScope scope = Services.CreateScope())
             {
                 var options = scope.ServiceProvider.Get<WorldDataOptions>();
-                options.ChunkSize = 8;
+                options.ChunkSize = 16;
                 var world = scope.ServiceProvider.Get<WorldData>();
                 var builder = scope.ServiceProvider.Get<WorldDataBuilder>();
                 Assert.IsNotNull(builder);
@@ -76,22 +70,15 @@ namespace TestProject
                 Assert.IsNotNull(builder.Options);
                 using (var template = scope.Get<Templates>())
                 {
-                    using (var buildings = template.Buildings)
-                    {
-                        using (var shops = buildings.Shops)
-                        {
-                        }
-                    }
+                    template
+                        .AddShop(3, 2, BuildingSize.Small)
+                        .AddShop(10, 2, BuildingSize.Small);
                 }
-                builder
-                    .Templates
-                        .Buildings
-                            .Shops
-                                .AddSmallShop(5, 2);
-                builder.Add(Shops.SmallShop(5, 2));
-                builder.Add(Shops.SmallShop(25, 2));
+                Assert.HasCount(2, world.Objects);
+                Assert.AreEqual(2, world.WorldIndex.Count);
+                Assert.AreEqual(2, world.WorldIndex.StaticCount);
+                Assert.AreEqual(0, world.WorldIndex.DynamicCount);
             }
-
         }
     }
 

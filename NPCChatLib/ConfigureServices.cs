@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
@@ -22,7 +23,13 @@ namespace NPChat
                 .ForEach(t =>
                 {
                     var attr = t.GetCustomAttribute<InjectionAttribute>();
-                    attr?.GetServiceDescriptors(t).ForEach(services.Add);
+                    if (attr != null)
+                    {
+                        foreach (var descriptor in attr.GetServiceDescriptors(t))
+                        {
+                            services.Add(descriptor);
+                        }
+                    }
                 });
         }
     }

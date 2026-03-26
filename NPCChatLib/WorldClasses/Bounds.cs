@@ -14,12 +14,12 @@ namespace NPCChatLib.WorldClasses
         public int Width => Right - Left;
         public int Height => Bottom - Top;
 
-        public Bounds(int X, int Y, int Width, int Height)
+        public Bounds(int x, int y, Size size)
         {
-            Left = X;
-            Top = Y;
-            Right = X + Width;
-            Bottom = Y + Height;
+            Left = x;
+            Top = y;
+            Right = x + size.Width;
+            Bottom = y + size.Height;
         }
 
         public bool Intersects(Bounds other)
@@ -28,14 +28,6 @@ namespace NPCChatLib.WorldClasses
                    Right > other.Left &&
                    Top < other.Bottom &&
                    Bottom > other.Top;
-        }
-
-        public bool Intersects(Position other)
-        {
-            return other.X >= Left &&
-                   other.X < Right &&
-                   other.Y >= Top &&
-                   other.Y < Bottom;
         }
     }
 

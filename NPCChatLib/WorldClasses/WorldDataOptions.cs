@@ -25,9 +25,9 @@ namespace NPCChatLib.WorldClasses
         {
             var chunk = ToChunk(bounds);
             yield return chunk;
-            if (bounds.Right > chunk.X * ChunkSize)
+            if (bounds.Right > (chunk.X * ChunkSize) + ChunkSize)
                 yield return new ChunkPosition(chunk.X + 1, chunk.Y);
-            if (bounds.Bottom > chunk.Y * ChunkSize)
+            if (bounds.Bottom > (chunk.Y * ChunkSize) + ChunkSize)
                 yield return new ChunkPosition(chunk.X, chunk.Y + 1);
         }
 

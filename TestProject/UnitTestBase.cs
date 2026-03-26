@@ -7,7 +7,6 @@ namespace TestProject
 {
     public class UnitTestBase
     {
-        private IServiceProvider? _serviceProvider;
         protected IServiceProvider Services { get; private set; } = null!;
         protected GlobalDataContainer Data { get; private set; } = null!;
         protected LoadingProviderFactory LoadingFactory { get; private set; } = null!;
@@ -17,7 +16,7 @@ namespace TestProject
         {
             IServiceCollection services = new ServiceCollection();
             ConfigureServices.Configure(services);
-            _serviceProvider = services.BuildServiceProvider();
+            Services = services.BuildServiceProvider();
             LoadingFactory = Services.Get<LoadingProviderFactory>();
         }
     }

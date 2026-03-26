@@ -14,153 +14,83 @@ namespace NPCChatLib.WorldClasses
 
     [Scoped]
     public class WorldData(
-        WorldDataOptions Options,
-        WorldChunkIndex WorldIndex)
+        WorldDataOptions options,
+        WorldChunkIndex worldIndex)
     {
+        public WorldDataOptions Options { get; } = options;
+        public WorldChunkIndex WorldIndex { get; } = worldIndex;
+        public readonly Dictionary<ChunkPosition, ChunkData> ChunkData = [];
+
         public Dictionary<int, WorldObject> Objects { get; } = [];
 
         public void Add(WorldObject o)
         {
-            var errors = new StringBuilder();
+            WorldIndex.thr
             var conflicts = new List<(string, WorldObject)>();
             var relatedChunks = Options.GetRelatedChunkPositions(o.Bounds).ToArray();
+            List<Action> addActions = [];
             foreach (var relatedChunk in relatedChunks)
             {
                 var chunkData = WorldIndex.GetOrAdd(relatedChunk);
-                foreach (var chunk in chunkData.GetChunkInfos(o))
+                foreach ((var isPrimary, var name, var info) in chunkData.GetChunkInfos(o))
                 {
-                }
-            }
-
-
-            var boundInfos = new List<BoundInfos>();
-            try
-            {
-                if (!Objects.TryAdd(o.Id, o))
-                    conflicts.Add(("dup Id in Objects", o));
-                var relatedChunks = Options.GetRelatedChunkPositions(o.Bounds).ToArray();
-                var primary = GetPrimaryIndex(o);
-                for (int i = 0; i < relatedChunks.Length; i++)
-                {
-                    var chunkPosition = relatedChunks[i];
-                    foreach (var index in Indexes)
+                    if (info.Id == o.Id)
+                        conflicts.Add(($"dup Id in {name}{relatedChunk}", o));
+                    else if (info.Bounds.Intersects(o.Bounds))
+                        conflicts.Add(($"position conflict in {name}{relatedChunk}", Objects[info.Id]));
+                    else if (isPrimary)
                     {
-                        BoundInfos infos;
-                        if (index == primary)
-                        {
-                            infos = index.GetOrAdd(chunkPosition);
-                            foreach (var info in infos)
-                            {
-                                if (info.Id == o.Id)
-                                    conflicts.Add(($"dup Id in {chunkPosition}", o));
-                                else if (info.Bounds.Intersects(o.Bounds))
-                                    conflicts.Add(($"position conflict", Objects[info.Id]));
-                            }
-
-                            continue;
-                        }
-                        if (index.TryGet(chunkPosition, index == primary, out infos))
-                        {
-                            foreach (var info in infos)
-                            {
-                                if (info.Bounds.Intersects(o.Bounds))
-                                    conflicts.Add(Objects[info.Id]);
-                            }
-
-                        }
-                        infos.Where(info => info.Bounds.Intersects(o.Bounds)).ForEach(info => conflicts.Add(Objects[info.Id]));
-                        if (index == primary)
-                            boundInfos.Add(infos);
-                    }
-                }
-                if (conflicts.Any())
-                {
-                    throw new WorldGenerationException(o, conflicts);
-                }
-
-            }
-            catch (Exception e)
-            {
-                var errorText = new StringBuilder($"new object {o.GetDescription()} conflicts with:\r\n");
-                errorText.AppendLine("  " + e.Message);
-                throw;
-            }
-
-            if (Objects.TryGetValue(o.Id, out WorldObject conflict))
-            {
-                errorText.AppendLine($"  [conflicting id]: {conflict.GetDescription()}");
-            }
-            else
-            {
-                var relatedChunks = Options.GetRelatedChunkPositions(o.Bounds).ToArray();
-                //var chunkPosition = Options.ToChunk(o.Bounds);
-                var index = GetNonPrimaryIndex(o);
-                CheckForConflicts(index);
-                if (index.TryGetValue(o, out BoundInfos infos))
-                {
-                    foreach (var info in infos)
-                    {
-                        if (o.Bounds.Intersects(info.Bounds))
-                        {
-                            errorText.AppendLine($"  [conflicting position]: {Objects[info.Id].GetDescription()}");
-                        }
-                    }
-                }
-                index = GetPrimaryIndex(o);
-                var relatedChunks = Options.GetRelatedChunkPositions(o.Bounds).ToArray();
-                foreach (var chunk in relatedChunks)
-                {
-
-                }
-                if (index.TryGetValue(chunkPosition, out infos))
-                {
-                    foreach (var info in infos)
-                    {
-                        if (o.Bounds.Intersects(info.Bounds))
-                        {
-                            errorText.AppendLine($"  [conflicting position]: {Objects[info.Id].GetDescription()}");
-                        }
+                        addActions.Add(() => chunkData.Add(o));
                     }
                 }
             }
-            if (errorText.Length > 0)
+            if (conflicts.Any())
             {
-                errorText.Insert(0, $"new object {o.GetDescription()} conflicts with:\r\n");
-                error = errorText.ToString();
+                addActions.Clear();
+                throw new WorldGenerationException(o, conflicts);
             }
-            return error != null;
+            Objects.Add(o.Id, o);
+            addActions.ForEach(action => action());
         }
+    }
 
-        private void CheckForConflicts(WorldChunkIndex index)
+    public class WorldObjectVerification(WorldData worldData)
+    {
+        private readonly WorldDataOptions options = worldData.Options;
+        public void ThrowIfAnyConflicts(WorldObject o)
         {
-
-        }
-
-
-
-
-
-        public bool TryGetConflicts(ChunkPosition chunkPosition, WorldObject o, out string message)
-        {
-            message = null;
-            var conflicts = new List<WorldObject>();
-            foreach (var index in Indexes)
+            var conflicts = GetConflicts(o).ToList();
+            if (conflicts.Any())
             {
-                if (index.TryGetValue(chunkPosition, out BoundInfos infos))
-                {
-                    foreach (var info in infos)
-                    {
-                        if (o.Bounds.Intersects(info.Bounds))
-                        {
-                            if (message == null)
-                                message = $"new object {o.GetDescription()} conflicts with:";
-                            message += "\r\n  " + Objects[info.Id].GetDescription();
-                        }
-                    }
-                }
+                conflicts.Insert(0, $"WorldObject {o.Id} {o.Bounds} has conflicts:");
+                throw new WorldGenerationException(string.Join("\r\n", conflicts);
             }
-
-            return message != null;
         }
+
+        public IEnumerable<string> GetConflicts(WorldObject o)
+        {
+            var primary = GetPrimaryChunkInfoList(o);
+            var relatedChunks = options.GetRelatedChunkPositions(o.Bounds).ToArray();
+            foreach (var relatedChunk in relatedChunks)
+            {
+                foreach (var conflict in GetConflicts(o, "Secondary", GetSecondaryChunkInfoList(o)))
+                    yield return conflict;
+            }
+        }
+
+        private IEnumerable<string> GetConflicts(WorldObject o, string name, List<ChunkInfo> items)
+        {
+            var itemsName = items == StaticChunkInfos ? "Static" : "Dynamic";
+            string formatConflict(string kind, ChunkInfo conflict) => $"{kind} conflict in {itemsName}({name}) Id:{conflict.Id} {conflict.Bounds}";
+            foreach (var info in items)
+            {
+                if (info.Id == o.Id)
+                    yield return formatConflict("Id", info);
+                if (info.Bounds.Intersects(o.Bounds))
+                    yield return formatConflict("position", info);
+
+            }
+        }
+
     }
 }

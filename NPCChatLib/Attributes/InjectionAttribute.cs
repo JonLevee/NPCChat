@@ -14,7 +14,7 @@ namespace NPCChatLib.Attributes
         public Type ServiceType { get; } = serviceType;
         public IEnumerable<ServiceDescriptor> GetServiceDescriptors(Type implementationType)
         {
-            yield return new(implementationType, Lifetime);
+            yield return new(implementationType, implementationType, Lifetime);
             if (ServiceType != null)
                 yield return new(ServiceType, implementationType, Lifetime);
         }

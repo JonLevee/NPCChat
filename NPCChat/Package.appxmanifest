@@ -34,7 +34,7 @@
   <Applications>
     <Application Id="App"
       Executable="$targetnametoken$.exe"
-      EntryPoint="$targetentrypoint$" uap18:RuntimeBehavior="windowsApp">
+      EntryPoint="$targetentrypoint$" uap18:RuntimeBehavior="packagedClassicApp" uap18:TrustLevel="mediumIL">
       <uap:VisualElements
         DisplayName="NPCChat"
         Description="NPCChat"

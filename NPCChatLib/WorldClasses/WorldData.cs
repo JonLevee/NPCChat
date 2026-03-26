@@ -1,96 +1,292 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Drawing;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-using NPCChatLib.Attributes;
-using NPCChatLib.Exceptions;
-using NPCChatLib.Extensions;
+
 
 namespace NPCChatLib.WorldClasses
 {
-
-    [Scoped]
-    public class WorldData(
-        WorldDataOptions options,
-        WorldChunkIndex worldIndex)
+    public sealed class WorldData(IWorldOptions options, ObjectHandleManager handleManager)
     {
-        public WorldDataOptions Options { get; } = options;
-        public WorldChunkIndex WorldIndex { get; } = worldIndex;
-        public readonly Dictionary<ChunkPosition, ChunkData> ChunkData = [];
+        private readonly Dictionary<ChunkPosition, ChunkData> _chunks = [];
 
-        public Dictionary<int, WorldObject> Objects { get; } = [];
+        public IReadOnlyDictionary<ChunkPosition, ChunkData> Chunks => _chunks;
 
-        public void Add(WorldObject o)
+        public ObjectHandle AddObject(WorldObject obj)
         {
-            WorldIndex.thr
-            var conflicts = new List<(string, WorldObject)>();
-            var relatedChunks = Options.GetRelatedChunkPositions(o.Bounds).ToArray();
-            List<Action> addActions = [];
-            foreach (var relatedChunk in relatedChunks)
+            ArgumentNullException.ThrowIfNull(obj);
+
+            if (!obj.Handle.IsDefault)
+                throw new InvalidOperationException("Object already has a handle assigned.");
+
+            EnsureNoIntersection(obj.Bounds, ignoreHandle: default);
+
+            var handle = handleManager.GetNewHandle(obj);
+            obj.Handle = handle;
+            AddObjectToChunks(obj);
+
+            return handle;
+        }
+
+        public void RemoveObject(ObjectHandle handle)
+        {
+            var obj = GetRequiredObject(handle);
+
+            RemoveObjectFromChunks(obj);
+
+            handleManager.RemoveSlot(handle);
+
+        }
+
+        public bool TryGetObject(ObjectHandle handle, out WorldObject obj)
+        {
+            obj = null;
+            if (handleManager.TryGetSlot(handle, out ObjectSlot slot))
+                obj = slot.Object;
+            return obj is not null;
+        }
+
+        public void MoveDynamicObjectBetweenChunks(ObjectHandle handle, Bounds newBounds)
+        {
+            var obj = GetRequiredObject(handle);
+
+            if (obj.Category == WorldObjectCategory.Static)
+                throw new InvalidOperationException($"Object {handle} is static and cannot be moved with {nameof(MoveDynamicObjectBetweenChunks)}.");
+
+            var oldBounds = obj.Bounds;
+
+            if (oldBounds == newBounds)
+                return;
+
+            EnsureNoIntersection(newBounds, ignoreHandle: handle);
+
+            RemoveDynamicObjectFromChunks(handle, oldBounds);
+
+            try
             {
-                var chunkData = WorldIndex.GetOrAdd(relatedChunk);
-                foreach ((var isPrimary, var name, var info) in chunkData.GetChunkInfos(o))
+                obj.Bounds = newBounds;
+                AddDynamicObjectToChunks(handle, newBounds);
+            }
+            catch
+            {
+                obj.Bounds = oldBounds;
+                AddDynamicObjectToChunks(handle, oldBounds);
+                throw;
+            }
+        }
+
+        private WorldObject GetRequiredObject(ObjectHandle handle)
+        {
+            if (!TryGetObject(handle, out var obj) || obj is null)
+                throw new KeyNotFoundException($"No active object found for handle {handle}.");
+
+            return obj;
+        }
+
+        private void EnsureNoIntersection(Bounds bounds, ObjectHandle ignoreHandle)
+        {
+            var candidateChunks = EnumerateTouchedChunks(bounds);
+            var seen = new HashSet<ObjectHandle>();
+
+            foreach (var chunkPos in candidateChunks)
+            {
+                if (!_chunks.TryGetValue(chunkPos, out var chunk))
+                    continue;
+
+                foreach (var staticInfo in chunk.StaticInfos)
                 {
-                    if (info.Id == o.Id)
-                        conflicts.Add(($"dup Id in {name}{relatedChunk}", o));
-                    else if (info.Bounds.Intersects(o.Bounds))
-                        conflicts.Add(($"position conflict in {name}{relatedChunk}", Objects[info.Id]));
-                    else if (isPrimary)
+                    if (staticInfo.Handle == ignoreHandle)
+                        continue;
+
+                    if (!seen.Add(staticInfo.Handle))
+                        continue;
+
+                    if (staticInfo.Bounds.Intersects(bounds))
+                        throw new InvalidOperationException(
+                            $"Bounds {bounds} intersect existing static object {staticInfo.Handle} with bounds {staticInfo.Bounds}.");
+                }
+
+                foreach (var dynamicInfo in chunk.DynamicInfos)
+                {
+                    if (dynamicInfo.Handle == ignoreHandle)
+                        continue;
+
+                    if (!seen.Add(dynamicInfo.Handle))
+                        continue;
+
+                    var other = GetRequiredObject(dynamicInfo.Handle);
+
+                    if (other.Bounds.Intersects(bounds))
                     {
-                        addActions.Add(() => chunkData.Add(o));
+                        throw new InvalidOperationException(
+                            $"Bounds {bounds} intersect existing dynamic object {dynamicInfo.Handle} with bounds {other.Bounds}.");
                     }
                 }
             }
-            if (conflicts.Any())
-            {
-                addActions.Clear();
-                throw new WorldGenerationException(o, conflicts);
-            }
-            Objects.Add(o.Id, o);
-            addActions.ForEach(action => action());
         }
-    }
 
-    public class WorldObjectVerification(WorldData worldData)
-    {
-        private readonly WorldDataOptions options = worldData.Options;
-        public void ThrowIfAnyConflicts(WorldObject o)
+        private void AddObjectToChunks(WorldObject obj)
         {
-            var conflicts = GetConflicts(o).ToList();
-            if (conflicts.Any())
+            if (obj.Category == WorldObjectCategory.Static)
             {
-                conflicts.Insert(0, $"WorldObject {o.Id} {o.Bounds} has conflicts:");
-                throw new WorldGenerationException(string.Join("\r\n", conflicts);
+                AddStaticObjectToChunks(obj.Handle, obj.Bounds);
+            }
+            else
+            {
+                AddDynamicObjectToChunks(obj.Handle, obj.Bounds);
             }
         }
 
-        public IEnumerable<string> GetConflicts(WorldObject o)
+        private void RemoveObjectFromChunks(WorldObject obj)
         {
-            var primary = GetPrimaryChunkInfoList(o);
-            var relatedChunks = options.GetRelatedChunkPositions(o.Bounds).ToArray();
-            foreach (var relatedChunk in relatedChunks)
+            if (obj.Category == WorldObjectCategory.Static)
             {
-                foreach (var conflict in GetConflicts(o, "Secondary", GetSecondaryChunkInfoList(o)))
-                    yield return conflict;
+                RemoveStaticObjectFromChunks(obj.Handle, obj.Bounds);
+            }
+            else
+            {
+                RemoveDynamicObjectFromChunks(obj.Handle, obj.Bounds);
             }
         }
 
-        private IEnumerable<string> GetConflicts(WorldObject o, string name, List<ChunkInfo> items)
+        private void AddStaticObjectToChunks(ObjectHandle handle, Bounds bounds)
         {
-            var itemsName = items == StaticChunkInfos ? "Static" : "Dynamic";
-            string formatConflict(string kind, ChunkInfo conflict) => $"{kind} conflict in {itemsName}({name}) Id:{conflict.Id} {conflict.Bounds}";
-            foreach (var info in items)
+            foreach (var chunkPos in EnumerateTouchedChunks(bounds))
             {
-                if (info.Id == o.Id)
-                    yield return formatConflict("Id", info);
-                if (info.Bounds.Intersects(o.Bounds))
-                    yield return formatConflict("position", info);
+                var chunk = GetOrCreateChunk(chunkPos);
 
+                // prevent duplicate handle insertion into same chunk
+                foreach (var existing in chunk.StaticInfos)
+                {
+                    if (existing.Handle == handle)
+                        throw new InvalidOperationException($"Static handle {handle} already exists in chunk {chunkPos}.");
+                }
+
+                chunk.StaticInfos.Add(new StaticChunkInfo(handle, bounds));
             }
         }
 
+        private void AddDynamicObjectToChunks(ObjectHandle handle, Bounds bounds)
+        {
+            foreach (var chunkPos in EnumerateTouchedChunks(bounds))
+            {
+                var chunk = GetOrCreateChunk(chunkPos);
+
+                foreach (var existing in chunk.DynamicInfos)
+                {
+                    if (existing.Handle == handle)
+                        throw new InvalidOperationException($"Dynamic handle {handle} already exists in chunk {chunkPos}.");
+                }
+
+                chunk.DynamicInfos.Add(new DynamicChunkInfo(handle));
+            }
+        }
+
+        private void RemoveStaticObjectFromChunks(ObjectHandle handle, Bounds bounds)
+        {
+            foreach (var chunkPos in EnumerateTouchedChunks(bounds))
+            {
+                if (!_chunks.TryGetValue(chunkPos, out var chunk))
+                    throw new InvalidOperationException($"Expected static object {handle} chunk {chunkPos} to exist, but it did not.");
+
+                bool removed = RemoveStaticHandleFromChunk(chunk, handle);
+
+                if (!removed)
+                    throw new InvalidOperationException($"Expected static object {handle} in chunk {chunkPos}, but it was not found.");
+
+                CleanupChunkIfEmpty(chunkPos, chunk);
+            }
+        }
+
+        private void RemoveDynamicObjectFromChunks(ObjectHandle handle, Bounds bounds)
+        {
+            foreach (var chunkPos in EnumerateTouchedChunks(bounds))
+            {
+                if (!_chunks.TryGetValue(chunkPos, out var chunk))
+                    throw new InvalidOperationException($"Expected dynamic object {handle} chunk {chunkPos} to exist, but it did not.");
+
+                bool removed = RemoveDynamicHandleFromChunk(chunk, handle);
+
+                if (!removed)
+                    throw new InvalidOperationException($"Expected dynamic object {handle} in chunk {chunkPos}, but it was not found.");
+
+                CleanupChunkIfEmpty(chunkPos, chunk);
+            }
+        }
+
+        private static bool RemoveStaticHandleFromChunk(ChunkData chunk, ObjectHandle handle)
+        {
+            for (int i = 0; i < chunk.StaticInfos.Count; i++)
+            {
+                if (chunk.StaticInfos[i].Handle == handle)
+                {
+                    int last = chunk.StaticInfos.Count - 1;
+                    chunk.StaticInfos[i] = chunk.StaticInfos[last];
+                    chunk.StaticInfos.RemoveAt(last);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool RemoveDynamicHandleFromChunk(ChunkData chunk, ObjectHandle handle)
+        {
+            for (int i = 0; i < chunk.DynamicInfos.Count; i++)
+            {
+                if (chunk.DynamicInfos[i].Handle == handle)
+                {
+                    int last = chunk.DynamicInfos.Count - 1;
+                    chunk.DynamicInfos[i] = chunk.DynamicInfos[last];
+                    chunk.DynamicInfos.RemoveAt(last);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private ChunkData GetOrCreateChunk(ChunkPosition chunkPos)
+        {
+            if (_chunks.TryGetValue(chunkPos, out var chunk))
+                return chunk;
+
+            chunk = new ChunkData();
+            _chunks.Add(chunkPos, chunk);
+            return chunk;
+        }
+
+        private void CleanupChunkIfEmpty(ChunkPosition chunkPos, ChunkData chunk)
+        {
+            if (chunk.IsEmpty)
+            {
+                _chunks.Remove(chunkPos);
+            }
+        }
+
+        private IEnumerable<ChunkPosition> EnumerateTouchedChunks(Bounds bounds)
+        {
+            int minChunkX = FloorDiv(bounds.Left, options.ChunkSize);
+            int maxChunkX = FloorDiv(bounds.Right - 1, options.ChunkSize);
+            int minChunkY = FloorDiv(bounds.Top, options.ChunkSize);
+            int maxChunkY = FloorDiv(bounds.Bottom - 1, options.ChunkSize);
+
+            for (int y = minChunkY; y <= maxChunkY; y++)
+            {
+                for (int x = minChunkX; x <= maxChunkX; x++)
+                {
+                    yield return new ChunkPosition(x, y);
+                }
+            }
+        }
+
+        private static int FloorDiv(int value, int divisor)
+        {
+            int quotient = value / divisor;
+            int remainder = value % divisor;
+
+            if (remainder != 0 && ((remainder < 0) != (divisor < 0)))
+                quotient--;
+
+            return quotient;
+        }
     }
 }

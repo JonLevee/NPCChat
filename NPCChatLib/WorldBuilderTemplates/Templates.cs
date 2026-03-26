@@ -17,22 +17,24 @@ namespace NPCChatLib.WorldBuilderTemplates
     [Transient]
     public partial class Templates(WorldDataBuilder builder) : IDisposable
     {
-        public Templates AddShop(int x, int y, Size size) => Add(WorldObjectType.Building, x, y, size);
+        public Templates AddShop(int x, int y, Size size) => Add(WorldObjectCategory.Static, WorldObjectKind.Building, x, y, size);
 
         public void Dispose()
         {
             GC.SuppressFinalize(this);
         }
 
-        private Templates Add(WorldObjectType type, int x, int y, Size size)
+        private Templates Add(WorldObjectCategory category, WorldObjectKind kind, int x, int y, Size size)
         {
             var o = new WorldObject
             {
-                Id = builder.Options.GetNextId(),
-                Type = type,
-                Bounds = new(x, y, size),
+                Kind = kind,
+                Category = category,
+                Handle = ObjectHandle.None,
+                Bounds = new Bounds(x, y, size)
             };
-            builder.World.Add(o);
+
+            builder.World.AddObject(o);
             return this;
         }
     }

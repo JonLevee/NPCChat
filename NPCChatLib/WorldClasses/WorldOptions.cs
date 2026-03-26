@@ -17,7 +17,7 @@ namespace NPCChatLib.WorldClasses
             get => chunkSize;
             set
             {
-                Assert.IsGreaterThan(value, 0);
+                Assert.IsGreaterThan(0, value);
                 chunkSize = value;
             }
         }

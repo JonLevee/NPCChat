@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
+using NPCChatLib.Attributes;
 
 
 namespace NPCChatLib.WorldClasses
 {
+    [Scoped]
     public sealed class WorldData(IWorldOptions options, ObjectHandleManager handleManager)
     {
         private readonly Dictionary<ChunkPosition, ChunkData> _chunks = [];

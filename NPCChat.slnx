@@ -1,20 +1,5 @@
 <Solution>
-  <Configurations>
-    <Platform Name="ARM64" />
-    <Platform Name="x64" />
-    <Platform Name="x86" />
-  </Configurations>
-  <Project Path="NPCChat/NPCChat.csproj">
-    <Platform Solution="*|x64" Project="x64" />
-    <Platform Solution="*|x86" Project="x86" />
-    <Platform Solution="Debug|ARM64" Project="x64" />
-    <Platform Solution="Release|ARM64" Project="ARM64" />
-    <Deploy />
-  </Project>
-  <Project Path="NPCChatLib/NPCChatLib.csproj" Id="4fcd83f4-acda-4e70-b6d3-d603fdd43afd">
-    <Platform Solution="Debug|x64" Project="x64" />
-  </Project>
-  <Project Path="TestProject/TestProject.csproj" Id="9c5219f3-e29c-4442-b2fc-8565d918be77">
-    <Platform Solution="Debug|x64" Project="x64" />
-  </Project>
+  <Project Path="NPCChat.Core/NPCChat.Core.csproj" />
+  <Project Path="NPCChat.Editor/NPCChat.Editor.csproj" />
+  <Project Path="NPCChat.Tests/NPCChat.Tests.csproj" />
 </Solution>

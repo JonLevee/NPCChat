@@ -1,4 +1,7 @@
 <Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="README.md" />
+  </Folder>
   <Project Path="NPCChat.Core/NPCChat.Core.csproj" />
   <Project Path="NPCChat.Editor/NPCChat.Editor.csproj" />
   <Project Path="NPCChat.Tests/NPCChat.Tests.csproj" />

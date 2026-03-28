@@ -290,5 +290,50 @@ namespace NPCChatLib.WorldClasses
 
             return quotient;
         }
+
+        public void Clear()
+        {
+            var handles = EnumerateWorldObjects().Select(x => x.Handle).ToArray();
+
+            foreach (var handle in handles)
+            {
+                RemoveObject(handle);
+            }
+
+        }
+
+        public IReadOnlyList<WorldObject> EnumerateWorldObjects()
+        {
+            var results = new List<WorldObject>();
+            var seen = new HashSet<ObjectHandle>();
+
+            foreach (var chunk in Chunks.Values)
+            {
+                foreach (var item in chunk.StaticInfos)
+                {
+                    if (seen.Add(item.Handle) && TryGetObject(item.Handle, out var obj) && obj is not null)
+                    {
+                        results.Add(obj);
+                    }
+                }
+
+                foreach (var item in chunk.DynamicInfos)
+                {
+                    if (seen.Add(item.Handle) && TryGetObject(item.Handle, out var obj) && obj is not null)
+                    {
+                        results.Add(obj);
+                    }
+                }
+            }
+
+            return results
+                .OrderBy(x => x.Category)
+                .ThenBy(x => x.Kind)
+                .ThenBy(x => x.Bounds.Top)
+                .ThenBy(x => x.Bounds.Left)
+                .ToArray();
+        }
+
+
     }
 }

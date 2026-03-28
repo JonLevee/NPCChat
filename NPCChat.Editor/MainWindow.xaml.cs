@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using System.Windows.Threading;
 using NPCChatLib.Builders;
 using NPCChatLib.WorldBuilderTemplates;
 using NPCChatLib.WorldClasses;
@@ -17,6 +18,11 @@ namespace NPCChat
         private readonly WorldDataBuilder _worldBuilder;
         private bool _isUIReady;
 
+        private DispatcherTimer _gameTimer = new() 
+        { 
+            Interval = new TimeSpan(20) 
+        };
+
         public MainWindow(WorldData world, WorldDataBuilder worldBuilder)
         {
             InitializeComponent();
@@ -25,7 +31,14 @@ namespace NPCChat
             _worldBuilder = worldBuilder;
 
             Title = "NPCChat Sandbox - Map View";
+            _gameTimer.Tick += _gameTimer_Tick;
+            
             BuildDemoTown();
+        }
+
+        private void _gameTimer_Tick(object? sender, EventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         private void RootGrid_Loaded(object sender, RoutedEventArgs e)
@@ -71,85 +84,14 @@ namespace NPCChat
 
             using var templates = _worldBuilder.GetTemplates();
 
-            templates
-                .AddShop(2, 2, BuildingSize.Small)
-                .AddShop(10, 2, BuildingSize.Small)
-                .AddShop(18, 2, BuildingSize.Small)
-                .AddShop(2, 8, new System.Drawing.Size(7, 4))
-                .AddShop(12, 9, new System.Drawing.Size(5, 5))
-                .AddShop(22, 8, new System.Drawing.Size(8, 4))
-                .AddShop(6, 16, new System.Drawing.Size(9, 5))
-                .AddShop(20, 16, new System.Drawing.Size(6, 6));
-
-            var player = new WorldObject
-            {
-                Kind = WorldObjectKind.Player,
-                Category = WorldObjectCategory.Dynamic,
-                Bounds = new Bounds(16, 14, 17, 15)
-            };
-            _world.AddObject(player);
-
-            var npcA = new WorldObject
-            {
-                Kind = WorldObjectKind.Npc,
-                Category = WorldObjectCategory.Dynamic,
-                Bounds = new Bounds(8, 14, 9, 15)
-            };
-            _world.AddObject(npcA);
-
-            var npcB = new WorldObject
-            {
-                Kind = WorldObjectKind.Npc,
-                Category = WorldObjectCategory.Dynamic,
-                Bounds = new Bounds(24, 14, 25, 15)
-            };
-            _world.AddObject(npcB);
+            templates.AddSmallTown();
 
             RenderWorld();
         }
 
         private void ClearWorld()
         {
-            var handles = EnumerateWorldObjects()
-                .Select(x => x.Handle)
-                .ToArray();
-
-            foreach (var handle in handles)
-            {
-                _world.RemoveObject(handle);
-            }
-        }
-
-        private IReadOnlyList<WorldObject> EnumerateWorldObjects()
-        {
-            var results = new List<WorldObject>();
-            var seen = new HashSet<ObjectHandle>();
-
-            foreach (var chunk in _world.Chunks.Values)
-            {
-                foreach (var item in chunk.StaticInfos)
-                {
-                    if (seen.Add(item.Handle) && _world.TryGetObject(item.Handle, out var obj) && obj is not null)
-                    {
-                        results.Add(obj);
-                    }
-                }
-
-                foreach (var item in chunk.DynamicInfos)
-                {
-                    if (seen.Add(item.Handle) && _world.TryGetObject(item.Handle, out var obj) && obj is not null)
-                    {
-                        results.Add(obj);
-                    }
-                }
-            }
-
-            return results
-                .OrderBy(x => x.Category)
-                .ThenBy(x => x.Kind)
-                .ThenBy(x => x.Bounds.Top)
-                .ThenBy(x => x.Bounds.Left)
-                .ToArray();
+            _world.Clear();
         }
 
         private void RenderWorld()
@@ -157,7 +99,7 @@ namespace NPCChat
             if (!_isUIReady)
                 return;
 
-            var objects = EnumerateWorldObjects();
+            var objects = _world.EnumerateWorldObjects();
             MapCanvas.Children.Clear();
 
             const int minCells = 32;

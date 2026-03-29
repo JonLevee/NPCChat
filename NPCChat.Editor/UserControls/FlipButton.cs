@@ -33,6 +33,8 @@ public class FlipButton : Button
         set => SetValue(CurrentStateIndexProperty, value);
     }
 
+    public FlipButtonState State => States[CurrentStateIndex];
+
     private static void OnStateChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         var btn = (FlipButton)d;
@@ -46,10 +48,7 @@ public class FlipButton : Button
 
         if (States != null && States.Count > 0)
         {
-            // 1. Raise the event for the CURRENT state
-            States[CurrentStateIndex].RaiseSelected(this);
-
-            // 2. Increment index (looping back to 0)
+            // Increment index (looping back to 0)
             CurrentStateIndex = (CurrentStateIndex + 1) % States.Count;
         }
     }
@@ -72,16 +71,6 @@ public class FlipButton : Button
 
 public class FlipButtonState
 {
+    public string Key { get; set; } = string.Empty;
     public string Text { get; set; } = string.Empty;
-
-    // This allows the XAML attribute syntax: Selected="MyMethodName"
-#pragma warning disable CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
-    public event EventHandler Selected;
-#pragma warning restore CS8618 // Non-nullable field must contain a non-null value when exiting constructor. Consider adding the 'required' modifier or declaring as nullable.
-
-    // Internal helper to raise the event
-    internal void RaiseSelected(object sender)
-    {
-        Selected?.Invoke(sender, EventArgs.Empty);
-    }
 }

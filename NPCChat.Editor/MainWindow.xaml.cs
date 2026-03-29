@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using NPCChat.Editor.UserControls;
 using NPCChatLib.Builders;
 using NPCChatLib.WorldBuilderTemplates;
 using NPCChatLib.WorldClasses;
@@ -236,14 +237,14 @@ namespace NPCChat
             };
         }
 
-        private void FlipButtonState_Selected(object sender, EventArgs e)
+        private void CreateGameButton_Click(object sender, RoutedEventArgs e)
         {
-
-        }
-
-        private void GameCreate_Selected(object sender, EventArgs e)
-        {
-
+            if (sender is FlipButton button)
+            {
+                switch (button.State.Key)
+                {
+                }
+            }
         }
     }
 }

@@ -18,10 +18,10 @@ namespace NPCChat
         private readonly WorldDataBuilder _worldBuilder;
         private bool _isUIReady;
 
-        private DispatcherTimer _gameTimer = new() 
-        { 
-            Interval = new TimeSpan(20) 
-        };
+        // TODO: Implement game loop with proper time tracking and updates
+        // TODO:  use layers to avoid redrawing buildings
+
+        private readonly DispatcherTimer _gameTimer = new();
 
         public MainWindow(WorldData world, WorldDataBuilder worldBuilder)
         {
@@ -31,14 +31,15 @@ namespace NPCChat
             _worldBuilder = worldBuilder;
 
             Title = "NPCChat Sandbox - Map View";
+            _gameTimer.Interval = TimeSpan.FromMilliseconds(20);
             _gameTimer.Tick += _gameTimer_Tick;
-            
-            BuildDemoTown();
+            _gameTimer.Start();
+
         }
 
         private void _gameTimer_Tick(object? sender, EventArgs e)
         {
-            throw new NotImplementedException();
+
         }
 
         private void RootGrid_Loaded(object sender, RoutedEventArgs e)
@@ -62,6 +63,19 @@ namespace NPCChat
 
         private void BuildDemoTown_Click(object sender, RoutedEventArgs e)
         {
+            if (BuildDemoTownButton.Tag == null)
+            {
+                BuildDemoTownButton.Tag = new string[] { "Clear", (string)BuildDemoTownButton.Content };
+            }
+            var nextActionIndex = string.Equals("Clear", BuildDemoTownButton.Content) ? 1 : 0;
+            BuildDemoTownButton.Content = ((string[])BuildDemoTownButton.Tag)[nextActionIndex];
+            switch (nextActionIndex)
+            {
+                case 0:
+                    break;
+                case 1:
+                    break;
+            }
             BuildDemoTown();
         }
 
@@ -220,6 +234,16 @@ namespace NPCChat
                 WorldObjectKind.DungeonEntrance => "D",
                 _ => "?"
             };
+        }
+
+        private void FlipButtonState_Selected(object sender, EventArgs e)
+        {
+
+        }
+
+        private void GameCreate_Selected(object sender, EventArgs e)
+        {
+
         }
     }
 }

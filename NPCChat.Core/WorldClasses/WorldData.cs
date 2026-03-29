@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using NPCChatLib.Attributes;
 
+// TODO: add background thread for non-UI updates
 
 namespace NPCChatLib.WorldClasses
 {

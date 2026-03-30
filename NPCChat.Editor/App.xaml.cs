@@ -11,7 +11,7 @@ namespace NPCChat.Editor
     /// </summary>
     public partial class App : Application
     {
-        private IServiceProvider _serviceProvider = null!;
+        public static IServiceProvider Services { get; private set; } = null!;
         protected override void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
@@ -24,16 +24,12 @@ namespace NPCChat.Editor
             services.AddSingleton<MainWindow>();
 
             // 3. Build the IServiceProvider
-            _serviceProvider = services.BuildServiceProvider();
+            Services = services.BuildServiceProvider();
 
             // 4. Resolve and show the main window
-            var mainWindow = _serviceProvider.GetRequiredService<MainWindow>();
+            var mainWindow = Services.GetRequiredService<MainWindow>();
             mainWindow.Show();
         }
-
-
-        // Optional: Provide a way to access the ServiceProvider from other parts of the application if necessary
-        public static IServiceProvider ServiceProvider => (Current as App)?._serviceProvider!;
     }
 }
 

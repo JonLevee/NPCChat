@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:NPCChat.Editor.UserControls"
+        xmlns:uc="clr-namespace:NPCChat.Editor.UserControls"
         mc:Ignorable="d"
         Title="NPCChat Sandbox"
         Height="900"
@@ -11,7 +11,7 @@
         Background="#0B1220"
         Foreground="White">
 
-    <Grid x:Name="RootGrid" Loaded="RootGrid_Loaded">
+    <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto" />
             <RowDefinition Height="Auto" />
@@ -21,20 +21,20 @@
         <StackPanel Grid.Row="0"
                     Orientation="Horizontal"
                     Margin="12,12,12,6">
-            <local:FlipButton   x:Name="CreateGameButton" 
-                                Click="CreateGameButton_Click"
-                                Margin="0,0,12,0"
-                                Padding="12,6">
-                <local:FlipButtonState Key="Create" Text="Game: Create" />
-                <local:FlipButtonState Key="Clear" Text="Game: Clear" />
-            </local:FlipButton>
+            <uc:FlipButton  Click="CreateGameButton_Click"
+                            Margin="0,0,12,0"
+                            Padding="12,6">
+                <uc:FlipButtonState Key="Create" Text="Game: Create" />
+                <uc:FlipButtonState Key="Clear" Text="Game: Clear" />
+            </uc:FlipButton>
             <Button Name= "BuildDemoTownButton"
                     Content="Build Demo Town"
                     Click="BuildDemoTown_Click"
                     Margin="0,0,12,0"
                     Padding="12,6" />
 
-            <Button Content="Redraw"
+            <Button Name="RedrawButton"
+                    Content="Redraw"
                     Click="Redraw_Click"
                     Margin="0,0,12,0"
                     Padding="12,6" />
@@ -58,7 +58,6 @@
                 BorderThickness="1"
                 Background="#0F172A">
             <TextBlock x:Name="StatusTextBlock"
-                       Text="Ready."
                        TextWrapping="Wrap" />
         </Border>
 

@@ -6,8 +6,12 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
+using Microsoft.Extensions.DependencyInjection;
+using NPCChat.Core.Validation;
+using NPCChat.Editor;
 using NPCChat.Editor.UserControls;
 using NPCChatLib.Builders;
+using NPCChatLib.Extensions;
 using NPCChatLib.WorldBuilderTemplates;
 using NPCChatLib.WorldClasses;
 
@@ -17,7 +21,9 @@ namespace NPCChat
     {
         private readonly WorldData _world;
         private readonly WorldDataBuilder _worldBuilder;
-        private bool _isUIReady;
+        private IServiceScope? serviceScope;
+        private Control[] _gameControls;
+
 
         // TODO: Implement game loop with proper time tracking and updates
         // TODO:  use layers to avoid redrawing buildings
@@ -27,29 +33,23 @@ namespace NPCChat
         public MainWindow(WorldData world, WorldDataBuilder worldBuilder)
         {
             InitializeComponent();
-
+            _gameControls = [BuildDemoTownButton, RedrawButton, CellSizeBox];
             _world = world;
             _worldBuilder = worldBuilder;
+
 
             Title = "NPCChat Sandbox - Map View";
             _gameTimer.Interval = TimeSpan.FromMilliseconds(20);
             _gameTimer.Tick += _gameTimer_Tick;
             _gameTimer.Start();
 
+            _gameControls.ForEach(c => c.IsEnabled = false);
+
         }
 
         private void _gameTimer_Tick(object? sender, EventArgs e)
         {
 
-        }
-
-        private void RootGrid_Loaded(object sender, RoutedEventArgs e)
-        {
-            if (_isUIReady)
-                return;
-
-            _isUIReady = true;
-            RenderWorld();
         }
 
         private int CellSize => GetCellSize();
@@ -87,10 +87,7 @@ namespace NPCChat
 
         private void CellSizeBox_TextChanged(object sender, TextChangedEventArgs e)
         {
-            if (_isUIReady)
-            {
-                RenderWorld();
-            }
+            RenderWorld();
         }
 
         private void BuildDemoTown()
@@ -111,8 +108,7 @@ namespace NPCChat
 
         private void RenderWorld()
         {
-            if (!_isUIReady)
-                return;
+            if (serviceScope is null) return;
 
             var objects = _world.EnumerateWorldObjects();
             MapCanvas.Children.Clear();
@@ -239,12 +235,36 @@ namespace NPCChat
 
         private void CreateGameButton_Click(object sender, RoutedEventArgs e)
         {
-            if (sender is FlipButton button)
+
+            switch (((FlipButton)sender).State.Key)
             {
-                switch (button.State.Key)
-                {
-                }
+                case "Create":
+                    CreateWorldScope();
+                    break;
+                case "Clear":
+                    ClearWorldScope();
+                    break;
             }
+        }
+
+        private void CreateWorldScope()
+        {
+            Require.IsNull(serviceScope);
+            serviceScope = App.Services.CreateScope();
+            _gameControls.ForEach(c => c.IsEnabled = true);
+            _gameTimer.Start();
+            RenderWorld();
+        }
+
+        private void ClearWorldScope()
+        {
+            Require.IsNotNull(serviceScope);
+            _gameTimer.Stop();
+            serviceScope?.Dispose();
+            serviceScope = null;
+            _gameControls.ForEach(c => c.IsEnabled = false);
+            MapCanvas.Children.Clear();
+            StatusTextBlock.Text = string.Empty;
         }
     }
 }

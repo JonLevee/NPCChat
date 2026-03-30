@@ -44,13 +44,16 @@ public class FlipButton : Button
     // Logic to run the handler and flip to the next state
     protected override void OnClick()
     {
-        base.OnClick();
-
-        if (States != null && States.Count > 0)
+        try
         {
-            // Increment index (looping back to 0)
-            CurrentStateIndex = (CurrentStateIndex + 1) % States.Count;
+            base.OnClick();
         }
+        catch (Exception)
+        {
+            return; // Don't flip state if handler throws an exception
+        }
+
+        CurrentStateIndex = (CurrentStateIndex + 1) % States.Count;
     }
 
     private void UpdateVisuals()

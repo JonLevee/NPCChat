@@ -1,15 +1,14 @@
 using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using NPCChat.Core.Validation;
 using NPCChat.Editor;
-using NPCChat.Editor.UserControls;
 using NPCChatLib.Builders;
 using NPCChatLib.Extensions;
 using NPCChatLib.WorldBuilderTemplates;
@@ -24,31 +23,59 @@ namespace NPCChat
         private IServiceScope? serviceScope;
         private Control[] _gameControls;
 
-
-        // TODO: Implement game loop with proper time tracking and updates
-        // TODO:  use layers to avoid redrawing buildings
-
         private readonly DispatcherTimer _gameTimer = new();
+
+        public RelayCommand CreateWorldScopeCommand { get; }
+        public RelayCommand ClearWorldScopeCommand { get; }
+        public RelayCommand BuildDemoTownCommand { get; }
+        public RelayCommand ClearDemoTownCommand { get; }
+        public RelayCommand RedrawCommand { get; }
 
         public MainWindow(WorldData world, WorldDataBuilder worldBuilder)
         {
-            InitializeComponent();
-            _gameControls = [BuildDemoTownButton, RedrawButton, CellSizeBox];
             _world = world;
             _worldBuilder = worldBuilder;
 
+            CreateWorldScopeCommand = new RelayCommand(
+                execute: _ => CreateWorldScope(),
+                canExecute: _ => serviceScope is null);
+
+            ClearWorldScopeCommand = new RelayCommand(
+                execute: _ => ClearWorldScope(),
+                canExecute: _ => serviceScope is not null);
+
+            BuildDemoTownCommand = new RelayCommand(
+                execute: _ => BuildDemoTown(),
+                canExecute: _ => serviceScope is not null);
+
+            ClearDemoTownCommand = new RelayCommand(
+                execute: _ =>
+                {
+                    ClearWorld();
+                    RenderWorld();
+                },
+                canExecute: _ => serviceScope is not null);
+
+            RedrawCommand = new RelayCommand(
+                execute: _ => RenderWorld(),
+                canExecute: _ => serviceScope is not null);
+
+            InitializeComponent();
+
+            DataContext = this;
+
+            _gameControls = [BuildDemoTownButton, RedrawButton, CellSizeBox];
 
             Title = "NPCChat Sandbox - Map View";
             _gameTimer.Interval = TimeSpan.FromMilliseconds(20);
             _gameTimer.Tick += _gameTimer_Tick;
 
             _gameControls.ForEach(c => c.IsEnabled = false);
-
+            RefreshCommands();
         }
 
         private void _gameTimer_Tick(object? sender, EventArgs e)
         {
-
         }
 
         private int CellSize => GetCellSize();
@@ -61,29 +88,6 @@ namespace NPCChat
             return Math.Max(8, Math.Min(64, value));
         }
 
-        private void BuildDemoTown_Click(object sender, RoutedEventArgs e)
-        {
-            if (BuildDemoTownButton.Tag == null)
-            {
-                BuildDemoTownButton.Tag = new string[] { "Clear", (string)BuildDemoTownButton.Content };
-            }
-            var nextActionIndex = string.Equals("Clear", BuildDemoTownButton.Content) ? 1 : 0;
-            BuildDemoTownButton.Content = ((string[])BuildDemoTownButton.Tag)[nextActionIndex];
-            switch (nextActionIndex)
-            {
-                case 0:
-                    break;
-                case 1:
-                    break;
-            }
-            BuildDemoTown();
-        }
-
-        private void Redraw_Click(object sender, RoutedEventArgs e)
-        {
-            RenderWorld();
-        }
-
         private void CellSizeBox_TextChanged(object sender, TextChangedEventArgs e)
         {
             RenderWorld();
@@ -94,7 +98,6 @@ namespace NPCChat
             ClearWorld();
 
             using var templates = _worldBuilder.GetTemplates();
-
             templates.AddSmallTown();
 
             RenderWorld();
@@ -107,7 +110,8 @@ namespace NPCChat
 
         private void RenderWorld()
         {
-            if (serviceScope is null) return;
+            if (serviceScope is null)
+                return;
 
             var objects = _world.EnumerateWorldObjects();
             MapCanvas.Children.Clear();
@@ -115,8 +119,13 @@ namespace NPCChat
             const int minCells = 32;
             const int paddingCells = 2;
 
-            int maxRight = objects.Count == 0 ? minCells : Math.Max(minCells, objects.Max(x => x.Bounds.Right) + paddingCells);
-            int maxBottom = objects.Count == 0 ? minCells : Math.Max(minCells, objects.Max(x => x.Bounds.Bottom) + paddingCells);
+            int maxRight = objects.Count == 0
+                ? minCells
+                : Math.Max(minCells, objects.Max(x => x.Bounds.Right) + paddingCells);
+
+            int maxBottom = objects.Count == 0
+                ? minCells
+                : Math.Max(minCells, objects.Max(x => x.Bounds.Bottom) + paddingCells);
 
             double pixelWidth = maxRight * CellSize;
             double pixelHeight = maxBottom * CellSize;
@@ -232,38 +241,66 @@ namespace NPCChat
             };
         }
 
-        private void CreateGameButton_Click(object sender, RoutedEventArgs e)
-        {
-
-            switch (((FlipButton)sender).State.Key)
-            {
-                case "Create":
-                    CreateWorldScope();
-                    break;
-                case "Clear":
-                    ClearWorldScope();
-                    break;
-            }
-        }
-
         private void CreateWorldScope()
         {
             Require.IsNull(serviceScope);
+
             serviceScope = App.Services.CreateScope();
             _gameControls.ForEach(c => c.IsEnabled = true);
             _gameTimer.Start();
             RenderWorld();
+            RefreshCommands();
         }
 
         private void ClearWorldScope()
         {
             Require.IsNotNull(serviceScope);
+
             _gameTimer.Stop();
             serviceScope?.Dispose();
             serviceScope = null;
             _gameControls.ForEach(c => c.IsEnabled = false);
             MapCanvas.Children.Clear();
             StatusTextBlock.Text = string.Empty;
+            RefreshCommands();
+        }
+
+        private void RefreshCommands()
+        {
+            CreateWorldScopeCommand.RaiseCanExecuteChanged();
+            ClearWorldScopeCommand.RaiseCanExecuteChanged();
+            BuildDemoTownCommand.RaiseCanExecuteChanged();
+            ClearDemoTownCommand.RaiseCanExecuteChanged();
+            RedrawCommand.RaiseCanExecuteChanged();
+        }
+
+        public sealed class RelayCommand : ICommand
+        {
+            private readonly Action<object?> _execute;
+            private readonly Func<object?, bool>? _canExecute;
+
+            public RelayCommand(Action<object?> execute, Func<object?, bool>? canExecute = null)
+            {
+                _execute = execute ?? throw new ArgumentNullException(nameof(execute));
+                _canExecute = canExecute;
+            }
+
+            public event EventHandler? CanExecuteChanged;
+
+            public bool CanExecute(object? parameter)
+            {
+                return _canExecute?.Invoke(parameter) ?? true;
+            }
+
+            public void Execute(object? parameter)
+            {
+                _execute(parameter);
+            }
+
+            public void RaiseCanExecuteChanged()
+            {
+                CanExecuteChanged?.Invoke(this, EventArgs.Empty);
+            }
         }
     }
 }

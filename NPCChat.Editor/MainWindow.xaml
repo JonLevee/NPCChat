@@ -1,4 +1,5 @@
 <Window x:Class="NPCChat.MainWindow"
+        x:Name="RootWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
@@ -21,21 +22,28 @@
         <StackPanel Grid.Row="0"
                     Orientation="Horizontal"
                     Margin="12,12,12,6">
-            <uc:FlipButton  Click="CreateGameButton_Click"
-                            Margin="0,0,12,0"
-                            Padding="12,6">
+
+            <uc:FlipButton x:Name="CreateGameButton"
+                           Margin="0,0,12,0"
+                           Padding="12,6"
+                           PrimaryCommand="{Binding ElementName=RootWindow, Path=CreateWorldScopeCommand}"
+                           SecondaryCommand="{Binding ElementName=RootWindow, Path=ClearWorldScopeCommand}">
                 <uc:FlipButtonState Key="Create" Text="Game: Create" />
                 <uc:FlipButtonState Key="Clear" Text="Game: Clear" />
             </uc:FlipButton>
-            <Button Name= "BuildDemoTownButton"
-                    Content="Build Demo Town"
-                    Click="BuildDemoTown_Click"
-                    Margin="0,0,12,0"
-                    Padding="12,6" />
 
-            <Button Name="RedrawButton"
+            <uc:FlipButton x:Name="BuildDemoTownButton"
+                           Margin="0,0,12,0"
+                           Padding="12,6"
+                           PrimaryCommand="{Binding ElementName=RootWindow, Path=BuildDemoTownCommand}"
+                           SecondaryCommand="{Binding ElementName=RootWindow, Path=ClearDemoTownCommand}">
+                <uc:FlipButtonState Key="Build" Text="Town: Build Demo" />
+                <uc:FlipButtonState Key="Clear" Text="Town: Clear" />
+            </uc:FlipButton>
+
+            <Button x:Name="RedrawButton"
                     Content="Redraw"
-                    Click="Redraw_Click"
+                    Command="{Binding RedrawCommand}"
                     Margin="0,0,12,0"
                     Padding="12,6" />
 

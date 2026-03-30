@@ -7,11 +7,52 @@ using NPCChatLib.Attributes;
 namespace NPCChatLib.WorldClasses
 {
     [Scoped]
-    public sealed class WorldData(IWorldOptions options, ObjectHandleManager handleManager)
+    public sealed class WorldData : IDisposable
     {
         private readonly Dictionary<ChunkPosition, ChunkData> _chunks = [];
+        private readonly IWorldOptions options;
+        private readonly ObjectHandleManager handleManager;
+        private Task _simulationProcessingTask = null!;
+        private CancellationTokenSource _cancellationTokenSource = null!;
+        private CancellationToken _cancellationToken;
+
+        public WorldData(IWorldOptions options, ObjectHandleManager handleManager)
+        {
+            this.options = options;
+            this.handleManager = handleManager;
+            StartSimulationProcessing();
+        }
 
         public IReadOnlyDictionary<ChunkPosition, ChunkData> Chunks => _chunks;
+
+        public void StartSimulationProcessing()
+        {
+            if (_simulationProcessingTask != null)
+            {
+                _cancellationTokenSource = new CancellationTokenSource();
+                _cancellationToken = _cancellationTokenSource.Token;
+                _simulationProcessingTask = Task.Factory.StartNew(SimulationProcessing, _cancellationToken);
+            }
+        }
+
+        public void StopSimulationProcessing()
+        {
+            if (_simulationProcessingTask != null)
+            {
+                _cancellationTokenSource.Cancel();
+                _simulationProcessingTask.Wait();
+                _simulationProcessingTask.Wait();
+                _simulationProcessingTask.Dispose();
+                _cancellationTokenSource.Dispose();
+                _cancellationTokenSource = null!;
+                _simulationProcessingTask = null!;
+            }
+        }
+
+        private void SimulationProcessing()
+        {
+            throw new NotImplementedException();
+        }
 
         public ObjectHandle AddObject(WorldObject obj)
         {
@@ -335,6 +376,9 @@ namespace NPCChatLib.WorldClasses
                 .ToArray();
         }
 
-
+        public void Dispose()
+        {
+            StopSimulationProcessing();
+        }
     }
 }

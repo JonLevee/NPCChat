@@ -41,7 +41,6 @@ namespace NPCChat
             Title = "NPCChat Sandbox - Map View";
             _gameTimer.Interval = TimeSpan.FromMilliseconds(20);
             _gameTimer.Tick += _gameTimer_Tick;
-            _gameTimer.Start();
 
             _gameControls.ForEach(c => c.IsEnabled = false);
 

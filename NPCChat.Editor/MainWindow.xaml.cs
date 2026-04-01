@@ -7,101 +7,72 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using NPCChat.Core.SupportClasses;
 using NPCChat.Core.Validation;
 using NPCChat.Editor;
+using NPCChat.Editor.Persistence;
 using NPCChatLib.Builders;
 using NPCChatLib.Extensions;
 using NPCChatLib.WorldBuilderTemplates;
 using NPCChatLib.WorldClasses;
+using Brush = System.Windows.Media.Brush;
+using Brushes = System.Windows.Media.Brushes;
+using Color = System.Windows.Media.Color;
+using Control = System.Windows.Controls.Control;
+using Panel = System.Windows.Controls.Panel;
+using Rectangle = System.Windows.Shapes.Rectangle;
 
 namespace NPCChat
 {
     public partial class MainWindow : Window
     {
-        private readonly WorldData _world;
-        private readonly WorldDataBuilder _worldBuilder;
-        private IServiceScope? serviceScope;
-        private Control[] _gameControls;
+        private WorldData _world = null!;
+        private WorldDataBuilder _worldBuilder = null!;
+        private IServiceScope serviceScope = null!;
 
         private readonly DispatcherTimer _gameTimer = new();
 
-        public RelayCommand CreateWorldScopeCommand { get; }
-        public RelayCommand ClearWorldScopeCommand { get; }
-        public RelayCommand BuildDemoTownCommand { get; }
-        public RelayCommand ClearDemoTownCommand { get; }
-        public RelayCommand RedrawCommand { get; }
+        private bool _autoStartGame = false;
 
-        public MainWindow(WorldData world, WorldDataBuilder worldBuilder)
+        private readonly UserSettingsRepository _userSettingsRepository;
+
+
+        public MainWindow(UserSettingsRepository userSettingsRepository)
         {
-            _world = world;
-            _worldBuilder = worldBuilder;
-
-            CreateWorldScopeCommand = new RelayCommand(
-                execute: _ => CreateWorldScope(),
-                canExecute: _ => serviceScope is null);
-
-            ClearWorldScopeCommand = new RelayCommand(
-                execute: _ => ClearWorldScope(),
-                canExecute: _ => serviceScope is not null);
-
-            BuildDemoTownCommand = new RelayCommand(
-                execute: _ => BuildDemoTown(),
-                canExecute: _ => serviceScope is not null);
-
-            ClearDemoTownCommand = new RelayCommand(
-                execute: _ =>
-                {
-                    ClearWorld();
-                    RenderWorld();
-                },
-                canExecute: _ => serviceScope is not null);
-
-            RedrawCommand = new RelayCommand(
-                execute: _ => RenderWorld(),
-                canExecute: _ => serviceScope is not null);
-
+            _userSettingsRepository = userSettingsRepository;
             InitializeComponent();
 
-            DataContext = this;
+            Loaded += (s, e) => _userSettingsRepository.RestoreWindow(this);
+            Closing += (s, e) => _userSettingsRepository.SaveWindow(this);
 
-            _gameControls = [BuildDemoTownButton, RedrawButton, CellSizeBox];
+            var title = Title;
+            this.LocationChanged += (s, e) => Title = $"{title} - {_userSettingsRepository.GetUserSettingsText(this)}";
+            this.SizeChanged += (s, e) => Title = $"{title} - {_userSettingsRepository.GetUserSettingsText(this)}";
+
+            DataContext = this;
 
             Title = "NPCChat Sandbox - Map View";
             _gameTimer.Interval = TimeSpan.FromMilliseconds(20);
             _gameTimer.Tick += _gameTimer_Tick;
 
-            _gameControls.ForEach(c => c.IsEnabled = false);
-            RefreshCommands();
+            var chunkInfo = App.Services.GetRequiredService<ChunkInfo>();
+            CellSizeListBox.Items.Clear();
+            chunkInfo.ChunkSizes.ForEach(size => CellSizeListBox.Items.Add(size));
+            CellSizeListBox.SelectedItem = chunkInfo.ChunkSize;
+
+            _gameTimer.Start();
         }
 
         private void _gameTimer_Tick(object? sender, EventArgs e)
         {
+            if (_autoStartGame)
+            {
+                _autoStartGame = false;
+                StartStopButton_Click(this, new RoutedEventArgs());
+            }
         }
 
-        private int CellSize => GetCellSize();
-
-        private int GetCellSize()
-        {
-            if (!int.TryParse(CellSizeBox.Text, out var value))
-                value = 24;
-
-            return Math.Max(8, Math.Min(64, value));
-        }
-
-        private void CellSizeBox_TextChanged(object sender, TextChangedEventArgs e)
-        {
-            RenderWorld();
-        }
-
-        private void BuildDemoTown()
-        {
-            ClearWorld();
-
-            using var templates = _worldBuilder.GetTemplates();
-            templates.AddSmallTown();
-
-            RenderWorld();
-        }
+        private int CellSize => (int)CellSizeListBox.SelectedItem;
 
         private void ClearWorld()
         {
@@ -142,7 +113,11 @@ namespace NPCChat
             }
 
             StatusTextBlock.Text =
-                $"Objects: {objects.Count}   |   Static: {objects.Count(x => x.Category == WorldObjectCategory.Static)}   |   Dynamic: {objects.Count(x => x.Category == WorldObjectCategory.Dynamic)}   |   Chunks: {_world.Chunks.Count}   |   ChunkSize: {_worldBuilder.Options.ChunkSize}";
+                $"Objects: {objects.Count}" +
+                $"   |   Static: {objects.Count(x => x.Category == WorldObjectCategory.Static)}" +
+                $"   |   Dynamic: {objects.Count(x => x.Category == WorldObjectCategory.Dynamic)}" +
+                $"   |   Chunks: {_world.Chunks.Count}" +
+                $"   |   ChunkSize: {_worldBuilder.Options.ChunkInfo.ChunkSize}";
         }
 
         private void DrawGrid(int widthInCells, int heightInCells)
@@ -157,8 +132,8 @@ namespace NPCChat
                     X2 = px,
                     Y2 = heightInCells * CellSize,
                     Stroke = CreateBrush(45, 55, 72),
-                    StrokeThickness = x % _worldBuilder.Options.ChunkSize == 0 ? 1.5 : 0.5,
-                    Opacity = x % _worldBuilder.Options.ChunkSize == 0 ? 0.80 : 0.45
+                    StrokeThickness = x % _worldBuilder.Options.ChunkInfo.ChunkSize == 0 ? 1.5 : 0.5,
+                    Opacity = x % _worldBuilder.Options.ChunkInfo.ChunkSize == 0 ? 0.80 : 0.45
                 });
             }
 
@@ -172,8 +147,8 @@ namespace NPCChat
                     X2 = widthInCells * CellSize,
                     Y2 = py,
                     Stroke = CreateBrush(45, 55, 72),
-                    StrokeThickness = y % _worldBuilder.Options.ChunkSize == 0 ? 1.5 : 0.5,
-                    Opacity = y % _worldBuilder.Options.ChunkSize == 0 ? 0.80 : 0.45
+                    StrokeThickness = y % _worldBuilder.Options.ChunkInfo.ChunkSize == 0 ? 1.5 : 0.5,
+                    Opacity = y % _worldBuilder.Options.ChunkInfo.ChunkSize == 0 ? 0.80 : 0.45
                 });
             }
         }
@@ -246,61 +221,68 @@ namespace NPCChat
             Require.IsNull(serviceScope);
 
             serviceScope = App.Services.CreateScope();
-            _gameControls.ForEach(c => c.IsEnabled = true);
-            _gameTimer.Start();
+            _worldBuilder = serviceScope.ServiceProvider.GetRequiredService<WorldDataBuilder>();
+            _world = serviceScope.ServiceProvider.GetRequiredService<WorldData>();
             RenderWorld();
-            RefreshCommands();
         }
 
         private void ClearWorldScope()
         {
-            Require.IsNotNull(serviceScope);
-
-            _gameTimer.Stop();
-            serviceScope?.Dispose();
-            serviceScope = null;
-            _gameControls.ForEach(c => c.IsEnabled = false);
-            MapCanvas.Children.Clear();
-            StatusTextBlock.Text = string.Empty;
-            RefreshCommands();
+            if (serviceScope != null)
+            {
+                serviceScope?.Dispose();
+                serviceScope = null!;
+                MapCanvas.Children.Clear();
+                StatusTextBlock.Text = string.Empty;
+                _world.Dispose();
+                _world = null!;
+                _worldBuilder = null!;
+                BuildDemoTownButton.IsEnabled = false;
+                RedrawButton.IsEnabled = false;
+                CellSizeListBox.IsEnabled = true;
+            }
         }
 
-        private void RefreshCommands()
+        private void StartStopButton_Click(object sender, RoutedEventArgs e)
         {
-            CreateWorldScopeCommand.RaiseCanExecuteChanged();
-            ClearWorldScopeCommand.RaiseCanExecuteChanged();
-            BuildDemoTownCommand.RaiseCanExecuteChanged();
-            ClearDemoTownCommand.RaiseCanExecuteChanged();
-            RedrawCommand.RaiseCanExecuteChanged();
+            switch (StartStopButton.Content)
+            {
+                case "Start":
+                    CreateWorldScope();
+                    BuildDemoTownButton.IsEnabled = true;
+                    RedrawButton.IsEnabled = true;
+                    CellSizeListBox.IsEnabled = false;
+                    StartStopButton.Content = "Stop";
+                    break;
+                case "Stop":
+                    ClearWorldScope();
+                    BuildDemoTownButton.IsEnabled = false;
+                    RedrawButton.IsEnabled = false;
+                    CellSizeListBox.IsEnabled = true;
+                    StartStopButton.Content = "Start";
+                    break;
+            }
         }
 
-        public sealed class RelayCommand : ICommand
+        private void BuildDemoTownButton_Click(object sender, RoutedEventArgs e)
         {
-            private readonly Action<object?> _execute;
-            private readonly Func<object?, bool>? _canExecute;
+            ClearWorld();
 
-            public RelayCommand(Action<object?> execute, Func<object?, bool>? canExecute = null)
-            {
-                _execute = execute ?? throw new ArgumentNullException(nameof(execute));
-                _canExecute = canExecute;
-            }
+            using var templates = _worldBuilder.GetTemplates();
+            templates.AddSmallTown();
 
-            public event EventHandler? CanExecuteChanged;
+            RenderWorld();
 
-            public bool CanExecute(object? parameter)
-            {
-                return _canExecute?.Invoke(parameter) ?? true;
-            }
+        }
 
-            public void Execute(object? parameter)
-            {
-                _execute(parameter);
-            }
+        private void RedrawButton_Click(object sender, RoutedEventArgs e)
+        {
+            RenderWorld();
+        }
 
-            public void RaiseCanExecuteChanged()
-            {
-                CanExecuteChanged?.Invoke(this, EventArgs.Empty);
-            }
+        private void CellSizeListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+
         }
     }
 }

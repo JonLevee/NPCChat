@@ -308,10 +308,10 @@ namespace NPCChatLib.WorldClasses
 
         private IEnumerable<ChunkPosition> EnumerateTouchedChunks(Bounds bounds)
         {
-            int minChunkX = FloorDiv(bounds.Left, options.ChunkSize);
-            int maxChunkX = FloorDiv(bounds.Right - 1, options.ChunkSize);
-            int minChunkY = FloorDiv(bounds.Top, options.ChunkSize);
-            int maxChunkY = FloorDiv(bounds.Bottom - 1, options.ChunkSize);
+            int minChunkX = FloorDiv(bounds.Left, options.ChunkInfo.ChunkSize);
+            int maxChunkX = FloorDiv(bounds.Right - 1, options.ChunkInfo.ChunkSize);
+            int minChunkY = FloorDiv(bounds.Top, options.ChunkInfo.ChunkSize);
+            int maxChunkY = FloorDiv(bounds.Bottom - 1, options.ChunkInfo.ChunkSize);
 
             for (int y = minChunkY; y <= maxChunkY; y++)
             {

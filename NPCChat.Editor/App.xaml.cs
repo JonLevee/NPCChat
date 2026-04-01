@@ -3,6 +3,7 @@ using System.Data;
 using System.Windows;
 using Microsoft.Extensions.DependencyInjection;
 using NPCChat.Core;
+using Application = System.Windows.Application;
 
 namespace NPCChat.Editor
 {

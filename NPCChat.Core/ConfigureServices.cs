@@ -16,9 +16,11 @@ namespace NPCChat.Core
     {
         public static void Configure(IServiceCollection services)
         {
-            Assembly
-                .GetExecutingAssembly()
-                .GetTypes()
+            new[] 
+            { 
+                Assembly.GetCallingAssembly(), 
+                Assembly.GetExecutingAssembly() 
+            }.SelectMany(a => a.GetTypes())
                 .Where(t => t.GetCustomAttribute<InjectionAttribute>() != null)
                 .ForEach(t =>
                 {

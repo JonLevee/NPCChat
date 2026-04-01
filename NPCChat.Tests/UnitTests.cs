@@ -62,7 +62,7 @@ namespace NPCChat.Tests
             using (IServiceScope scope = Services.CreateScope())
             {
                 var options = scope.ServiceProvider.Get<WorldOptions>();
-                options.ChunkSize = 16;
+                options.ChunkInfo.ChunkSize = 16;
                 var world = scope.ServiceProvider.Get<WorldData>();
                 var builder = scope.ServiceProvider.Get<WorldDataBuilder>();
                 var handleManager = scope.ServiceProvider.Get<ObjectHandleManager>();

@@ -4,7 +4,6 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:uc="clr-namespace:NPCChat.Editor.UserControls"
         mc:Ignorable="d"
         Title="NPCChat Sandbox"
         Height="900"
@@ -23,39 +22,34 @@
                     Orientation="Horizontal"
                     Margin="12,12,12,6">
 
-            <uc:FlipButton x:Name="CreateGameButton"
-                           Margin="0,0,12,0"
-                           Padding="12,6"
-                           PrimaryCommand="{Binding ElementName=RootWindow, Path=CreateWorldScopeCommand}"
-                           SecondaryCommand="{Binding ElementName=RootWindow, Path=ClearWorldScopeCommand}">
-                <uc:FlipButtonState Key="Create" Text="Game: Create" />
-                <uc:FlipButtonState Key="Clear" Text="Game: Clear" />
-            </uc:FlipButton>
+            <Button x:Name="StartStopButton"
+                    Content="Start"
+                    Margin="0,0,12,0"
+                    Padding="12,6"
+                    Click="StartStopButton_Click"
+                    />
 
-            <uc:FlipButton x:Name="BuildDemoTownButton"
-                           Margin="0,0,12,0"
-                           Padding="12,6"
-                           PrimaryCommand="{Binding ElementName=RootWindow, Path=BuildDemoTownCommand}"
-                           SecondaryCommand="{Binding ElementName=RootWindow, Path=ClearDemoTownCommand}">
-                <uc:FlipButtonState Key="Build" Text="Town: Build Demo" />
-                <uc:FlipButtonState Key="Clear" Text="Town: Clear" />
-            </uc:FlipButton>
+            <Button x:Name="BuildDemoTownButton"
+                    Content="Build Demo"
+                    Click="BuildDemoTownButton_Click"
+                    Margin="0,0,12,0"
+                    Padding="12,6">
+            </Button>
 
             <Button x:Name="RedrawButton"
                     Content="Redraw"
-                    Command="{Binding RedrawCommand}"
+                    Click="RedrawButton_Click"
                     Margin="0,0,12,0"
                     Padding="12,6" />
 
             <TextBlock Text="Cell Size:"
                        VerticalAlignment="Center"
                        Margin="0,0,8,0" />
-
-            <TextBox x:Name="CellSizeBox"
-                     Width="90"
-                     Text="24"
-                     VerticalContentAlignment="Center"
-                     TextChanged="CellSizeBox_TextChanged" />
+            <ComboBox x:Name="CellSizeListBox"
+                     Width="60"
+                     VerticalAlignment="Center"
+                     SelectionChanged="CellSizeListBox_SelectionChanged" HorizontalAlignment="Center" IsReadOnly="True">
+            </ComboBox>
         </StackPanel>
 
         <Border Grid.Row="1"

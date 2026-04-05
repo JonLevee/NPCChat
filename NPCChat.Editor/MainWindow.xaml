@@ -71,7 +71,11 @@
                     BorderThickness="1"
                     Background="#111827"
                     Padding="8">
-                <Canvas x:Name="MapCanvas" />
+                <Canvas 
+                    x:Name="MapCanvas" 
+                    MouseUp="MapCanvas_MouseUp"
+                    MouseMove="MapCanvas_MouseMove"
+                    />
             </Border>
         </ScrollViewer>
     </Grid>

@@ -20,6 +20,7 @@ using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
 using Control = System.Windows.Controls.Control;
 using Panel = System.Windows.Controls.Panel;
+using Point = System.Windows.Point;
 using Rectangle = System.Windows.Shapes.Rectangle;
 
 namespace NPCChat
@@ -32,7 +33,10 @@ namespace NPCChat
 
         private readonly DispatcherTimer _gameTimer = new();
 
-        private bool _autoStartGame = false;
+        private bool _autoStartGame = true;
+        private string originalTitle = string.Empty;
+        private Point lastMousePosition;
+        private Point lastMouseDownPosition;
 
         private readonly UserSettingsRepository _userSettingsRepository;
 
@@ -45,9 +49,9 @@ namespace NPCChat
             Loaded += (s, e) => _userSettingsRepository.RestoreWindow(this);
             Closing += (s, e) => _userSettingsRepository.SaveWindow(this);
 
-            var title = Title;
-            this.LocationChanged += (s, e) => Title = $"{title} - {_userSettingsRepository.GetUserSettingsText(this)}";
-            this.SizeChanged += (s, e) => Title = $"{title} - {_userSettingsRepository.GetUserSettingsText(this)}";
+            originalTitle = Title;
+            this.LocationChanged += (s, e) => UpdateTitle();
+            this.SizeChanged += (s, e) => UpdateTitle();
 
             DataContext = this;
 
@@ -63,12 +67,18 @@ namespace NPCChat
             _gameTimer.Start();
         }
 
+        private void UpdateTitle()
+        {
+            Title = $"{originalTitle} - {_userSettingsRepository.GetUserSettingsText(this)} Clicked = {lastMouseDownPosition} Mouse = {lastMousePosition}";
+        }
+
         private void _gameTimer_Tick(object? sender, EventArgs e)
         {
             if (_autoStartGame)
             {
                 _autoStartGame = false;
                 StartStopButton_Click(this, new RoutedEventArgs());
+                BuildDemoTownButton_Click(this, new RoutedEventArgs());
             }
         }
 
@@ -283,6 +293,18 @@ namespace NPCChat
         private void CellSizeListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
 
+        }
+
+        private void MapCanvas_MouseUp(object sender, MouseButtonEventArgs e)
+        {
+            lastMouseDownPosition = e.GetPosition(this.MapCanvas);
+            UpdateTitle();
+        }
+
+        private void MapCanvas_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            lastMousePosition = e.GetPosition(this.MapCanvas);
+            UpdateTitle();
         }
     }
 }

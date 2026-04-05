@@ -40,11 +40,13 @@ namespace NPCChat
         private IsometricTransform _isoTransform = null!;
 
         private readonly UserSettingsRepository _userSettingsRepository;
+        private readonly ChunkInfo _chunkInfo;
 
 
-        public MainWindow(UserSettingsRepository userSettingsRepository)
+        public MainWindow(UserSettingsRepository userSettingsRepository, ChunkInfo chunkInfo)
         {
             _userSettingsRepository = userSettingsRepository;
+            _chunkInfo = chunkInfo;
             InitializeComponent();
 
             Loaded += (s, e) => _userSettingsRepository.RestoreWindow(this);
@@ -60,10 +62,9 @@ namespace NPCChat
             _gameTimer.Interval = TimeSpan.FromMilliseconds(20);
             _gameTimer.Tick += _gameTimer_Tick;
 
-            var chunkInfo = App.Services.GetRequiredService<ChunkInfo>();
             CellSizeListBox.Items.Clear();
-            chunkInfo.ChunkSizes.ForEach(size => CellSizeListBox.Items.Add(size));
-            CellSizeListBox.SelectedItem = chunkInfo.ChunkSize;
+            _chunkInfo.ChunkSizes.ForEach(size => CellSizeListBox.Items.Add(size));
+            CellSizeListBox.SelectedItem = _chunkInfo.ChunkSize;
 
             _gameTimer.Start();
         }
@@ -83,7 +84,9 @@ namespace NPCChat
             }
         }
 
-        private int CellSize => (int)CellSizeListBox.SelectedItem;
+        // Pixels per grid unit for rendering. Independent of chunk size.
+        // RenderScale = 32 → 64x32 pixel diamonds (classic 2:1 isometric).
+        private const int RenderScale = 32;
 
         private void ClearWorld()
         {
@@ -109,7 +112,7 @@ namespace NPCChat
                 ? minCells
                 : Math.Max(minCells, objects.Max(x => x.Bounds.Bottom) + paddingCells);
 
-            _isoTransform = new IsometricTransform(CellSize, maxBottom);
+            _isoTransform = new IsometricTransform(RenderScale, maxBottom);
 
             MapCanvas.Width = _isoTransform.CanvasWidth(maxRight, maxBottom);
             MapCanvas.Height = _isoTransform.CanvasHeight(maxRight, maxBottom);
@@ -138,7 +141,7 @@ namespace NPCChat
 
         private void DrawGrid(int widthInCells, int heightInCells)
         {
-            int chunkSize = _worldBuilder.Options.ChunkInfo.ChunkSize;
+            int chunkSize = _chunkInfo.ChunkSize;
 
             // Diagonal lines running down-left (constant gridX columns)
             for (int x = 0; x <= widthInCells; x++)
@@ -202,12 +205,12 @@ namespace NPCChat
             var label = new TextBlock
             {
                 Text = GetLabel(obj),
-                FontSize = Math.Max(9, CellSize * 0.38),
+                FontSize = Math.Max(9, RenderScale * 0.38),
                 Foreground = Brushes.White,
                 IsHitTestVisible = false
             };
-            Canvas.SetLeft(label, center.X - CellSize * 0.15);
-            Canvas.SetTop(label,  center.Y - CellSize * 0.22);
+            Canvas.SetLeft(label, center.X - RenderScale * 0.15);
+            Canvas.SetTop(label,  center.Y - RenderScale * 0.22);
             MapCanvas.Children.Add(label);
         }
 
@@ -307,7 +310,8 @@ namespace NPCChat
 
         private void CellSizeListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-
+            if (CellSizeListBox.SelectedItem is int size)
+                _chunkInfo.ChunkSize = size;
         }
 
         private void MapCanvas_MouseUp(object sender, MouseButtonEventArgs e)

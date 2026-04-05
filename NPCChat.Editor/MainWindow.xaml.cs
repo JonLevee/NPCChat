@@ -37,6 +37,7 @@ namespace NPCChat
         private string originalTitle = string.Empty;
         private Point lastMousePosition;
         private Point lastMouseDownPosition;
+        private IsometricTransform _isoTransform = null!;
 
         private readonly UserSettingsRepository _userSettingsRepository;
 
@@ -69,7 +70,7 @@ namespace NPCChat
 
         private void UpdateTitle()
         {
-            Title = $"{originalTitle} - {_userSettingsRepository.GetUserSettingsText(this)} Clicked = {lastMouseDownPosition} Mouse = {lastMousePosition}";
+            Title = $"{originalTitle} - {_userSettingsRepository.GetUserSettingsText(this)} Clicked = {GridCoordLabel(lastMouseDownPosition)} Mouse = {GridCoordLabel(lastMousePosition)}";
         }
 
         private void _gameTimer_Tick(object? sender, EventArgs e)
@@ -108,16 +109,21 @@ namespace NPCChat
                 ? minCells
                 : Math.Max(minCells, objects.Max(x => x.Bounds.Bottom) + paddingCells);
 
-            double pixelWidth = maxRight * CellSize;
-            double pixelHeight = maxBottom * CellSize;
+            _isoTransform = new IsometricTransform(CellSize, maxBottom);
 
-            MapCanvas.Width = pixelWidth;
-            MapCanvas.Height = pixelHeight;
+            MapCanvas.Width = _isoTransform.CanvasWidth(maxRight, maxBottom);
+            MapCanvas.Height = _isoTransform.CanvasHeight(maxRight, maxBottom);
             MapCanvas.Background = Brushes.Transparent;
 
             DrawGrid(maxRight, maxBottom);
 
-            foreach (var obj in objects)
+            // Painter's algorithm: draw back-to-front so near objects overlap far ones.
+            // Static objects first, dynamic always on top at same depth.
+            var sorted = objects
+                .OrderBy(o => o.Bounds.Right + o.Bounds.Bottom)
+                .ThenBy(o => o.Category == WorldObjectCategory.Dynamic ? 1 : 0);
+
+            foreach (var obj in sorted)
             {
                 DrawObject(obj);
             }
@@ -132,67 +138,76 @@ namespace NPCChat
 
         private void DrawGrid(int widthInCells, int heightInCells)
         {
+            int chunkSize = _worldBuilder.Options.ChunkInfo.ChunkSize;
+
+            // Diagonal lines running down-left (constant gridX columns)
             for (int x = 0; x <= widthInCells; x++)
             {
-                double px = x * CellSize;
+                var from = _isoTransform.GridToScreen(x, 0);
+                var to   = _isoTransform.GridToScreen(x, heightInCells);
+                bool isChunk = x % chunkSize == 0;
                 MapCanvas.Children.Add(new Line
                 {
-                    X1 = px,
-                    Y1 = 0,
-                    X2 = px,
-                    Y2 = heightInCells * CellSize,
+                    X1 = from.X, Y1 = from.Y,
+                    X2 = to.X,   Y2 = to.Y,
                     Stroke = CreateBrush(45, 55, 72),
-                    StrokeThickness = x % _worldBuilder.Options.ChunkInfo.ChunkSize == 0 ? 1.5 : 0.5,
-                    Opacity = x % _worldBuilder.Options.ChunkInfo.ChunkSize == 0 ? 0.80 : 0.45
+                    StrokeThickness = isChunk ? 1.5 : 0.5,
+                    Opacity = isChunk ? 0.80 : 0.45
                 });
             }
 
+            // Diagonal lines running down-right (constant gridY rows)
             for (int y = 0; y <= heightInCells; y++)
             {
-                double py = y * CellSize;
+                var from = _isoTransform.GridToScreen(0, y);
+                var to   = _isoTransform.GridToScreen(widthInCells, y);
+                bool isChunk = y % chunkSize == 0;
                 MapCanvas.Children.Add(new Line
                 {
-                    X1 = 0,
-                    Y1 = py,
-                    X2 = widthInCells * CellSize,
-                    Y2 = py,
+                    X1 = from.X, Y1 = from.Y,
+                    X2 = to.X,   Y2 = to.Y,
                     Stroke = CreateBrush(45, 55, 72),
-                    StrokeThickness = y % _worldBuilder.Options.ChunkInfo.ChunkSize == 0 ? 1.5 : 0.5,
-                    Opacity = y % _worldBuilder.Options.ChunkInfo.ChunkSize == 0 ? 0.80 : 0.45
+                    StrokeThickness = isChunk ? 1.5 : 0.5,
+                    Opacity = isChunk ? 0.80 : 0.45
                 });
             }
         }
 
         private void DrawObject(WorldObject obj)
         {
-            var rectangle = new Rectangle
+            // Four corners of the grid-aligned rectangle become the four diamond vertices.
+            // Order: top, right, bottom, left — forming a clockwise diamond.
+            // When height/walls are added later, this top-face footprint stays and
+            // wall geometry is drawn between this and a lower parallel diamond.
+            var top    = _isoTransform.GridToScreen(obj.Bounds.Left,  obj.Bounds.Top);
+            var right  = _isoTransform.GridToScreen(obj.Bounds.Right, obj.Bounds.Top);
+            var bottom = _isoTransform.GridToScreen(obj.Bounds.Right, obj.Bounds.Bottom);
+            var left   = _isoTransform.GridToScreen(obj.Bounds.Left,  obj.Bounds.Bottom);
+
+            var diamond = new Polygon
             {
-                Width = Math.Max(1, obj.Bounds.Width * CellSize),
-                Height = Math.Max(1, obj.Bounds.Height * CellSize),
+                Points = new PointCollection { top, right, bottom, left },
                 Fill = GetFillBrush(obj),
                 Stroke = Brushes.Black,
-                StrokeThickness = 1,
-                RadiusX = obj.Category == WorldObjectCategory.Dynamic ? 8 : 2,
-                RadiusY = obj.Category == WorldObjectCategory.Dynamic ? 8 : 2,
+                StrokeThickness = obj.Category == WorldObjectCategory.Dynamic ? 1.5 : 1.0,
                 ToolTip = $"{obj.Kind}\n{obj.Category}\n{obj.Bounds}\n{obj.Handle}"
             };
+            MapCanvas.Children.Add(diamond);
 
-            Canvas.SetLeft(rectangle, obj.Bounds.Left * CellSize);
-            Canvas.SetTop(rectangle, obj.Bounds.Top * CellSize);
-            Panel.SetZIndex(rectangle, obj.Category == WorldObjectCategory.Dynamic ? 10 : 1);
-            MapCanvas.Children.Add(rectangle);
+            // Label at the visual center of the diamond
+            var center = _isoTransform.GridToScreen(
+                (obj.Bounds.Left + obj.Bounds.Right) / 2.0,
+                (obj.Bounds.Top  + obj.Bounds.Bottom) / 2.0);
 
             var label = new TextBlock
             {
                 Text = GetLabel(obj),
-                FontSize = Math.Max(10, CellSize * 0.42),
+                FontSize = Math.Max(9, CellSize * 0.38),
                 Foreground = Brushes.White,
                 IsHitTestVisible = false
             };
-
-            Canvas.SetLeft(label, obj.Bounds.Left * CellSize + 4);
-            Canvas.SetTop(label, obj.Bounds.Top * CellSize + 2);
-            Panel.SetZIndex(label, obj.Category == WorldObjectCategory.Dynamic ? 11 : 2);
+            Canvas.SetLeft(label, center.X - CellSize * 0.15);
+            Canvas.SetTop(label,  center.Y - CellSize * 0.22);
             MapCanvas.Children.Add(label);
         }
 
@@ -305,6 +320,13 @@ namespace NPCChat
         {
             lastMousePosition = e.GetPosition(this.MapCanvas);
             UpdateTitle();
+        }
+
+        private string GridCoordLabel(Point screenPoint)
+        {
+            if (_isoTransform is null) return screenPoint.ToString();
+            var (gx, gy) = _isoTransform.ScreenToGrid(screenPoint);
+            return $"({gx}, {gy})";
         }
     }
 }

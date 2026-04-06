@@ -4,6 +4,5 @@ namespace NPCChatLib.Extensions
 {
     public static class WorldExtensions
     {
-
     }
 }

@@ -3,25 +3,19 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
-using System.Windows.Shapes;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using NPCChat.Core.SupportClasses;
 using NPCChat.Core.Validation;
 using NPCChat.Editor;
 using NPCChat.Editor.Persistence;
+using NPCChat.Editor.UIClasses;
+using NPCChat.Editor.UserControls;
 using NPCChatLib.Builders;
 using NPCChatLib.Extensions;
 using NPCChatLib.WorldBuilderTemplates;
 using NPCChatLib.WorldClasses;
-using Brush = System.Windows.Media.Brush;
-using Brushes = System.Windows.Media.Brushes;
-using Color = System.Windows.Media.Color;
-using Control = System.Windows.Controls.Control;
-using Panel = System.Windows.Controls.Panel;
 using Point = System.Windows.Point;
-using Rectangle = System.Windows.Shapes.Rectangle;
 
 namespace NPCChat
 {
@@ -37,10 +31,10 @@ namespace NPCChat
         private string originalTitle = string.Empty;
         private Point lastMousePosition;
         private Point lastMouseDownPosition;
-        private IsometricTransform _isoTransform = null!;
 
         private readonly UserSettingsRepository _userSettingsRepository;
         private readonly ChunkInfo _chunkInfo;
+        private GridRenderer _gridRenderer = null!;
 
 
         public MainWindow(UserSettingsRepository userSettingsRepository, ChunkInfo chunkInfo)
@@ -57,6 +51,7 @@ namespace NPCChat
             this.SizeChanged += (s, e) => UpdateTitle();
 
             DataContext = this;
+            _gridRenderer = new GridRenderer(this, chunkInfo);
 
             Title = "NPCChat Sandbox - Map View";
             _gameTimer.Interval = TimeSpan.FromMilliseconds(20);
@@ -84,164 +79,9 @@ namespace NPCChat
             }
         }
 
-        // Pixels per grid unit for rendering. Independent of chunk size.
-        // RenderScale = 32 → 64x32 pixel diamonds (classic 2:1 isometric).
-        private const int RenderScale = 32;
-
         private void ClearWorld()
         {
             _world.Clear();
-        }
-
-        private void RenderWorld()
-        {
-            if (serviceScope is null)
-                return;
-
-            var objects = _world.EnumerateWorldObjects();
-            MapCanvas.Children.Clear();
-
-            const int minCells = 32;
-            const int paddingCells = 2;
-
-            int maxRight = objects.Count == 0
-                ? minCells
-                : Math.Max(minCells, objects.Max(x => x.Bounds.Right) + paddingCells);
-
-            int maxBottom = objects.Count == 0
-                ? minCells
-                : Math.Max(minCells, objects.Max(x => x.Bounds.Bottom) + paddingCells);
-
-            _isoTransform = new IsometricTransform(RenderScale, maxBottom);
-
-            MapCanvas.Width = _isoTransform.CanvasWidth(maxRight, maxBottom);
-            MapCanvas.Height = _isoTransform.CanvasHeight(maxRight, maxBottom);
-            MapCanvas.Background = Brushes.Transparent;
-
-            DrawGrid(maxRight, maxBottom);
-
-            // Painter's algorithm: draw back-to-front so near objects overlap far ones.
-            // Static objects first, dynamic always on top at same depth.
-            var sorted = objects
-                .OrderBy(o => o.Bounds.Right + o.Bounds.Bottom)
-                .ThenBy(o => o.Category == WorldObjectCategory.Dynamic ? 1 : 0);
-
-            foreach (var obj in sorted)
-            {
-                DrawObject(obj);
-            }
-
-            StatusTextBlock.Text =
-                $"Objects: {objects.Count}" +
-                $"   |   Static: {objects.Count(x => x.Category == WorldObjectCategory.Static)}" +
-                $"   |   Dynamic: {objects.Count(x => x.Category == WorldObjectCategory.Dynamic)}" +
-                $"   |   Chunks: {_world.Chunks.Count}" +
-                $"   |   ChunkSize: {_worldBuilder.Options.ChunkInfo.ChunkSize}";
-        }
-
-        private void DrawGrid(int widthInCells, int heightInCells)
-        {
-            int chunkSize = _chunkInfo.ChunkSize;
-
-            // Diagonal lines running down-left (constant gridX columns)
-            for (int x = 0; x <= widthInCells; x++)
-            {
-                var from = _isoTransform.GridToScreen(x, 0);
-                var to   = _isoTransform.GridToScreen(x, heightInCells);
-                bool isChunk = x % chunkSize == 0;
-                MapCanvas.Children.Add(new Line
-                {
-                    X1 = from.X, Y1 = from.Y,
-                    X2 = to.X,   Y2 = to.Y,
-                    Stroke = CreateBrush(45, 55, 72),
-                    StrokeThickness = isChunk ? 1.5 : 0.5,
-                    Opacity = isChunk ? 0.80 : 0.45
-                });
-            }
-
-            // Diagonal lines running down-right (constant gridY rows)
-            for (int y = 0; y <= heightInCells; y++)
-            {
-                var from = _isoTransform.GridToScreen(0, y);
-                var to   = _isoTransform.GridToScreen(widthInCells, y);
-                bool isChunk = y % chunkSize == 0;
-                MapCanvas.Children.Add(new Line
-                {
-                    X1 = from.X, Y1 = from.Y,
-                    X2 = to.X,   Y2 = to.Y,
-                    Stroke = CreateBrush(45, 55, 72),
-                    StrokeThickness = isChunk ? 1.5 : 0.5,
-                    Opacity = isChunk ? 0.80 : 0.45
-                });
-            }
-        }
-
-        private void DrawObject(WorldObject obj)
-        {
-            // Four corners of the grid-aligned rectangle become the four diamond vertices.
-            // Order: top, right, bottom, left — forming a clockwise diamond.
-            // When height/walls are added later, this top-face footprint stays and
-            // wall geometry is drawn between this and a lower parallel diamond.
-            var top    = _isoTransform.GridToScreen(obj.Bounds.Left,  obj.Bounds.Top);
-            var right  = _isoTransform.GridToScreen(obj.Bounds.Right, obj.Bounds.Top);
-            var bottom = _isoTransform.GridToScreen(obj.Bounds.Right, obj.Bounds.Bottom);
-            var left   = _isoTransform.GridToScreen(obj.Bounds.Left,  obj.Bounds.Bottom);
-
-            var diamond = new Polygon
-            {
-                Points = new PointCollection { top, right, bottom, left },
-                Fill = GetFillBrush(obj),
-                Stroke = Brushes.Black,
-                StrokeThickness = obj.Category == WorldObjectCategory.Dynamic ? 1.5 : 1.0,
-                ToolTip = $"{obj.Kind}\n{obj.Category}\n{obj.Bounds}\n{obj.Handle}"
-            };
-            MapCanvas.Children.Add(diamond);
-
-            // Label at the visual center of the diamond
-            var center = _isoTransform.GridToScreen(
-                (obj.Bounds.Left + obj.Bounds.Right) / 2.0,
-                (obj.Bounds.Top  + obj.Bounds.Bottom) / 2.0);
-
-            var label = new TextBlock
-            {
-                Text = GetLabel(obj),
-                FontSize = Math.Max(9, RenderScale * 0.38),
-                Foreground = Brushes.White,
-                IsHitTestVisible = false
-            };
-            Canvas.SetLeft(label, center.X - RenderScale * 0.15);
-            Canvas.SetTop(label,  center.Y - RenderScale * 0.22);
-            MapCanvas.Children.Add(label);
-        }
-
-        private static Brush GetFillBrush(WorldObject obj)
-        {
-            return obj.Kind switch
-            {
-                WorldObjectKind.Building => CreateBrush(59, 130, 246),
-                WorldObjectKind.Player => CreateBrush(34, 197, 94),
-                WorldObjectKind.Npc => CreateBrush(245, 158, 11),
-                WorldObjectKind.Mob => CreateBrush(239, 68, 68),
-                _ => CreateBrush(148, 163, 184)
-            };
-        }
-
-        private static SolidColorBrush CreateBrush(byte r, byte g, byte b)
-        {
-            return new SolidColorBrush(Color.FromArgb(255, r, g, b));
-        }
-
-        private static string GetLabel(WorldObject obj)
-        {
-            return obj.Kind switch
-            {
-                WorldObjectKind.Building => "B",
-                WorldObjectKind.Player => "P",
-                WorldObjectKind.Npc => "N",
-                WorldObjectKind.Mob => "M",
-                WorldObjectKind.DungeonEntrance => "D",
-                _ => "?"
-            };
         }
 
         private void CreateWorldScope()
@@ -251,7 +91,16 @@ namespace NPCChat
             serviceScope = App.Services.CreateScope();
             _worldBuilder = serviceScope.ServiceProvider.GetRequiredService<WorldDataBuilder>();
             _world = serviceScope.ServiceProvider.GetRequiredService<WorldData>();
-            RenderWorld();
+            RefreshWorld();
+        }
+
+        private void RefreshWorld()
+        {
+            _gridRenderer.RenderWorld(_world);
+
+            WorldObjectPanel.Children.Clear();
+            foreach (var obj in _world.EnumerateWorldObjects())
+                WorldObjectPanel.Children.Add(new CharacterSummary(obj));
         }
 
         private void ClearWorldScope()
@@ -262,6 +111,7 @@ namespace NPCChat
                 serviceScope = null!;
                 MapCanvas.Children.Clear();
                 StatusTextBlock.Text = string.Empty;
+                WorldObjectPanel.Children.Clear();
                 _world.Dispose();
                 _world = null!;
                 _worldBuilder = null!;
@@ -299,13 +149,12 @@ namespace NPCChat
             using var templates = _worldBuilder.GetTemplates();
             templates.AddSmallTown();
 
-            RenderWorld();
-
+            RefreshWorld();
         }
 
         private void RedrawButton_Click(object sender, RoutedEventArgs e)
         {
-            RenderWorld();
+            RefreshWorld();
         }
 
         private void CellSizeListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
@@ -328,8 +177,8 @@ namespace NPCChat
 
         private string GridCoordLabel(Point screenPoint)
         {
-            if (_isoTransform is null) return screenPoint.ToString();
-            var (gx, gy) = _isoTransform.ScreenToGrid(screenPoint);
+            if (_gridRenderer.IsoTransform is null) return screenPoint.ToString();
+            var (gx, gy) = _gridRenderer.IsoTransform.ScreenToGrid(screenPoint);
             return $"({gx}, {gy})";
         }
     }

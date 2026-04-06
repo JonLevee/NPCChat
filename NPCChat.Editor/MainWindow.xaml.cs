@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -35,6 +36,7 @@ namespace NPCChat
         private readonly UserSettingsRepository _userSettingsRepository;
         private readonly ChunkInfo _chunkInfo;
         private GridRenderer _gridRenderer = null!;
+        private readonly Dictionary<ObjectHandle, CharacterSummary> _summaryMap = new();
 
 
         public MainWindow(UserSettingsRepository userSettingsRepository, ChunkInfo chunkInfo)
@@ -52,6 +54,13 @@ namespace NPCChat
 
             DataContext = this;
             _gridRenderer = new GridRenderer(this, chunkInfo);
+            _gridRenderer.ObjectHovered += obj =>
+            {
+                foreach (var cs in _summaryMap.Values)
+                    cs.SetHighlighted(false);
+                if (obj is not null && _summaryMap.TryGetValue(obj.Handle, out var summary))
+                    summary.SetHighlighted(true);
+            };
 
             Title = "NPCChat Sandbox - Map View";
             _gameTimer.Interval = TimeSpan.FromMilliseconds(20);
@@ -104,11 +113,22 @@ namespace NPCChat
                 .Where(o => o.Kind == WorldObjectKind.Npc)
                 .OrderBy(o => o.Category);
 
+            _summaryMap.Clear();
             WorldObjectPanel.Children.Clear();
+
             if (player is not null)
-                WorldObjectPanel.Children.Add(new CharacterSummary(player));
+                AddSummary(player);
             foreach (var obj in npcs)
-                WorldObjectPanel.Children.Add(new CharacterSummary(obj));
+                AddSummary(obj);
+        }
+
+        private void AddSummary(WorldObject obj)
+        {
+            var cs = new CharacterSummary(obj);
+            cs.MouseEnter += (s, e) => { _gridRenderer.HighlightObject(obj.Handle); cs.SetHighlighted(true); };
+            cs.MouseLeave += (s, e) => { _gridRenderer.ClearHighlight(); cs.SetHighlighted(false); };
+            _summaryMap[obj.Handle] = cs;
+            WorldObjectPanel.Children.Add(cs);
         }
 
         private void ClearWorldScope()
@@ -120,6 +140,7 @@ namespace NPCChat
                 MapCanvas.Children.Clear();
                 StatusTextBlock.Text = string.Empty;
                 WorldObjectPanel.Children.Clear();
+                _summaryMap.Clear();
                 _world.Dispose();
                 _world = null!;
                 _worldBuilder = null!;

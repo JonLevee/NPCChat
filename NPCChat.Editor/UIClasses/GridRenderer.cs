@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Windows.Controls;
 using System.Windows.Media;
@@ -19,6 +20,11 @@ namespace NPCChat.Editor.UIClasses
         private readonly TextBlock _statusTextBlock;
         private readonly ChunkInfo _chunkInfo;
 
+        private readonly Dictionary<ObjectHandle, Polygon> _polygonMap = new();
+        private ObjectHandle _highlightedHandle = ObjectHandle.None;
+
+        public event Action<WorldObject?>? ObjectHovered;
+
         public IsometricTransform? IsoTransform { get; private set; }
 
         public GridRenderer(MainWindow window, ChunkInfo chunkInfo)
@@ -28,9 +34,37 @@ namespace NPCChat.Editor.UIClasses
             _chunkInfo = chunkInfo;
         }
 
+        public void HighlightObject(ObjectHandle handle) => HighlightPolygon(handle);
+
+        public void ClearHighlight() => RestorePolygon();
+
+        private void HighlightPolygon(ObjectHandle handle)
+        {
+            RestorePolygon();
+            if (_polygonMap.TryGetValue(handle, out var polygon))
+            {
+                polygon.Stroke = Brushes.White;
+                polygon.StrokeThickness = 2.5;
+                _highlightedHandle = handle;
+            }
+        }
+
+        private void RestorePolygon()
+        {
+            if (_highlightedHandle != ObjectHandle.None && _polygonMap.TryGetValue(_highlightedHandle, out var polygon))
+            {
+                var obj = (WorldObject)polygon.Tag!;
+                polygon.Stroke = Brushes.Black;
+                polygon.StrokeThickness = obj.Category == WorldObjectCategory.Dynamic ? 1.5 : 1.0;
+                _highlightedHandle = ObjectHandle.None;
+            }
+        }
+
         public void RenderWorld(WorldData world)
         {
             var objects = world.EnumerateWorldObjects();
+            _polygonMap.Clear();
+            _highlightedHandle = ObjectHandle.None;
             _mapCanvas.Children.Clear();
 
             const int minCells = 32;
@@ -115,8 +149,12 @@ namespace NPCChat.Editor.UIClasses
                 Fill = GetFillBrush(obj),
                 Stroke = Brushes.Black,
                 StrokeThickness = obj.Category == WorldObjectCategory.Dynamic ? 1.5 : 1.0,
-                ToolTip = $"{obj.Kind}\n{obj.Category}\n{obj.Bounds}\n{obj.Handle}"
+                ToolTip = $"{obj.Kind}\n{obj.Category}\n{obj.Bounds}\n{obj.Handle}",
+                Tag = obj
             };
+            diamond.MouseEnter += (s, e) => { HighlightPolygon(obj.Handle); ObjectHovered?.Invoke(obj); };
+            diamond.MouseLeave += (s, e) => { RestorePolygon(); ObjectHovered?.Invoke(null); };
+            _polygonMap[obj.Handle] = diamond;
             _mapCanvas.Children.Add(diamond);
 
             var center = IsoTransform.GridToScreen(

@@ -5,7 +5,8 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              mc:Ignorable="d"
              d:DesignHeight="80" d:DesignWidth="200">
-    <Border BorderBrush="#334155"
+    <Border x:Name="SummaryBorder"
+            BorderBrush="#334155"
             BorderThickness="1"
             Background="#0F172A"
             CornerRadius="4"

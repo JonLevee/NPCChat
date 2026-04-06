@@ -98,8 +98,16 @@ namespace NPCChat
         {
             _gridRenderer.RenderWorld(_world);
 
+            var objects = _world.EnumerateWorldObjects();
+            var player = objects.FirstOrDefault(o => o.Kind == WorldObjectKind.Player);
+            var npcs = objects
+                .Where(o => o.Kind == WorldObjectKind.Npc)
+                .OrderBy(o => o.Category);
+
             WorldObjectPanel.Children.Clear();
-            foreach (var obj in _world.EnumerateWorldObjects())
+            if (player is not null)
+                WorldObjectPanel.Children.Add(new CharacterSummary(player));
+            foreach (var obj in npcs)
                 WorldObjectPanel.Children.Add(new CharacterSummary(obj));
         }
 

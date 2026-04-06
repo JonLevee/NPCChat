@@ -22,8 +22,10 @@ namespace NPCChat.Editor.UIClasses
 
         private readonly Dictionary<ObjectHandle, Polygon> _polygonMap = new();
         private ObjectHandle _highlightedHandle = ObjectHandle.None;
+        private ObjectHandle _selectedHandle = ObjectHandle.None;
 
         public event Action<WorldObject?>? ObjectHovered;
+        public event Action<WorldObject?>? ObjectSelected;
 
         public IsometricTransform? IsoTransform { get; private set; }
 
@@ -32,31 +34,66 @@ namespace NPCChat.Editor.UIClasses
             _mapCanvas = window.MapCanvas;
             _statusTextBlock = window.StatusTextBlock;
             _chunkInfo = chunkInfo;
+
+            _mapCanvas.MouseLeftButtonUp += (s, e) => ClearSelection();
         }
 
+        // Called from CharacterSummary MouseEnter
         public void HighlightObject(ObjectHandle handle) => HighlightPolygon(handle);
 
-        public void ClearHighlight() => RestorePolygon();
+        // Called from CharacterSummary MouseLeave
+        public void ClearHighlight() => ClearHoverHighlight();
+
+        // Called externally to clear selection (e.g. on world rebuild)
+        public void ClearSelection()
+        {
+            if (_selectedHandle != ObjectHandle.None && _selectedHandle != _highlightedHandle)
+                SetPolygonNormal(_selectedHandle);
+            _selectedHandle = ObjectHandle.None;
+            ObjectSelected?.Invoke(null);
+        }
 
         private void HighlightPolygon(ObjectHandle handle)
         {
-            RestorePolygon();
+            if (_highlightedHandle != ObjectHandle.None && _highlightedHandle != _selectedHandle)
+                SetPolygonNormal(_highlightedHandle);
+
             if (_polygonMap.TryGetValue(handle, out var polygon))
             {
                 polygon.Stroke = Brushes.White;
                 polygon.StrokeThickness = 2.5;
-                _highlightedHandle = handle;
             }
+            _highlightedHandle = handle;
         }
 
-        private void RestorePolygon()
+        private void ClearHoverHighlight()
         {
-            if (_highlightedHandle != ObjectHandle.None && _polygonMap.TryGetValue(_highlightedHandle, out var polygon))
+            if (_highlightedHandle != ObjectHandle.None && _highlightedHandle != _selectedHandle)
+                SetPolygonNormal(_highlightedHandle);
+            _highlightedHandle = ObjectHandle.None;
+        }
+
+        private void ApplySelection(ObjectHandle handle)
+        {
+            if (_selectedHandle != ObjectHandle.None && _selectedHandle != _highlightedHandle)
+                SetPolygonNormal(_selectedHandle);
+
+            if (_polygonMap.TryGetValue(handle, out var polygon))
+            {
+                polygon.Stroke = Brushes.White;
+                polygon.StrokeThickness = 2.5;
+            }
+            _selectedHandle = handle;
+            ObjectSelected?.Invoke((WorldObject)_polygonMap[handle].Tag!);
+        }
+
+        private void SetPolygonNormal(ObjectHandle handle)
+        {
+            if (_polygonMap.TryGetValue(handle, out var polygon))
             {
                 var obj = (WorldObject)polygon.Tag!;
                 polygon.Stroke = Brushes.Black;
                 polygon.StrokeThickness = obj.Category == WorldObjectCategory.Dynamic ? 1.5 : 1.0;
-                _highlightedHandle = ObjectHandle.None;
             }
         }
 
@@ -65,6 +102,7 @@ namespace NPCChat.Editor.UIClasses
             var objects = world.EnumerateWorldObjects();
             _polygonMap.Clear();
             _highlightedHandle = ObjectHandle.None;
+            _selectedHandle = ObjectHandle.None;
             _mapCanvas.Children.Clear();
 
             const int minCells = 32;
@@ -153,7 +191,8 @@ namespace NPCChat.Editor.UIClasses
                 Tag = obj
             };
             diamond.MouseEnter += (s, e) => { HighlightPolygon(obj.Handle); ObjectHovered?.Invoke(obj); };
-            diamond.MouseLeave += (s, e) => { RestorePolygon(); ObjectHovered?.Invoke(null); };
+            diamond.MouseLeave += (s, e) => { ClearHoverHighlight(); ObjectHovered?.Invoke(null); };
+            diamond.MouseLeftButtonUp += (s, e) => { e.Handled = true; ApplySelection(obj.Handle); };
             _polygonMap[obj.Handle] = diamond;
             _mapCanvas.Children.Add(diamond);
 

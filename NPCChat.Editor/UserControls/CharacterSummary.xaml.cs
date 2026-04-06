@@ -20,6 +20,14 @@ namespace NPCChat.Editor.UserControls
             DataContext = worldObject;
         }
 
+        public bool IsSelected { get; private set; }
+
+        public void SetSelected(bool selected)
+        {
+            IsSelected = selected;
+            SummaryBorder.BorderBrush = selected ? HighlightBorder : NormalBorder;
+        }
+
         public void SetHighlighted(bool highlighted)
         {
             SummaryBorder.BorderBrush = highlighted ? HighlightBorder : NormalBorder;

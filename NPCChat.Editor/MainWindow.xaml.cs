@@ -110,7 +110,7 @@ namespace NPCChat
             var objects = _world.EnumerateWorldObjects();
             var player = objects.FirstOrDefault(o => o.Kind == WorldObjectKind.Player);
             var npcs = objects
-                .Where(o => o.Kind == WorldObjectKind.Npc)
+                .Where(o => o.Kind == WorldObjectKind.NPC)
                 .OrderBy(o => o.Category);
 
             _summaryMap.Clear();

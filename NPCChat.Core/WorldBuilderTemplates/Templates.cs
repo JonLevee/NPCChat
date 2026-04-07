@@ -17,10 +17,10 @@ namespace NPCChatLib.WorldBuilderTemplates
     [Transient]
     public partial class Templates(WorldDataBuilder builder) : IDisposable
     {
-        private readonly Size CharacterSize = new Size(2,2);
+        private readonly Size CharacterSize = new Size(2, 2);
 
         public Templates AddPlayer(int x, int y) => Add(WorldObjectCategory.Dynamic, WorldObjectKind.Player, x, y, CharacterSize);
-        public Templates AddNPC(int x, int y) => Add(WorldObjectCategory.Dynamic, WorldObjectKind.Npc, x, y, CharacterSize);
+        public Templates AddNPC(int x, int y) => Add(WorldObjectCategory.Dynamic, WorldObjectKind.NPC, x, y, CharacterSize);
         public Templates AddShop(int x, int y, Size size) => Add(WorldObjectCategory.Static, WorldObjectKind.Building, x, y, size);
 
         public Templates AddSmallTown()

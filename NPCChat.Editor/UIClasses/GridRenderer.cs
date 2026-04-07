@@ -217,7 +217,7 @@ namespace NPCChat.Editor.UIClasses
             {
                 WorldObjectKind.Building => CreateBrush(59, 130, 246),
                 WorldObjectKind.Player   => CreateBrush(34, 197, 94),
-                WorldObjectKind.Npc      => CreateBrush(245, 158, 11),
+                WorldObjectKind.NPC      => CreateBrush(245, 158, 11),
                 WorldObjectKind.Mob      => CreateBrush(239, 68, 68),
                 _                        => CreateBrush(148, 163, 184)
             };
@@ -230,7 +230,7 @@ namespace NPCChat.Editor.UIClasses
             {
                 WorldObjectKind.Building        => "B",
                 WorldObjectKind.Player          => "P",
-                WorldObjectKind.Npc             => "N",
+                WorldObjectKind.NPC             => "N",
                 WorldObjectKind.Mob             => "M",
                 WorldObjectKind.DungeonEntrance => "D",
                 _                               => "?"

@@ -11,7 +11,7 @@ namespace NPCChatLib.WorldClasses
         Obstacle,
         Waypoint,
         Player,
-        Npc,
+        NPC,
         Mob
     }
 }

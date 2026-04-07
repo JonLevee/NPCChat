@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using NPCChatLib.Attributes;
+using NPCChatLib.Extensions;
 
 // TODO: add background thread for non-UI updates
 

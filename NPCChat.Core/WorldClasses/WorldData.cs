@@ -1,9 +1,7 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using NPCChatLib.Attributes;
 using NPCChatLib.Extensions;
-
-// TODO: add background thread for non-UI updates
 
 namespace NPCChatLib.WorldClasses
 {
@@ -11,6 +9,7 @@ namespace NPCChatLib.WorldClasses
     public sealed class WorldData : IDisposable
     {
         private readonly Dictionary<ChunkPosition, ChunkData> _chunks = [];
+        private readonly List<WorldObjectMoveable> _moveableObjects = [];
         private readonly IWorldOptions options;
         private readonly ObjectHandleManager handleManager;
         private Task _simulationProcessingTask = null!;
@@ -26,9 +25,15 @@ namespace NPCChatLib.WorldClasses
 
         public IReadOnlyDictionary<ChunkPosition, ChunkData> Chunks => _chunks;
 
+        /// <summary>
+        /// All moveable objects currently in the world, in insertion order.
+        /// Used by SimulationProcessing to advance movement each tick.
+        /// </summary>
+        public IReadOnlyList<WorldObjectMoveable> MoveableObjects => _moveableObjects;
+
         public void StartSimulationProcessing()
         {
-            if (_simulationProcessingTask != null)
+            if (_simulationProcessingTask == null)
             {
                 _cancellationTokenSource = new CancellationTokenSource();
                 _cancellationToken = _cancellationTokenSource.Token;
@@ -42,7 +47,6 @@ namespace NPCChatLib.WorldClasses
             {
                 _cancellationTokenSource.Cancel();
                 _simulationProcessingTask.Wait();
-                _simulationProcessingTask.Wait();
                 _simulationProcessingTask.Dispose();
                 _cancellationTokenSource.Dispose();
                 _cancellationTokenSource = null!;
@@ -52,7 +56,7 @@ namespace NPCChatLib.WorldClasses
 
         private void SimulationProcessing()
         {
-            throw new NotImplementedException();
+            // Phase 1: will implement movement loop here.
         }
 
         public ObjectHandle AddObject(WorldObject obj)
@@ -68,6 +72,9 @@ namespace NPCChatLib.WorldClasses
             obj.Handle = handle;
             AddObjectToChunks(obj);
 
+            if (obj is WorldObjectMoveable moveable)
+                _moveableObjects.Add(moveable);
+
             return handle;
         }
 
@@ -77,8 +84,10 @@ namespace NPCChatLib.WorldClasses
 
             RemoveObjectFromChunks(obj);
 
-            handleManager.RemoveSlot(handle);
+            if (obj is WorldObjectMoveable moveable)
+                _moveableObjects.Remove(moveable);
 
+            handleManager.RemoveSlot(handle);
         }
 
         public bool TryGetObject(ObjectHandle handle, out WorldObject obj)
@@ -93,8 +102,8 @@ namespace NPCChatLib.WorldClasses
         {
             var obj = GetRequiredObject(handle);
 
-            if (obj.Category == WorldObjectCategory.Static)
-                throw new InvalidOperationException($"Object {handle} is static and cannot be moved with {nameof(MoveDynamicObjectBetweenChunks)}.");
+            if (obj is not WorldObjectMoveable)
+                throw new InvalidOperationException($"Object {handle} is not moveable and cannot be moved with {nameof(MoveDynamicObjectBetweenChunks)}.");
 
             var oldBounds = obj.Bounds;
 
@@ -170,26 +179,18 @@ namespace NPCChatLib.WorldClasses
 
         private void AddObjectToChunks(WorldObject obj)
         {
-            if (obj.Category == WorldObjectCategory.Static)
-            {
-                AddStaticObjectToChunks(obj.Handle, obj.Bounds);
-            }
-            else
-            {
+            if (obj is WorldObjectMoveable)
                 AddDynamicObjectToChunks(obj.Handle, obj.Bounds);
-            }
+            else
+                AddStaticObjectToChunks(obj.Handle, obj.Bounds);
         }
 
         private void RemoveObjectFromChunks(WorldObject obj)
         {
-            if (obj.Category == WorldObjectCategory.Static)
-            {
-                RemoveStaticObjectFromChunks(obj.Handle, obj.Bounds);
-            }
-            else
-            {
+            if (obj is WorldObjectMoveable)
                 RemoveDynamicObjectFromChunks(obj.Handle, obj.Bounds);
-            }
+            else
+                RemoveStaticObjectFromChunks(obj.Handle, obj.Bounds);
         }
 
         private void AddStaticObjectToChunks(ObjectHandle handle, Bounds bounds)
@@ -342,7 +343,6 @@ namespace NPCChatLib.WorldClasses
             {
                 RemoveObject(handle);
             }
-
         }
 
         public IReadOnlyList<WorldObject> EnumerateWorldObjects()

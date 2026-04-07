@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using YamlDotNet.Serialization;
 
-namespace NPCChatLib.YamlImport
+namespace NPCChat.Core.YamlImport
 {
     public class YamlArchetype
     {

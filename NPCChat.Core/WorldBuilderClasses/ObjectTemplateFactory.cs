@@ -1,7 +1,7 @@
 ﻿using System;
-using NPCChatLib.Attributes;
+using NPCChat.Core.Attributes;
 
-namespace NPCChatLib.Builders
+namespace NPCChat.Core.Builders
 {
     public enum TownTemplateName
     {

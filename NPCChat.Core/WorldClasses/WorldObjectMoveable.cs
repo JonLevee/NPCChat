@@ -1,4 +1,4 @@
-namespace NPCChatLib.WorldClasses
+namespace NPCChat.Core.WorldClasses
 {
     /// <summary>
     /// A world object that moves under its own volition: Player, NPC, Mob.

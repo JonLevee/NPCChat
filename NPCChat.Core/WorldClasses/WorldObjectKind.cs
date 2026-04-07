@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace NPCChatLib.WorldClasses
+namespace NPCChat.Core.WorldClasses
 {
 
     public enum WorldObjectKind : UInt16

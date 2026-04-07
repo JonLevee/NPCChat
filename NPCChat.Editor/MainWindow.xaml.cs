@@ -12,10 +12,10 @@ using NPCChat.Editor;
 using NPCChat.Editor.Persistence;
 using NPCChat.Editor.UIClasses;
 using NPCChat.Editor.UserControls;
-using NPCChatLib.Builders;
-using NPCChatLib.Extensions;
-using NPCChatLib.WorldBuilderTemplates;
-using NPCChatLib.WorldClasses;
+using NPCChat.Core.Builders;
+using NPCChat.Core.Extensions;
+using NPCChat.Core.WorldBuilderTemplates;
+using NPCChat.Core.WorldClasses;
 using Point = System.Windows.Point;
 
 namespace NPCChat

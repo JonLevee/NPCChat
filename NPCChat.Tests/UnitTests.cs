@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NPCChatLib.Builders;
-using NPCChatLib.Extensions;
-using NPCChatLib.WorldBuilderTemplates;
-using NPCChatLib.WorldClasses;
+using NPCChat.Core.Builders;
+using NPCChat.Core.Extensions;
+using NPCChat.Core.WorldBuilderTemplates;
+using NPCChat.Core.WorldClasses;
 
 namespace NPCChat.Tests
 {

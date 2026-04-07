@@ -2,7 +2,7 @@
 using System.Drawing;
 using YamlDotNet.Serialization;
 
-namespace NPCChatLib.YamlImport
+namespace NPCChat.Core.YamlImport
 {
     public class YamlBuilding : YamlObjectBase
     {

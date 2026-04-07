@@ -1,10 +1,10 @@
 using System;
 using System.Drawing;
-using NPCChatLib.Attributes;
-using NPCChatLib.Builders;
-using NPCChatLib.WorldClasses;
+using NPCChat.Core.Attributes;
+using NPCChat.Core.Builders;
+using NPCChat.Core.WorldClasses;
 
-namespace NPCChatLib.WorldBuilderTemplates
+namespace NPCChat.Core.WorldBuilderTemplates
 {
     public static class BuildingSize
     {
@@ -21,7 +21,7 @@ namespace NPCChatLib.WorldBuilderTemplates
         private readonly Size CharacterSize = new Size(2, 2);
 
         public Templates AddPlayer(int x, int y) => AddMoveable(WorldObjectKind.Player, x, y, CharacterSize);
-        public Templates AddNPC(int x, int y)    => AddMoveable(WorldObjectKind.NPC,    x, y, CharacterSize);
+        public Templates AddNPC(int x, int y) => AddMoveable(WorldObjectKind.NPC, x, y, CharacterSize);
         public Templates AddShop(int x, int y, Size size) => AddStatic(WorldObjectKind.Building, x, y, size);
 
         public Templates AddSmallTown()

@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using NPCChatLib.Attributes;
-using NPCChatLib.Extensions;
+using NPCChat.Core.Attributes;
+using NPCChat.Core.Extensions;
 
-namespace NPCChatLib.WorldClasses
+namespace NPCChat.Core.WorldClasses
 {
     [Scoped]
     public sealed class WorldData : IDisposable

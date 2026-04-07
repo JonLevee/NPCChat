@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
-using NPCChatLib.Attributes;
-using NPCChatLib.LocalEventArgs;
+using NPCChat.Core.Attributes;
+using NPCChat.Core.LocalEventArgs;
 using YamlDotNet.Serialization;
 
-namespace NPCChatLib.YamlImport
+namespace NPCChat.Core.YamlImport
 {
     [Scoped]
     public class YamlWorld

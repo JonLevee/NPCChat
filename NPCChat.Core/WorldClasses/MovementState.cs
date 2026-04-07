@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace NPCChatLib.WorldClasses
+namespace NPCChat.Core.WorldClasses
 {
     /// <summary>
     /// Mutable movement state for a WorldObjectMoveable.

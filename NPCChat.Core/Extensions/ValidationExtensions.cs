@@ -1,4 +1,4 @@
-﻿namespace NPCChatLib.Extensions
+﻿namespace NPCChat.Core.Extensions
 {
     public static class ValidationExtensions
     {

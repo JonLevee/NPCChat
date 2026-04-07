@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using NPCChatLib.Attributes;
+using NPCChat.Core.Attributes;
 
 namespace NPCChat.Core.SupportClasses
 {

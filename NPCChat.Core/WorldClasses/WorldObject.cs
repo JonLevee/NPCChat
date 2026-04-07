@@ -1,4 +1,4 @@
-namespace NPCChatLib.WorldClasses
+namespace NPCChat.Core.WorldClasses
 {
     public abstract class WorldObject
     {

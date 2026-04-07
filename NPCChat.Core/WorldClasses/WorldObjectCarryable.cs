@@ -1,4 +1,4 @@
-namespace NPCChatLib.WorldClasses
+namespace NPCChat.Core.WorldClasses
 {
     /// <summary>
     /// A world object that can be picked up, owned, bought, and sold.

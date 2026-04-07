@@ -1,8 +1,8 @@
 ﻿using NPCChat.Core.SupportClasses;
 using NPCChat.Core.Validation;
-using NPCChatLib.Attributes;
+using NPCChat.Core.Attributes;
 
-namespace NPCChatLib.WorldClasses
+namespace NPCChat.Core.WorldClasses
 {
     public interface IWorldOptions
     {

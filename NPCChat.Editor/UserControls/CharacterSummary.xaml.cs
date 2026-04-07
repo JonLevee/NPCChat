@@ -1,6 +1,6 @@
 using System.Windows.Controls;
 using System.Windows.Media;
-using NPCChatLib.WorldClasses;
+using NPCChat.Core.WorldClasses;
 using Color = System.Windows.Media.Color;
 using UserControl = System.Windows.Controls.UserControl;
 

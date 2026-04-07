@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NPCChatLib.Attributes;
+using NPCChat.Core.Attributes;
 using System.IO;
 using System.Linq;
 using YamlDotNet.Serialization;

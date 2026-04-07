@@ -4,9 +4,9 @@ using System.Drawing;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using NPCChatLib.Builders;
+using NPCChat.Core.Builders;
 
-namespace NPCChatLib.LocalEventArgs
+namespace NPCChat.Core.LocalEventArgs
 {
     public class ChangeEventArgs<T> : EventArgs
     {

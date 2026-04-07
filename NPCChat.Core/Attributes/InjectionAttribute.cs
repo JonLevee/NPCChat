@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace NPCChatLib.Attributes
+namespace NPCChat.Core.Attributes
 {
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Struct, Inherited = true, AllowMultiple = false)]
     public abstract class InjectionAttribute(ServiceLifetime lifetime, Type serviceType) : Attribute

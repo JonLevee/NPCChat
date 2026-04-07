@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Drawing;
-using NPCChatLib.Attributes;
-using NPCChatLib.Builders;
-using NPCChatLib.WorldClasses;
+using NPCChat.Core.Attributes;
+using NPCChat.Core.Builders;
+using NPCChat.Core.WorldClasses;
 
-namespace NPCChatLib.WorldBuilderTemplates
+namespace NPCChat.Core.WorldBuilderTemplates
 {
     public static class BuildingSize
     {
@@ -17,11 +17,12 @@ namespace NPCChatLib.WorldBuilderTemplates
     [Transient]
     public partial class Templates(WorldDataBuilder builder) : IDisposable
     {
+        private const float DefaultMoveSpeed = 4.0f; // grid units per second
         private readonly Size CharacterSize = new Size(2, 2);
 
-        public Templates AddPlayer(int x, int y) => Add(WorldObjectCategory.Dynamic, WorldObjectKind.Player, x, y, CharacterSize);
-        public Templates AddNPC(int x, int y) => Add(WorldObjectCategory.Dynamic, WorldObjectKind.NPC, x, y, CharacterSize);
-        public Templates AddShop(int x, int y, Size size) => Add(WorldObjectCategory.Static, WorldObjectKind.Building, x, y, size);
+        public Templates AddPlayer(int x, int y) => AddMoveable(WorldObjectKind.Player, x, y, CharacterSize);
+        public Templates AddNPC(int x, int y) => AddMoveable(WorldObjectKind.NPC, x, y, CharacterSize);
+        public Templates AddShop(int x, int y, Size size) => AddStatic(WorldObjectKind.Building, x, y, size);
 
         public Templates AddSmallTown()
         {
@@ -45,12 +46,25 @@ namespace NPCChatLib.WorldBuilderTemplates
             GC.SuppressFinalize(this);
         }
 
-        private Templates Add(WorldObjectCategory category, WorldObjectKind kind, int x, int y, Size size)
+        private Templates AddMoveable(WorldObjectKind kind, int x, int y, Size size)
         {
-            var o = new WorldObject
+            var o = new WorldObjectMoveable
             {
                 Kind = kind,
-                Category = category,
+                Handle = ObjectHandle.None,
+                Bounds = new Bounds(x, y, size),
+                MaxSpeed = DefaultMoveSpeed
+            };
+
+            builder.World.AddObject(o);
+            return this;
+        }
+
+        private Templates AddStatic(WorldObjectKind kind, int x, int y, Size size)
+        {
+            var o = new WorldObjectStatic
+            {
+                Kind = kind,
                 Handle = ObjectHandle.None,
                 Bounds = new Bounds(x, y, size)
             };

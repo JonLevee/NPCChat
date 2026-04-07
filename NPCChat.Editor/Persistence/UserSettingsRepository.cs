@@ -2,7 +2,7 @@
 using System.Reflection;
 using System.Text.Json;
 using System.Windows;
-using NPCChatLib.Attributes;
+using NPCChat.Core.Attributes;
 
 namespace NPCChat.Editor.Persistence;
 

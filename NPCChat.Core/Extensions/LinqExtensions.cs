@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace NPCChatLib.Extensions
+namespace NPCChat.Core.Extensions
 {
     public static class LinqExtensions
     {

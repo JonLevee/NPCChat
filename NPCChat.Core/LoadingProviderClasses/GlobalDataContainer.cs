@@ -1,8 +1,8 @@
-﻿using NPCChatLib.Attributes;
+﻿using NPCChat.Core.Attributes;
 using System;
 using System.Collections.Generic;
 
-namespace NPCChatLib.LoadingProviderClasses
+namespace NPCChat.Core.LoadingProviderClasses
 {
     [Singleton]
     public class GlobalDataContainer

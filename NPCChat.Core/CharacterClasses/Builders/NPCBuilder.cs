@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using NPCChatLib.YamlImport;
+using NPCChat.Core.YamlImport;
 
-namespace NPCChatLib.CharacterClasses.Builders
+namespace NPCChat.Core.CharacterClasses.Builders
 {
     public class NPCBuilder
     {

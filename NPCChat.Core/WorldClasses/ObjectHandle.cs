@@ -1,7 +1,7 @@
 ﻿using System;
 
 
-namespace NPCChatLib.WorldClasses
+namespace NPCChat.Core.WorldClasses
 {
 
     /// <summary>

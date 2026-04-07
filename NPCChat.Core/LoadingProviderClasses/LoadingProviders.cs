@@ -1,10 +1,10 @@
 ﻿using System.Runtime.CompilerServices;
-using NPCChatLib.Attributes;
-using NPCChatLib.Extensions;
+using NPCChat.Core.Attributes;
+using NPCChat.Core.Extensions;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace NPCChatLib.LoadingProviderClasses
+namespace NPCChat.Core.LoadingProviderClasses
 {
     public interface ILoadingProvider
     {

@@ -4,7 +4,7 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Text;
-using NPCChatLib.Extensions;
+using NPCChat.Core.Extensions;
 
 namespace NPCChat.Core.Validation
 {

@@ -3,8 +3,8 @@ using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
-using NPCChatLib.Attributes;
-using NPCChatLib.Extensions;
+using NPCChat.Core.Attributes;
+using NPCChat.Core.Extensions;
 using NPChat.CharacterClasses;
 
 // To learn more about WinUI, the WinUI project structure,
@@ -16,10 +16,10 @@ namespace NPCChat.Core
     {
         public static void Configure(IServiceCollection services)
         {
-            new[] 
-            { 
-                Assembly.GetCallingAssembly(), 
-                Assembly.GetExecutingAssembly() 
+            new[]
+            {
+                Assembly.GetCallingAssembly(),
+                Assembly.GetExecutingAssembly()
             }.SelectMany(a => a.GetTypes())
                 .Where(t => t.GetCustomAttribute<InjectionAttribute>() != null)
                 .ForEach(t =>

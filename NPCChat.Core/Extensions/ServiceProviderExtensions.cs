@@ -2,7 +2,7 @@
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 
-namespace NPCChatLib.Extensions
+namespace NPCChat.Core.Extensions
 {
     public static class ServiceProviderExtensions
     {

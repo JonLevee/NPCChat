@@ -1,7 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 using NPCChat.Core;
-using NPCChatLib.Extensions;
-using NPCChatLib.LoadingProviderClasses;
+using NPCChat.Core.Extensions;
+using NPCChat.Core.LoadingProviderClasses;
 
 namespace NPCChat.Tests
 {

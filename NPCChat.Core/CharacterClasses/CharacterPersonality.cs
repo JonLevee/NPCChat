@@ -1,4 +1,4 @@
-﻿using NPCChatLib.Attributes;
+﻿using NPCChat.Core.Attributes;
 using YamlDotNet.Serialization;
 
 namespace NPChat.CharacterClasses

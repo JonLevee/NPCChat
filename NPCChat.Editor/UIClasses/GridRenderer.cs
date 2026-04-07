@@ -5,7 +5,7 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using NPCChat.Core.SupportClasses;
-using NPCChatLib.WorldClasses;
+using NPCChat.Core.WorldClasses;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
@@ -93,7 +93,7 @@ namespace NPCChat.Editor.UIClasses
             {
                 var obj = (WorldObject)polygon.Tag!;
                 polygon.Stroke = Brushes.Black;
-                polygon.StrokeThickness = obj.Category == WorldObjectCategory.Dynamic ? 1.5 : 1.0;
+                polygon.StrokeThickness = obj is WorldObjectMoveable ? 1.5 : 1.0;
             }
         }
 
@@ -126,15 +126,15 @@ namespace NPCChat.Editor.UIClasses
 
             var sorted = objects
                 .OrderBy(o => o.Bounds.Right + o.Bounds.Bottom)
-                .ThenBy(o => o.Category == WorldObjectCategory.Dynamic ? 1 : 0);
+                .ThenBy(o => o is WorldObjectMoveable ? 1 : 0);
 
             foreach (var obj in sorted)
                 DrawObject(obj);
 
             _statusTextBlock.Text =
                 $"Objects: {objects.Count}" +
-                $"   |   Static: {objects.Count(x => x.Category == WorldObjectCategory.Static)}" +
-                $"   |   Dynamic: {objects.Count(x => x.Category == WorldObjectCategory.Dynamic)}" +
+                $"   |   Static: {objects.Count(x => x is WorldObjectStatic)}" +
+                $"   |   Moveable: {objects.Count(x => x is WorldObjectMoveable)}" +
                 $"   |   Chunks: {world.Chunks.Count}" +
                 $"   |   ChunkSize: {_chunkInfo.ChunkSize}";
         }
@@ -186,7 +186,7 @@ namespace NPCChat.Editor.UIClasses
                 Points = new PointCollection { top, right, bottom, left },
                 Fill = GetFillBrush(obj),
                 Stroke = Brushes.Black,
-                StrokeThickness = obj.Category == WorldObjectCategory.Dynamic ? 1.5 : 1.0,
+                StrokeThickness = obj is WorldObjectMoveable ? 1.5 : 1.0,
                 ToolTip = $"{obj.Kind}\n{obj.Category}\n{obj.Bounds}\n{obj.Handle}",
                 Tag = obj
             };
@@ -217,7 +217,7 @@ namespace NPCChat.Editor.UIClasses
             {
                 WorldObjectKind.Building => CreateBrush(59, 130, 246),
                 WorldObjectKind.Player   => CreateBrush(34, 197, 94),
-                WorldObjectKind.Npc      => CreateBrush(245, 158, 11),
+                WorldObjectKind.NPC      => CreateBrush(245, 158, 11),
                 WorldObjectKind.Mob      => CreateBrush(239, 68, 68),
                 _                        => CreateBrush(148, 163, 184)
             };
@@ -230,7 +230,7 @@ namespace NPCChat.Editor.UIClasses
             {
                 WorldObjectKind.Building        => "B",
                 WorldObjectKind.Player          => "P",
-                WorldObjectKind.Npc             => "N",
+                WorldObjectKind.NPC             => "N",
                 WorldObjectKind.Mob             => "M",
                 WorldObjectKind.DungeonEntrance => "D",
                 _                               => "?"

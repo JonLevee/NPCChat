@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace NPCChatLib.Exceptions
+namespace NPCChat.Core.Exceptions
 {
     public class WorldGenerationException : Exception
     {

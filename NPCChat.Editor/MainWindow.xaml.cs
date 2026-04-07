@@ -12,10 +12,10 @@ using NPCChat.Editor;
 using NPCChat.Editor.Persistence;
 using NPCChat.Editor.UIClasses;
 using NPCChat.Editor.UserControls;
-using NPCChatLib.Builders;
-using NPCChatLib.Extensions;
-using NPCChatLib.WorldBuilderTemplates;
-using NPCChatLib.WorldClasses;
+using NPCChat.Core.Builders;
+using NPCChat.Core.Extensions;
+using NPCChat.Core.WorldBuilderTemplates;
+using NPCChat.Core.WorldClasses;
 using Point = System.Windows.Point;
 
 namespace NPCChat
@@ -110,7 +110,7 @@ namespace NPCChat
             var objects = _world.EnumerateWorldObjects();
             var player = objects.FirstOrDefault(o => o.Kind == WorldObjectKind.Player);
             var npcs = objects
-                .Where(o => o.Kind == WorldObjectKind.Npc)
+                .Where(o => o.Kind == WorldObjectKind.NPC)
                 .OrderBy(o => o.Category);
 
             _summaryMap.Clear();

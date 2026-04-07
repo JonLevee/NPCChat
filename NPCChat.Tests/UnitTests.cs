@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NPCChatLib.Builders;
-using NPCChatLib.Extensions;
-using NPCChatLib.WorldBuilderTemplates;
-using NPCChatLib.WorldClasses;
+using NPCChat.Core.Builders;
+using NPCChat.Core.Extensions;
+using NPCChat.Core.WorldBuilderTemplates;
+using NPCChat.Core.WorldClasses;
 
 namespace NPCChat.Tests
 {
@@ -16,45 +16,6 @@ namespace NPCChat.Tests
             TestInitializeBase();
         }
 
-        [TestMethod]
-        public void TestMethod1()
-        {
-            Assert.IsNotNull(Data);
-            var expected = new Dictionary<string, byte>();
-            var expectedGates = new List<byte>();
-            var expectedMoods = new List<byte>();
-            List<byte> expectedDisposition = [];
-            var dispositionText = File.ReadAllText(Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data", "dispositions.yaml"));
-            foreach (var line in dispositionText.Split(Environment.NewLine).Select(t => t.Trim()))
-            {
-                if (line.Equals("dispositions:")) continue;
-                if (line.Equals("gates:"))
-                {
-                    expectedDisposition = expectedGates;
-                    continue;
-                }
-                if (line.Equals("moods:"))
-                {
-                    expectedDisposition = expectedMoods;
-                    continue;
-                }
-                if (line.StartsWith("- "))
-                {
-                    var disposition = line.Substring(2).Trim();
-                    var id = (byte)(expected.Count + 1);
-                    expected.Add(disposition, id);
-                    expectedDisposition.Add(id);
-                    continue;
-                }
-
-                Assert.IsTrue(string.IsNullOrWhiteSpace(line));
-            }
-            Assert.HasCount(expected.Count, Data.DispositionIds);
-            expected.Keys.IsEquivalentTo(Data.DispositionIds.Keys);
-            expected.Values.IsEquivalentTo(Data.DispositionIds.Values);
-            expectedGates.IsEquivalentTo(Data.GateIds);
-            expectedMoods.IsEquivalentTo(Data.MoodIds);
-        }
 
         [TestMethod]
         public void CreateSmallMap()

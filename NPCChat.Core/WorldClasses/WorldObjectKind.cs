@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace NPCChatLib.WorldClasses
+namespace NPCChat.Core.WorldClasses
 {
 
     public enum WorldObjectKind : UInt16
@@ -11,7 +11,7 @@ namespace NPCChatLib.WorldClasses
         Obstacle,
         Waypoint,
         Player,
-        Npc,
+        NPC,
         Mob
     }
 }

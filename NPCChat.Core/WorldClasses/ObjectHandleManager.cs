@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using NPCChatLib.Attributes;
+using NPCChat.Core.Attributes;
 
 
-namespace NPCChatLib.WorldClasses
+namespace NPCChat.Core.WorldClasses
 {
     public interface IObjectHandleManager
     {

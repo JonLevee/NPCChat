@@ -1,10 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Drawing;
+using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using NPCChat.Core.Attributes;
 using NPCChat.Core.Exceptions;
 using NPCChat.Core.Extensions;
+using NPCChat.Core.PathfindingClasses;
 
 namespace NPCChat.Core.WorldClasses
 {
@@ -13,6 +16,7 @@ namespace NPCChat.Core.WorldClasses
     {
         private readonly Dictionary<ChunkPosition, ChunkData> _chunks = [];
         private readonly List<WorldObjectMoveable> _moveableObjects = [];
+        private readonly Queue<MoveCommand> _pendingPathCommands = new();
         private readonly IWorldOptions _options;
         private readonly ObjectHandleManager _handleManager;
 
@@ -39,7 +43,6 @@ namespace NPCChat.Core.WorldClasses
         {
             _options = options;
             _handleManager = handleManager;
-            StartSimulationProcessing();
         }
 
         /// <summary>Current number of occupied spatial chunks.</summary>
@@ -93,8 +96,17 @@ namespace NPCChat.Core.WorldClasses
                             $"Move command queue exceeded threshold of {_options.MoveCommandQueueThreshold}. " +
                             $"Current count: {_moveCommands.Reader.Count}");
 
-                    // Drain commands — Phase 2 will path and store them; discard for now.
-                    while (_moveCommands.Reader.TryRead(out _)) { }
+                    // Drain channel into pending queue.
+                    while (_moveCommands.Reader.TryRead(out var cmd))
+                        _pendingPathCommands.Enqueue(cmd);
+
+                    // Process up to PathBudgetPerTick commands this tick.
+                    int budget = _options.PathBudgetPerTick;
+                    while (budget > 0 && _pendingPathCommands.Count > 0)
+                    {
+                        ProcessMoveCommand(_pendingPathCommands.Dequeue());
+                        budget--;
+                    }
 
                     await Task.Delay(_options.SimTickMs, ct);
                 }
@@ -107,6 +119,84 @@ namespace NPCChat.Core.WorldClasses
             {
                 SimulationFault = ex;
             }
+        }
+
+        private void ProcessMoveCommand(MoveCommand cmd)
+        {
+            WorldObjectMoveable mover;
+            Bounds moverBounds;
+
+            _worldLock.EnterReadLock();
+            try
+            {
+                if (!TryGetObject(cmd.Mover, out var obj) || obj is not WorldObjectMoveable m)
+                    return;
+                mover = m;
+                moverBounds = mover.Bounds;
+            }
+            finally
+            {
+                _worldLock.ExitReadLock();
+            }
+
+            // Center the mover over the clicked tile.
+            var targetTopLeft = new Point(
+                cmd.Target.X - moverBounds.Width / 2,
+                cmd.Target.Y - moverBounds.Height / 2);
+            var sourceTopLeft = new Point(moverBounds.Left, moverBounds.Top);
+
+            if (sourceTopLeft == targetTopLeft)
+            {
+                mover.Movement.ClearMovement();
+                return;
+            }
+
+            var grid = CreatePathGrid(cmd.Mover, moverBounds);
+            var path = AStarPathfinder.FindPath(grid, sourceTopLeft, targetTopLeft, _options.MaxPathIterations);
+
+            if (path is null || path.Count == 0)
+            {
+                mover.Movement.ClearMovement();
+                return;
+            }
+
+            mover.Movement.ClearMovement();
+            mover.Movement.FinalTarget = targetTopLeft;
+            foreach (var step in path)
+                mover.Movement.Path.Enqueue(step);
+        }
+
+        public PathGrid CreatePathGrid(ObjectHandle moverHandle, Bounds moverBounds)
+        {
+            var obstacles = new List<Bounds>();
+
+            _worldLock.EnterReadLock();
+            try
+            {
+                var seen = new HashSet<ObjectHandle>();
+
+                foreach (var chunk in _chunks.Values)
+                {
+                    foreach (var info in chunk.StaticInfos)
+                    {
+                        if (seen.Add(info.Handle))
+                            obstacles.Add(info.Bounds);
+                    }
+
+                    foreach (var info in chunk.DynamicInfos)
+                    {
+                        if (info.Handle == moverHandle) continue;
+                        if (seen.Add(info.Handle) && TryGetObject(info.Handle, out var obj) && obj is not null)
+                            obstacles.Add(obj.Bounds);
+                    }
+                }
+            }
+            finally
+            {
+                _worldLock.ExitReadLock();
+            }
+
+            return new PathGrid(obstacles, moverBounds.Width, moverBounds.Height);
         }
 
         // ── Command queue ───────────────────────────────────────────────────

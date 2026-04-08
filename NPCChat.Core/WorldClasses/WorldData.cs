@@ -19,6 +19,7 @@ namespace NPCChat.Core.WorldClasses
         private readonly Queue<MoveCommand> _pendingPathCommands = new();
         private readonly IWorldOptions _options;
         private readonly ObjectHandleManager _handleManager;
+        private readonly AStarPathfinder _pathfinder;
 
         // Threading
         private readonly ReaderWriterLockSlim _worldLock = new(LockRecursionPolicy.NoRecursion);
@@ -39,10 +40,11 @@ namespace NPCChat.Core.WorldClasses
         /// </summary>
         public Exception SimulationFault { get; private set; }
 
-        public WorldData(IWorldOptions options, ObjectHandleManager handleManager)
+        public WorldData(IWorldOptions options, ObjectHandleManager handleManager, AStarPathfinder pathfinder)
         {
             _options = options;
             _handleManager = handleManager;
+            _pathfinder = pathfinder;
         }
 
         /// <summary>Current number of occupied spatial chunks.</summary>
@@ -108,6 +110,8 @@ namespace NPCChat.Core.WorldClasses
                         budget--;
                     }
 
+                    AdvanceMoveables();
+
                     await Task.Delay(_options.SimTickMs, ct);
                 }
             }
@@ -152,7 +156,7 @@ namespace NPCChat.Core.WorldClasses
             }
 
             var grid = CreatePathGrid(cmd.Mover, moverBounds);
-            var path = AStarPathfinder.FindPath(grid, sourceTopLeft, targetTopLeft, _options.MaxPathIterations);
+            var path = _pathfinder.FindPath(grid, sourceTopLeft, targetTopLeft, _options.MaxPathIterations);
 
             if (path is null || path.Count == 0)
             {
@@ -197,6 +201,100 @@ namespace NPCChat.Core.WorldClasses
             }
 
             return new PathGrid(obstacles, moverBounds.Width, moverBounds.Height);
+        }
+
+        private void AdvanceMoveables()
+        {
+            // Snapshot the list under read lock to avoid races with AddObject/RemoveObject.
+            WorldObjectMoveable[] snapshot;
+            _worldLock.EnterReadLock();
+            try { snapshot = _moveableObjects.ToArray(); }
+            finally { _worldLock.ExitReadLock(); }
+
+            float tickSeconds = _options.SimTickMs / 1000f;
+
+            foreach (var mover in snapshot)
+            {
+                if (!mover.Movement.IsMoving) continue;
+
+                // Accumulate fractional progress based on MaxSpeed (grid units/sec).
+                mover.Movement.StepAccumulator += mover.MaxSpeed * tickSeconds;
+                if (mover.Movement.StepAccumulator < 1f) continue;
+                mover.Movement.StepAccumulator -= 1f;
+
+                var nextStep = mover.Movement.Path.Peek();
+                var currentBounds = mover.Bounds;
+                var newBounds = new Bounds(
+                    nextStep.X, nextStep.Y,
+                    nextStep.X + currentBounds.Width,
+                    nextStep.Y + currentBounds.Height);
+
+                _worldLock.EnterWriteLock();
+                try
+                {
+                    // Verify the mover hasn't been removed since the snapshot.
+                    if (!TryGetObject(mover.Handle, out _))
+                    {
+                        mover.Movement.ClearMovement();
+                        continue;
+                    }
+
+                    // Verify the next step is still unobstructed.
+                    EnsureNoIntersection(newBounds, mover.Handle);
+
+                    RemoveDynamicObjectFromChunks(mover.Handle, currentBounds);
+                    mover.Bounds = newBounds;
+                    AddDynamicObjectToChunks(mover.Handle, newBounds);
+
+                    mover.Movement.Path.Dequeue();
+                    mover.Movement.Facing = Direction8Extensions.FromDelta(
+                        nextStep.X - currentBounds.Left,
+                        nextStep.Y - currentBounds.Top);
+                }
+                catch (InvalidOperationException)
+                {
+                    // Step is newly blocked — abandon the current path.
+                    mover.Movement.ClearMovement();
+                }
+                finally
+                {
+                    _worldLock.ExitWriteLock();
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns a snapshot of all moveable objects' current positions.
+        /// Safe to call from the UI thread.
+        /// </summary>
+        public (ObjectHandle Handle, Bounds Bounds)[] SnapshotMoveablePositions()
+        {
+            _worldLock.EnterReadLock();
+            try
+            {
+                var result = new (ObjectHandle, Bounds)[_moveableObjects.Count];
+                for (int i = 0; i < _moveableObjects.Count; i++)
+                    result[i] = (_moveableObjects[i].Handle, _moveableObjects[i].Bounds);
+                return result;
+            }
+            finally { _worldLock.ExitReadLock(); }
+        }
+
+        /// <summary>
+        /// Returns a snapshot of the remaining path steps for the given moveable.
+        /// Returns an empty array if the handle is unknown or not moving.
+        /// Safe to call from the UI thread.
+        /// </summary>
+        public Point[] SnapshotPath(ObjectHandle handle)
+        {
+            _worldLock.EnterReadLock();
+            try
+            {
+                if (!TryGetObject(handle, out var obj) || obj is not WorldObjectMoveable m)
+                    return [];
+                return m.Movement.Path.ToArray();
+            }
+            finally { _worldLock.ExitReadLock(); }
         }
 
         // ── Command queue ───────────────────────────────────────────────────

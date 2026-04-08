@@ -135,7 +135,7 @@ namespace NPCChat.Editor.UIClasses
                 $"Objects: {objects.Count}" +
                 $"   |   Static: {objects.Count(x => x is WorldObjectStatic)}" +
                 $"   |   Moveable: {objects.Count(x => x is WorldObjectMoveable)}" +
-                $"   |   Chunks: {world.Chunks.Count}" +
+                $"   |   Chunks: {world.ChunkCount}" +
                 $"   |   ChunkSize: {_chunkInfo.ChunkSize}";
         }
 

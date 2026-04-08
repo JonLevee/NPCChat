@@ -19,6 +19,7 @@ namespace NPCChat.Core.WorldClasses
         private readonly Queue<MoveCommand> _pendingPathCommands = new();
         private readonly IWorldOptions _options;
         private readonly ObjectHandleManager _handleManager;
+        private readonly AStarPathfinder _pathfinder;
 
         // Threading
         private readonly ReaderWriterLockSlim _worldLock = new(LockRecursionPolicy.NoRecursion);
@@ -39,10 +40,11 @@ namespace NPCChat.Core.WorldClasses
         /// </summary>
         public Exception SimulationFault { get; private set; }
 
-        public WorldData(IWorldOptions options, ObjectHandleManager handleManager)
+        public WorldData(IWorldOptions options, ObjectHandleManager handleManager, AStarPathfinder pathfinder)
         {
             _options = options;
             _handleManager = handleManager;
+            _pathfinder = pathfinder;
         }
 
         /// <summary>Current number of occupied spatial chunks.</summary>
@@ -152,7 +154,7 @@ namespace NPCChat.Core.WorldClasses
             }
 
             var grid = CreatePathGrid(cmd.Mover, moverBounds);
-            var path = AStarPathfinder.FindPath(grid, sourceTopLeft, targetTopLeft, _options.MaxPathIterations);
+            var path = _pathfinder.FindPath(grid, sourceTopLeft, targetTopLeft, _options.MaxPathIterations);
 
             if (path is null || path.Count == 0)
             {

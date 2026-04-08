@@ -8,6 +8,8 @@ namespace NPCChat.Tests
     [TestClass]
     public class AStarPathfinderTests
     {
+        private readonly AStarPathfinder _pathfinder = new();
+
         // Helper: build a PathGrid from a set of blocked rectangles.
         // Mover is 1x1 for simplicity unless specified.
         private static PathGrid BuildGrid(IEnumerable<Bounds> obstacles, int moverW = 1, int moverH = 1)
@@ -21,7 +23,7 @@ namespace NPCChat.Tests
         public void FindPath_SameSourceAndTarget_ReturnsEmptyList()
         {
             var grid = BuildGrid([]);
-            var result = AStarPathfinder.FindPath(grid, new Point(5, 5), new Point(5, 5), 10000);
+            var result = _pathfinder.FindPath(grid, new Point(5, 5), new Point(5, 5), 10000);
             Assert.IsNotNull(result);
             Assert.IsEmpty(result);
         }
@@ -32,7 +34,7 @@ namespace NPCChat.Tests
         public void FindPath_OpenMap_StraightHorizontalPath()
         {
             var grid = BuildGrid([]);
-            var result = AStarPathfinder.FindPath(grid, new Point(0, 0), new Point(5, 0), 10000);
+            var result = _pathfinder.FindPath(grid, new Point(0, 0), new Point(5, 0), 10000);
             Assert.IsNotNull(result);
             Assert.IsNotEmpty(result);
             // Path must begin adjacent to source and end at target.
@@ -43,7 +45,7 @@ namespace NPCChat.Tests
         public void FindPath_OpenMap_StraightVerticalPath()
         {
             var grid = BuildGrid([]);
-            var result = AStarPathfinder.FindPath(grid, new Point(0, 0), new Point(0, 4), 10000);
+            var result = _pathfinder.FindPath(grid, new Point(0, 0), new Point(0, 4), 10000);
             Assert.IsNotNull(result);
             Assert.AreEqual(new Point(0, 4), result[result.Count - 1]);
         }
@@ -54,7 +56,7 @@ namespace NPCChat.Tests
         public void FindPath_OpenMap_DiagonalPath_UsesFewerStepsThanCardinal()
         {
             var grid = BuildGrid([]);
-            var result = AStarPathfinder.FindPath(grid, new Point(0, 0), new Point(3, 3), 10000);
+            var result = _pathfinder.FindPath(grid, new Point(0, 0), new Point(3, 3), 10000);
             Assert.IsNotNull(result);
             // Diagonal should reach (3,3) in exactly 3 steps (pure diagonal).
             Assert.HasCount(3, result);
@@ -69,7 +71,7 @@ namespace NPCChat.Tests
             // Vertical wall at x=2 from y=0 to y=4 (5 tiles tall, 1 wide).
             var wall = new Bounds(2, 0, 3, 5);
             var grid = BuildGrid([wall]);
-            var result = AStarPathfinder.FindPath(grid, new Point(0, 2), new Point(4, 2), 10000);
+            var result = _pathfinder.FindPath(grid, new Point(0, 2), new Point(4, 2), 10000);
             Assert.IsNotNull(result, "Path should exist going around the wall.");
             Assert.AreEqual(new Point(4, 2), result[result.Count - 1]);
             // No step should land inside the wall.
@@ -85,7 +87,7 @@ namespace NPCChat.Tests
         {
             var block = new Bounds(5, 5, 6, 6);
             var grid = BuildGrid([block]);
-            var result = AStarPathfinder.FindPath(grid, new Point(0, 0), new Point(5, 5), 10000);
+            var result = _pathfinder.FindPath(grid, new Point(0, 0), new Point(5, 5), 10000);
             Assert.IsNull(result, "Should return null when target tile is blocked.");
         }
 
@@ -103,7 +105,7 @@ namespace NPCChat.Tests
                 new Bounds(4, 2, 5, 5), // right
             };
             var grid = BuildGrid(obstacles);
-            var result = AStarPathfinder.FindPath(grid, new Point(0, 0), new Point(3, 3), 10000);
+            var result = _pathfinder.FindPath(grid, new Point(0, 0), new Point(3, 3), 10000);
             Assert.IsNull(result, "Should return null when target is completely enclosed.");
         }
 
@@ -114,7 +116,7 @@ namespace NPCChat.Tests
         {
             // Long open path but very small iteration budget.
             var grid = BuildGrid([]);
-            var result = AStarPathfinder.FindPath(grid, new Point(0, 0), new Point(100, 100), maxIterations: 1);
+            var result = _pathfinder.FindPath(grid, new Point(0, 0), new Point(100, 100), maxIterations: 1);
             Assert.IsNull(result, "Should return null when iteration budget is exhausted.");
         }
 
@@ -126,7 +128,7 @@ namespace NPCChat.Tests
             var grid = BuildGrid([]);
             var source = new Point(0, 0);
             var target = new Point(6, 4);
-            var result = AStarPathfinder.FindPath(grid, source, target, 10000);
+            var result = _pathfinder.FindPath(grid, source, target, 10000);
             Assert.IsNotNull(result);
 
             var prev = source;

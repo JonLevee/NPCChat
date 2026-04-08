@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Drawing;
+using NPCChat.Core.Attributes;
 
 namespace NPCChat.Core.PathfindingClasses
 {
@@ -8,7 +9,8 @@ namespace NPCChat.Core.PathfindingClasses
     /// A* pathfinder for 8-directional grid movement.
     /// Uses an octile distance heuristic and strict diagonal corner-cutting prevention.
     /// </summary>
-    public static class AStarPathfinder
+    [Singleton]
+    public class AStarPathfinder
     {
         private static readonly float Sqrt2 = (float)Math.Sqrt(2.0);
 
@@ -35,7 +37,7 @@ namespace NPCChat.Core.PathfindingClasses
         /// null if no path exists or <paramref name="maxIterations"/> is exceeded.
         /// Returns an empty list if source == target.
         /// </returns>
-        public static List<Point> FindPath(PathGrid grid, Point source, Point target, int maxIterations)
+        public List<Point> FindPath(PathGrid grid, Point source, Point target, int maxIterations)
         {
             if (source == target)
                 return [];

@@ -90,6 +90,17 @@ namespace NPCChat
             // Surface any simulation fault on the UI thread so it is not silently swallowed.
             if (_world?.SimulationFault is { } fault)
                 throw new AggregateException("Simulation loop faulted.", fault);
+
+            if (_world is not null)
+            {
+                _gridRenderer.UpdateMoveablePositions(_world.SnapshotMoveablePositions());
+
+                var selected = _gridRenderer.SelectedHandle;
+                if (selected != ObjectHandle.None)
+                    _gridRenderer.DrawPathPreview(_world.SnapshotPath(selected));
+                else
+                    _gridRenderer.ClearPathPreview();
+            }
         }
 
         private void ClearWorld()
@@ -207,6 +218,21 @@ namespace NPCChat
         {
             lastMousePosition = e.GetPosition(this.MapCanvas);
             UpdateTitle();
+        }
+
+        private void MapCanvas_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (_world is null || _gridRenderer.IsoTransform is null) return;
+
+            var selected = _gridRenderer.SelectedHandle;
+            if (selected == ObjectHandle.None) return;
+            if (!_world.TryGetObject(selected, out var obj) || obj is not WorldObjectMoveable) return;
+
+            var screenPos = e.GetPosition(MapCanvas);
+            var (gx, gy) = _gridRenderer.IsoTransform.ScreenToGrid(screenPos);
+            _world.EnqueueMoveCommand(new MoveCommand(selected, new System.Drawing.Point(gx, gy)));
+
+            e.Handled = true;
         }
 
         private string GridCoordLabel(Point screenPoint)

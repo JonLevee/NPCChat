@@ -27,12 +27,19 @@ namespace NPCChat.Core.WorldClasses
         /// </summary>
         public Direction8 Facing { get; set; } = Direction8.S;
 
+        /// <summary>
+        /// Accumulated fractional steps. Incremented each tick by MaxSpeed * tickSeconds.
+        /// When it reaches 1.0 the mover advances one tile and this is decremented by 1.
+        /// </summary>
+        public float StepAccumulator { get; set; } = 0f;
+
         public bool IsMoving => Path.Count > 0;
 
         public void ClearMovement()
         {
             Path.Clear();
             FinalTarget = null;
+            StepAccumulator = 0f;
         }
     }
 }

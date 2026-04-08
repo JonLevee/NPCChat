@@ -86,6 +86,10 @@ namespace NPCChat
                 StartStopButton_Click(this, new RoutedEventArgs());
                 BuildDemoTownButton_Click(this, new RoutedEventArgs());
             }
+
+            // Surface any simulation fault on the UI thread so it is not silently swallowed.
+            if (_world?.SimulationFault is { } fault)
+                throw new AggregateException("Simulation loop faulted.", fault);
         }
 
         private void ClearWorld()

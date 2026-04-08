@@ -24,6 +24,12 @@ namespace NPCChat.Core.WorldClasses
         int PathBudgetPerTick { get; }
 
         /// <summary>
+        /// Maximum number of nodes A* will explore before giving up and returning null.
+        /// Prevents unbounded search on large open maps. Default: 50,000.
+        /// </summary>
+        int MaxPathIterations { get; }
+
+        /// <summary>
         /// When true, the Editor draws a preview of the path that would be taken
         /// to the cursor position while a moveable object is selected.
         /// Has no effect in Unity builds (debug aid only).
@@ -38,6 +44,7 @@ namespace NPCChat.Core.WorldClasses
         public int SimTickMs { get; set; } = 50;
         public int MoveCommandQueueThreshold { get; set; } = 500;
         public int PathBudgetPerTick { get; set; } = 20;
+        public int MaxPathIterations { get; set; } = 50_000;
         public bool ShowPathPreview { get; set; } = false;
 
         public WorldOptions(ChunkInfo chunkInfo)

@@ -104,6 +104,7 @@ namespace NPCChat
             serviceScope = App.Services.CreateScope();
             _worldBuilder = serviceScope.ServiceProvider.GetRequiredService<WorldDataBuilder>();
             _world = serviceScope.ServiceProvider.GetRequiredService<WorldData>();
+            _world.StartSimulationProcessing();
             RefreshWorld();
         }
 

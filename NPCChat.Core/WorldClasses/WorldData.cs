@@ -19,12 +19,12 @@ namespace NPCChat.Core.WorldClasses
         // Threading
         private readonly ReaderWriterLockSlim _worldLock = new(LockRecursionPolicy.NoRecursion);
         private readonly Channel<MoveCommand> _moveCommands =
-            Channel.CreateUnbounded<MoveCommand>(new UnboundedChannelOptions
-            {
-                SingleReader = true,
-                SingleWriter = false
-            });
-
+              Channel.CreateBounded<MoveCommand>(new BoundedChannelOptions(int.MaxValue)
+              {
+                  FullMode = BoundedChannelFullMode.DropOldest,
+                  SingleReader = true,
+                  SingleWriter = false
+              });
         private Task _simulationProcessingTask = null!;
         private CancellationTokenSource _cancellationTokenSource = null!;
 
@@ -410,9 +410,9 @@ namespace NPCChat.Core.WorldClasses
 
         private IEnumerable<ChunkPosition> EnumerateTouchedChunks(Bounds bounds)
         {
-            int minChunkX = FloorDiv(bounds.Left,       _options.ChunkInfo.ChunkSize);
-            int maxChunkX = FloorDiv(bounds.Right - 1,  _options.ChunkInfo.ChunkSize);
-            int minChunkY = FloorDiv(bounds.Top,        _options.ChunkInfo.ChunkSize);
+            int minChunkX = FloorDiv(bounds.Left, _options.ChunkInfo.ChunkSize);
+            int maxChunkX = FloorDiv(bounds.Right - 1, _options.ChunkInfo.ChunkSize);
+            int minChunkY = FloorDiv(bounds.Top, _options.ChunkInfo.ChunkSize);
             int maxChunkY = FloorDiv(bounds.Bottom - 1, _options.ChunkInfo.ChunkSize);
 
             for (int y = minChunkY; y <= maxChunkY; y++)

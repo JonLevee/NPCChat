@@ -31,7 +31,7 @@ namespace NPCChat.Core.LoadingProviderClasses
         private readonly IServiceProvider services;
         private readonly IDeserializer deserializer;
         private readonly ISerializer serializer;
-        private GlobalDataContainer globalDataContainer;
+        private StaticData staticData;
         private string[] persistanceLocations = [
             @"C:\Users\jonle\My Drive\Games\YamlData"
             ];
@@ -39,7 +39,7 @@ namespace NPCChat.Core.LoadingProviderClasses
         public LoadingProviderFactory(IServiceProvider services)
         {
             this.services = services;
-            globalDataContainer = services.Get<GlobalDataContainer>() ?? throw new InvalidOperationException("GlobalDataContainer not registered in service provider");
+            staticData = services.Get<StaticData>() ?? throw new InvalidOperationException("StaticData not registered in service provider");
             deserializer = new DeserializerBuilder()
                 .WithNamingConvention(UnderscoredNamingConvention.Instance)
                 .IgnoreUnmatchedProperties()
@@ -104,7 +104,7 @@ namespace NPCChat.Core.LoadingProviderClasses
         private void Load<SType, TType>(
             string yamlFile,
             Func<object, SType> getSource,
-            Func<GlobalDataContainer, TType> getTarget,
+            Func<StaticData, TType> getTarget,
             Action<SType, TType> loader,
             string yamlStartTag = null)
         {
@@ -118,7 +118,7 @@ namespace NPCChat.Core.LoadingProviderClasses
             var yamlObject = deserializer.Deserialize(yaml) as Dictionary<object, object>;
             var startingObject = yamlObject[yamlStartTag];
             var source = getSource(startingObject);
-            var target = getTarget(globalDataContainer);
+            var target = getTarget(staticData);
             loader(source, target);
         }
 

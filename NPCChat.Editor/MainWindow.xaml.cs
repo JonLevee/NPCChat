@@ -43,6 +43,9 @@ namespace NPCChat
         // Dialogue state
         private DialogueSession? _dialogueSession;
 
+        // Inventory state
+        private bool _inventoryOpen;
+
 
         public MainWindow(UserSettingsRepository userSettingsRepository, ChunkInfo chunkInfo)
         {
@@ -281,17 +284,34 @@ namespace NPCChat
 
         private void Window_KeyDown(object sender, KeyEventArgs e)
         {
+            switch (e.Key)
+            {
+                case Key.I:
+                    ToggleInventory();
+                    e.Handled = true;
+                    return;
+
+                case Key.Escape:
+                    if (_inventoryOpen)
+                    {
+                        CloseInventory();
+                        e.Handled = true;
+                    }
+                    else if (_dialogueSession is not null)
+                    {
+                        CloseDialogue();
+                        e.Handled = true;
+                    }
+                    return;
+            }
+
+            // Remaining keys only apply when a dialogue session is open.
             if (_dialogueSession is null) return;
 
             var ctx = BuildDialogueContext(_dialogueSession.Actor);
 
             switch (e.Key)
             {
-                case Key.Escape:
-                    CloseDialogue();
-                    e.Handled = true;
-                    break;
-
                 case Key.Space:
                 case Key.Enter:
                     if (_dialogueSession.State == DialogueSessionState.NpcLine)
@@ -341,6 +361,35 @@ namespace NPCChat
         {
             _dialogueSession = null;
             DialoguePanelControl.Hide();
+        }
+
+        private void ToggleInventory()
+        {
+            if (_inventoryOpen)
+            {
+                CloseInventory();
+            }
+            else
+            {
+                OpenInventory();
+            }
+        }
+
+        private void OpenInventory()
+        {
+            if (_world is null) return;
+            var player = _world.GetPlayer();
+            if (player is null) return;
+
+            var slots = _world.SnapshotInventory(player.Handle);
+            InventoryPanelControl.Refresh(slots);
+            _inventoryOpen = true;
+        }
+
+        private void CloseInventory()
+        {
+            InventoryPanelControl.Hide();
+            _inventoryOpen = false;
         }
 
         private DialogueContext BuildDialogueContext(WorldObjectMoveable actor)

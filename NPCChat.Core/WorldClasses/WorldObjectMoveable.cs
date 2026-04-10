@@ -35,5 +35,17 @@ namespace NPCChat.Core.WorldClasses
         /// Null for the player and non-character moveables.
         /// </summary>
         public Character? Character { get; set; }
+
+        /// <summary>
+        /// Radius (in grid units) within which loose items (Kind == Item) are auto-picked up.
+        /// 0 = auto-pickup disabled.
+        /// </summary>
+        public float ItemPickupRadius { get; init; }
+
+        /// <summary>
+        /// Radius (in grid units) within which resource nodes are auto-harvested.
+        /// 0 = auto-harvest disabled.
+        /// </summary>
+        public float ResourcePickupRadius { get; init; }
     }
 }

@@ -10,6 +10,8 @@ using NPCChat.Core.BehaviorClasses;
 using NPCChat.Core.DialogueClasses;
 using NPCChat.Core.Exceptions;
 using NPCChat.Core.Extensions;
+using NPCChat.Core.InventoryClasses;
+using NPCChat.Core.ItemClasses;
 using NPCChat.Core.PathfindingClasses;
 
 namespace NPCChat.Core.WorldClasses
@@ -18,7 +20,8 @@ namespace NPCChat.Core.WorldClasses
     public sealed class WorldData : IDisposable
     {
         private readonly Dictionary<ChunkPosition, ChunkData> _chunks = [];
-        private readonly List<WorldObjectMoveable> _moveableObjects = [];
+        private readonly List<WorldObjectMoveable>  _moveableObjects  = [];
+        private readonly List<WorldObjectCarryable> _carryableObjects = [];
         private readonly Queue<MoveCommand> _pendingPathCommands = new();
         private readonly IWorldOptions _options;
         private readonly ObjectHandleManager _handleManager;
@@ -28,6 +31,13 @@ namespace NPCChat.Core.WorldClasses
         private readonly ReaderWriterLockSlim _worldLock = new(LockRecursionPolicy.NoRecursion);
         private readonly Channel<MoveCommand> _moveCommands =
               Channel.CreateBounded<MoveCommand>(new BoundedChannelOptions(int.MaxValue)
+              {
+                  FullMode = BoundedChannelFullMode.DropOldest,
+                  SingleReader = true,
+                  SingleWriter = false
+              });
+        private readonly Channel<DropCommand> _dropCommands =
+              Channel.CreateBounded<DropCommand>(new BoundedChannelOptions(512)
               {
                   FullMode = BoundedChannelFullMode.DropOldest,
                   SingleReader = true,
@@ -125,8 +135,13 @@ namespace NPCChat.Core.WorldClasses
                         budget--;
                     }
 
+                    // Drain drop commands first, then move and behave.
+                    while (_dropCommands.Reader.TryRead(out var drop))
+                        ProcessDropCommand(drop);
+
                     AdvanceMoveables();
                     AdvanceBehaviors();
+                    AdvancePickups();
 
                     await Task.Delay(_options.SimTickMs, ct);
                 }
@@ -350,6 +365,33 @@ namespace NPCChat.Core.WorldClasses
             _moveCommands.Writer.TryWrite(cmd);
         }
 
+        /// <summary>
+        /// Enqueues a drop command from the UI thread. Never blocks.
+        /// The simulation loop processes it on the next tick.
+        /// </summary>
+        public void EnqueueDropCommand(DropCommand cmd)
+        {
+            _dropCommands.Writer.TryWrite(cmd);
+        }
+
+        /// <summary>
+        /// Returns a snapshot of the inventory slots for the given handle, or an empty array
+        /// if the handle is unknown or has no inventory. Safe to call from the UI thread.
+        /// </summary>
+        public (string Name, int Quantity)[] SnapshotInventory(ObjectHandle handle)
+        {
+            _worldLock.EnterReadLock();
+            try
+            {
+                if (!TryGetObject(handle, out var obj) || obj?.Inventory is not { } inv)
+                    return [];
+                return inv.Slots
+                    .Select(s => (s.Item.Name, s.Quantity))
+                    .ToArray();
+            }
+            finally { _worldLock.ExitReadLock(); }
+        }
+
         // ── Object management ───────────────────────────────────────────────
 
         public ObjectHandle AddObject(WorldObject obj)
@@ -374,6 +416,10 @@ namespace NPCChat.Core.WorldClasses
                     if (moveable.Kind == WorldObjectKind.Player)
                         _playerObject = moveable;
                 }
+                else if (obj is WorldObjectCarryable carryable)
+                {
+                    _carryableObjects.Add(carryable);
+                }
 
                 return handle;
             }
@@ -396,6 +442,10 @@ namespace NPCChat.Core.WorldClasses
                     _moveableObjects.Remove(moveable);
                     if (moveable == _playerObject)
                         _playerObject = null;
+                }
+                else if (obj is WorldObjectCarryable carryable)
+                {
+                    _carryableObjects.Remove(carryable);
                 }
 
                 _handleManager.RemoveSlot(handle);
@@ -665,6 +715,111 @@ namespace NPCChat.Core.WorldClasses
             if (remainder != 0 && ((remainder < 0) != (divisor < 0)))
                 quotient--;
             return quotient;
+        }
+
+        private void ProcessDropCommand(DropCommand cmd)
+        {
+            // Must run outside write lock — AddObject acquires write lock internally.
+            WorldObjectMoveable? dropper;
+            Bounds dropperBounds;
+            ItemDef? itemDef;
+
+            _worldLock.EnterReadLock();
+            try
+            {
+                if (!TryGetObject(cmd.DropperHandle, out var obj) || obj is not WorldObjectMoveable m) return;
+                dropper      = m;
+                dropperBounds = dropper.Bounds;
+
+                if (dropper.Inventory is null) return;
+                // Peek the item def from the inventory before removing.
+                var slot = dropper.Inventory.Slots
+                    .FirstOrDefault(s => string.Equals(s.Item.Id, cmd.ItemId, StringComparison.OrdinalIgnoreCase));
+                itemDef = slot?.Item;
+            }
+            finally { _worldLock.ExitReadLock(); }
+
+            if (itemDef is null) return;
+
+            // Remove from inventory under write lock.
+            _worldLock.EnterWriteLock();
+            try
+            {
+                if (!dropper.Inventory!.TryRemove(cmd.ItemId, cmd.Quantity, out int removed) || removed == 0)
+                    return;
+
+                // Spawn a WorldObjectCarryable at the dropper's top-left tile.
+                var carryable = new WorldObjectCarryable
+                {
+                    Kind    = WorldObjectKind.Item,
+                    Bounds  = new Bounds(dropperBounds.Left, dropperBounds.Top, dropperBounds.Left + 1, dropperBounds.Top + 1),
+                    ItemDef = itemDef,
+                    Quantity = removed
+                };
+
+                var handle = _handleManager.GetNewHandle(carryable);
+                carryable.Handle = handle;
+                AddObjectToChunks(carryable);
+                _carryableObjects.Add(carryable);
+            }
+            finally { _worldLock.ExitWriteLock(); }
+        }
+
+        private void AdvancePickups()
+        {
+            // Snapshot under read lock.
+            WorldObjectMoveable[] movers;
+            WorldObjectCarryable[] items;
+
+            _worldLock.EnterReadLock();
+            try
+            {
+                movers = _moveableObjects.ToArray();
+                items  = _carryableObjects.ToArray();
+            }
+            finally { _worldLock.ExitReadLock(); }
+
+            if (items.Length == 0) return;
+
+            var toRemove = new List<WorldObjectCarryable>();
+
+            foreach (var mover in movers)
+            {
+                if (mover.ItemPickupRadius <= 0f || mover.Inventory is null) continue;
+
+                float cx = mover.Bounds.Left + mover.Bounds.Width  * 0.5f;
+                float cy = mover.Bounds.Top  + mover.Bounds.Height * 0.5f;
+
+                foreach (var item in items)
+                {
+                    if (item.Owner.HasValue) continue;  // already being carried
+                    if (toRemove.Contains(item)) continue;
+
+                    float ix = item.Bounds.Left + 0.5f;
+                    float iy = item.Bounds.Top  + 0.5f;
+                    float dx = cx - ix, dy = cy - iy;
+                    if (dx * dx + dy * dy > mover.ItemPickupRadius * mover.ItemPickupRadius) continue;
+
+                    // Attempt to add to inventory.
+                    _worldLock.EnterWriteLock();
+                    try
+                    {
+                        if (!mover.Inventory.TryAdd(item.ItemDef, item.Quantity, out _)) continue;
+                        item.Owner = mover.Handle;
+                        RemoveObjectFromChunks(item);
+                        _handleManager.RemoveSlot(item.Handle);
+                        toRemove.Add(item);
+                    }
+                    finally { _worldLock.ExitWriteLock(); }
+                }
+            }
+
+            if (toRemove.Count > 0)
+            {
+                _worldLock.EnterWriteLock();
+                try { foreach (var c in toRemove) _carryableObjects.Remove(c); }
+                finally { _worldLock.ExitWriteLock(); }
+            }
         }
 
         private void AdvanceBehaviors()

@@ -12,6 +12,8 @@ namespace NPCChat.Core.WorldClasses
         Waypoint,
         Player,
         NPC,
-        Mob
+        Mob,
+        Item,
+        Container
     }
 }

@@ -1,3 +1,6 @@
+#nullable enable
+using NPCChat.Core.ItemClasses;
+
 namespace NPCChat.Core.WorldClasses
 {
     /// <summary>
@@ -11,10 +14,19 @@ namespace NPCChat.Core.WorldClasses
     {
         public override WorldObjectCategory Category => WorldObjectCategory.Carryable;
 
+        /// <summary>Item definition. Must be set before the object is added to the world.</summary>
+        public required ItemDef ItemDef { get; init; }
+
         /// <summary>
         /// The handle of the WorldObjectMoveable currently carrying this item.
         /// Null if the item is lying on the map.
         /// </summary>
         public ObjectHandle? Owner { get; set; }
+
+        /// <summary>
+        /// How many of this item are in this world object.
+        /// For non-stackable items (MaxStack == 1) this is always 1.
+        /// </summary>
+        public int Quantity { get; set; } = 1;
     }
 }

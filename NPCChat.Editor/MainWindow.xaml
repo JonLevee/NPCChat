@@ -100,6 +100,13 @@
                 <uc:DialoguePanel x:Name="DialoguePanelControl"
                                   VerticalAlignment="Bottom"
                                   Panel.ZIndex="20" />
+
+                <!-- Inventory panel — floats over the map at the top-right -->
+                <uc:InventoryPanel x:Name="InventoryPanelControl"
+                                   VerticalAlignment="Top"
+                                   HorizontalAlignment="Right"
+                                   Margin="0,8,8,0"
+                                   Panel.ZIndex="20" />
             </Grid>
         </Grid>
     </Grid>

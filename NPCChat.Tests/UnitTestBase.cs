@@ -8,7 +8,7 @@ namespace NPCChat.Tests
     public class UnitTestBase
     {
         protected IServiceProvider Services { get; private set; } = null!;
-        protected GlobalDataContainer Data { get; private set; } = null!;
+        protected StaticData Data { get; private set; } = null!;
         protected LoadingProviderFactory LoadingFactory { get; private set; } = null!;
 
         [TestInitialize]

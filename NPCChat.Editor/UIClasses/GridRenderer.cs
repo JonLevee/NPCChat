@@ -232,11 +232,13 @@ namespace NPCChat.Editor.UIClasses
         private static Brush GetFillBrush(WorldObject obj) =>
             obj.Kind switch
             {
-                WorldObjectKind.Building => CreateBrush(59, 130, 246),
-                WorldObjectKind.Player   => CreateBrush(34, 197, 94),
-                WorldObjectKind.NPC      => CreateBrush(245, 158, 11),
-                WorldObjectKind.Mob      => CreateBrush(239, 68, 68),
-                _                        => CreateBrush(148, 163, 184)
+                WorldObjectKind.Building  => CreateBrush(59, 130, 246),
+                WorldObjectKind.Player    => CreateBrush(34, 197, 94),
+                WorldObjectKind.NPC       => CreateBrush(245, 158, 11),
+                WorldObjectKind.Mob       => CreateBrush(239, 68, 68),
+                WorldObjectKind.Item      => CreateBrush(250, 204, 21),   // gold-yellow
+                WorldObjectKind.Container => CreateBrush(180, 120, 60),   // brown
+                _                         => CreateBrush(148, 163, 184)
             };
 
         private static SolidColorBrush CreateBrush(byte r, byte g, byte b) =>
@@ -250,6 +252,8 @@ namespace NPCChat.Editor.UIClasses
                 WorldObjectKind.NPC             => "N",
                 WorldObjectKind.Mob             => "M",
                 WorldObjectKind.DungeonEntrance => "D",
+                WorldObjectKind.Item            => "i",
+                WorldObjectKind.Container       => "C",
                 _                               => "?"
             };
 

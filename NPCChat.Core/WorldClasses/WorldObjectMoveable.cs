@@ -1,6 +1,7 @@
 #nullable enable
 using NPCChat.Core.BehaviorClasses;
 using NPCChat.Core.CharacterClasses;
+using NPCChat.Core.FactionClasses;
 using NPCChat.Core.QuestClasses;
 
 namespace NPCChat.Core.WorldClasses
@@ -54,5 +55,11 @@ namespace NPCChat.Core.WorldClasses
         /// Accessed exclusively on the UI thread.
         /// </summary>
         public QuestLog? QuestLog { get; set; }
+
+        /// <summary>
+        /// Faction reputation journal. Non-null for the player; null for NPCs and mobs.
+        /// Accessed exclusively on the UI thread.
+        /// </summary>
+        public ReputationLog? ReputationLog { get; set; }
     }
 }

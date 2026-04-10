@@ -1,9 +1,16 @@
+#nullable enable
 namespace NPCChat.Core.CharacterClasses
 {
     public class Character
     {
         public string Name      { get; set; } = string.Empty;
         public string Archetype { get; set; } = string.Empty;
+
+        /// <summary>
+        /// The faction this character belongs to. Null for unaffiliated characters.
+        /// Used to gate interactions and to credit reputation when the player helps them.
+        /// </summary>
+        public string? FactionId { get; set; }
 
         /// <summary>
         /// Normalized unit vector in the owning DialogueTree's MoodAxes space.

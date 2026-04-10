@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using NPCChat.Core.Attributes;
 using NPCChat.Core.Builders;
+using NPCChat.Core.FactionClasses;
 using NPCChat.Core.InventoryClasses;
 using NPCChat.Core.ItemClasses;
 using NPCChat.Core.QuestClasses;
@@ -35,7 +36,8 @@ namespace NPCChat.Core.WorldBuilderTemplates
                 ItemPickupRadius = DefaultItemRadius,
                 ResourcePickupRadius = 0f,
                 Inventory = new InventoryComponent { MaxSlots = 30 },
-                QuestLog = new QuestLog()
+                QuestLog = new QuestLog(),
+                ReputationLog = new ReputationLog()
             };
             builder.World.AddObject(o);
             return this;
@@ -87,6 +89,22 @@ namespace NPCChat.Core.WorldBuilderTemplates
         }
 
         /// <summary>
+        /// Registers core faction definitions into StaticData. Called once at world startup.
+        /// </summary>
+        public Templates RegisterSeedFactions()
+        {
+            builder.StaticData.RegisterFaction(new FactionDef
+            {
+                Id               = "townsfolk",
+                Name             = "Townsfolk",
+                Description      = "The ordinary people of the town — merchants, farmers, and craftspeople.",
+                FriendlyThreshold = 50,
+                HostileThreshold  = -25
+            });
+            return this;
+        }
+
+        /// <summary>
         /// Registers core quest definitions into StaticData. Called once at world startup.
         /// </summary>
         public Templates RegisterSeedQuests()
@@ -119,6 +137,7 @@ namespace NPCChat.Core.WorldBuilderTemplates
         public Templates AddSmallTown()
         {
             RegisterSeedItems();
+            RegisterSeedFactions();
             RegisterSeedQuests();
 
             AddShop(10, 2, BuildingSize.Small);

@@ -20,7 +20,7 @@ namespace NPCChat.Core.WorldBuilderTemplates
     [Transient]
     public partial class Templates(WorldDataBuilder builder) : IDisposable
     {
-        private const float DefaultMoveSpeed  = 4.0f;  // grid units per second
+        private const float DefaultMoveSpeed = 4.0f;  // grid units per second
         private const float DefaultItemRadius = 2.0f;  // grid units — auto-pickup range
         private readonly Size CharacterSize = new Size(2, 2);
 
@@ -28,14 +28,14 @@ namespace NPCChat.Core.WorldBuilderTemplates
         {
             var o = new WorldObjectMoveable
             {
-                Kind                = WorldObjectKind.Player,
-                Handle              = ObjectHandle.None,
-                Bounds              = new Bounds(x, y, CharacterSize),
-                MaxSpeed            = DefaultMoveSpeed,
-                ItemPickupRadius    = DefaultItemRadius,
+                Kind = WorldObjectKind.Player,
+                Handle = ObjectHandle.None,
+                Bounds = new Bounds(x, y, CharacterSize),
+                MaxSpeed = DefaultMoveSpeed,
+                ItemPickupRadius = DefaultItemRadius,
                 ResourcePickupRadius = 0f,
-                Inventory           = new InventoryComponent { MaxSlots = 30 },
-                QuestLog            = new QuestLog()
+                Inventory = new InventoryComponent { MaxSlots = 30 },
+                QuestLog = new QuestLog()
             };
             builder.World.AddObject(o);
             return this;
@@ -75,10 +75,10 @@ namespace NPCChat.Core.WorldBuilderTemplates
 
             var o = new WorldObjectCarryable
             {
-                Kind     = WorldObjectKind.Item,
-                Handle   = ObjectHandle.None,
-                Bounds   = new Bounds(x, y, x + 1, y + 1),
-                ItemDef  = itemDef,
+                Kind = WorldObjectKind.Item,
+                Handle = ObjectHandle.None,
+                Bounds = new Bounds(x, y, x + 1, y + 1),
+                ItemDef = itemDef,
                 Quantity = quantity
             };
 
@@ -93,10 +93,10 @@ namespace NPCChat.Core.WorldBuilderTemplates
         {
             var fetchIronOre = new QuestDef
             {
-                Id          = "fetch_iron_ore",
-                Name        = "Iron Ore Delivery",
+                Id = "fetch_iron_ore",
+                Name = "Iron Ore Delivery",
                 Description = "The blacksmith needs iron ore for his forge.",
-                Objectives  =
+                Objectives =
                 [
                     new QuestObjectiveDef
                     {
@@ -133,9 +133,9 @@ namespace NPCChat.Core.WorldBuilderTemplates
             AddFarmer(24, 14);
 
             // Scatter a few items for auto-pickup testing.
-            AddItem("gold_coin",     17, 14, quantity: 10);
+            AddItem("gold_coin", 19, 14, quantity: 10);
             AddItem("health_potion", 16, 16, quantity: 2);
-            AddItem("iron_ore",      18, 15, quantity: 3);
+            AddItem("iron_ore", 18, 15, quantity: 3);
 
             return this;
         }

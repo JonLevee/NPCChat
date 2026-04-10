@@ -4,12 +4,14 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:uc="clr-namespace:NPCChat.Editor.UserControls"
         mc:Ignorable="d"
         Title="NPCChat Sandbox"
         Height="900"
         Width="1400"
         Background="#0B1220"
-        Foreground="White">
+        Foreground="White"
+        KeyDown="Window_KeyDown">
 
     <Grid x:Name="RootGrid">
         <Grid.RowDefinitions>
@@ -77,22 +79,28 @@
                             Orientation="Vertical" />
             </ScrollViewer>
 
-            <ScrollViewer Grid.Column="1"
-                          Margin="4,0,12,12"
-                          HorizontalScrollBarVisibility="Auto"
-                          VerticalScrollBarVisibility="Auto">
-                <Border BorderBrush="#334155"
-                        BorderThickness="1"
-                        Background="#111827"
-                        Padding="8">
-                    <Canvas
-                        x:Name="MapCanvas"
-                        MouseUp="MapCanvas_MouseUp"
-                        MouseMove="MapCanvas_MouseMove"
-                        MouseRightButtonUp="MapCanvas_MouseRightButtonUp"
-                        />
-                </Border>
-            </ScrollViewer>
+            <!-- Map area + dialogue overlay in the same cell -->
+            <Grid Grid.Column="1" Margin="4,0,12,12">
+                <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                              VerticalScrollBarVisibility="Auto">
+                    <Border BorderBrush="#334155"
+                            BorderThickness="1"
+                            Background="#111827"
+                            Padding="8">
+                        <Canvas
+                            x:Name="MapCanvas"
+                            MouseUp="MapCanvas_MouseUp"
+                            MouseMove="MapCanvas_MouseMove"
+                            MouseRightButtonUp="MapCanvas_MouseRightButtonUp"
+                            />
+                    </Border>
+                </ScrollViewer>
+
+                <!-- Dialogue panel — floats over the map at the bottom -->
+                <uc:DialoguePanel x:Name="DialoguePanelControl"
+                                  VerticalAlignment="Bottom"
+                                  Panel.ZIndex="20" />
+            </Grid>
         </Grid>
     </Grid>
 </Window>

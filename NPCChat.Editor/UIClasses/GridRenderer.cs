@@ -1,15 +1,21 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Shapes;
+using NPCChat.Core.DialogueClasses;
 using NPCChat.Core.SupportClasses;
 using NPCChat.Core.WorldClasses;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
+using Cursors = System.Windows.Input.Cursors;
 using DrawingPoint = System.Drawing.Point;
+using Orientation = System.Windows.Controls.Orientation;
+using Panel = System.Windows.Controls.Panel;
 
 namespace NPCChat.Editor.UIClasses
 {
@@ -28,6 +34,12 @@ namespace NPCChat.Editor.UIClasses
 
         public event Action<WorldObject?>? ObjectHovered;
         public event Action<WorldObject?>? ObjectSelected;
+
+        /// <summary>
+        /// Fired when the player clicks an interaction option badge on the canvas.
+        /// Parameters: actor handle, the selected option.
+        /// </summary>
+        public event Action<ObjectHandle, InteractionOption>? InteractionOptionSelected;
 
         public IsometricTransform? IsoTransform { get; private set; }
         public ObjectHandle SelectedHandle => _selectedHandle;
@@ -305,6 +317,93 @@ namespace NPCChat.Editor.UIClasses
                 .ToList();
             foreach (var line in toRemove)
                 _mapCanvas.Children.Remove(line);
+        }
+
+        // ── Interaction overlays ───────────────────────────────────────────────
+
+        private const string InteractionOverlayTag = "InteractionOverlay";
+
+        private static readonly SolidColorBrush OverlayBg     = new(Color.FromArgb(210, 13, 27, 42));
+        private static readonly SolidColorBrush OverlayBorder = new(Color.FromArgb(255, 99, 102, 241));
+        private static readonly SolidColorBrush OverlayText   = new(Color.FromRgb(147, 197, 253));
+
+        /// <summary>
+        /// Renders numbered verb badges above each actor that has visible interactions.
+        /// Clicking a badge fires InteractionOptionSelected.
+        /// Pass null or an empty array to just clear.
+        /// </summary>
+        public void UpdateInteractionOverlays(InteractionSnapshot[]? snapshots)
+        {
+            ClearInteractionOverlays();
+            if (IsoTransform is null || snapshots is null || snapshots.Length == 0) return;
+
+            foreach (var snapshot in snapshots)
+            {
+                if (snapshot.Options.Length == 0) continue;
+
+                // Position the badge row just above the actor's top-centre vertex.
+                var topCenter = IsoTransform.GridToScreen(
+                    (snapshot.ActorBounds.Left + snapshot.ActorBounds.Right) / 2.0,
+                    snapshot.ActorBounds.Top);
+
+                var row = new StackPanel
+                {
+                    Orientation         = Orientation.Horizontal,
+                    Tag                 = InteractionOverlayTag,
+                    IsHitTestVisible    = true
+                };
+
+                foreach (var option in snapshot.Options)
+                {
+                    var capturedOption  = option;
+                    var capturedHandle  = snapshot.ActorHandle;
+
+                    var badge = new Border
+                    {
+                        Background      = OverlayBg,
+                        BorderBrush     = OverlayBorder,
+                        BorderThickness = new Thickness(1),
+                        CornerRadius    = new CornerRadius(3),
+                        Padding         = new Thickness(5, 2, 5, 2),
+                        Margin          = new Thickness(0, 0, 3, 0),
+                        Cursor          = Cursors.Hand,
+                        Tag             = InteractionOverlayTag,
+                        Child = new TextBlock
+                        {
+                            Text       = $"[{option.Index}] {option.Label}",
+                            FontSize   = 10,
+                            Foreground = OverlayText
+                        }
+                    };
+
+                    badge.MouseLeftButtonUp += (_, e) =>
+                    {
+                        e.Handled = true;
+                        InteractionOptionSelected?.Invoke(capturedHandle, capturedOption);
+                    };
+
+                    row.Children.Add(badge);
+                }
+
+                // Measure the row width so we can roughly centre it.
+                row.Measure(new System.Windows.Size(double.PositiveInfinity, double.PositiveInfinity));
+                double rowWidth = row.DesiredSize.Width;
+
+                Canvas.SetLeft(row, topCenter.X - rowWidth / 2);
+                Canvas.SetTop(row, topCenter.Y - 28);
+                Panel.SetZIndex(row, 5);
+                _mapCanvas.Children.Add(row);
+            }
+        }
+
+        public void ClearInteractionOverlays()
+        {
+            var toRemove = _mapCanvas.Children
+                .OfType<UIElement>()
+                .Where(e => InteractionOverlayTag.Equals((e as FrameworkElement)?.Tag))
+                .ToList();
+            foreach (var el in toRemove)
+                _mapCanvas.Children.Remove(el);
         }
     }
 }

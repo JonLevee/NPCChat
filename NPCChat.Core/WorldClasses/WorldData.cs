@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Channels;
 using NPCChat.Core.Attributes;
 using NPCChat.Core.BehaviorClasses;
+using NPCChat.Core.DialogueClasses;
 using NPCChat.Core.Exceptions;
 using NPCChat.Core.Extensions;
 using NPCChat.Core.PathfindingClasses;
@@ -40,6 +41,12 @@ namespace NPCChat.Core.WorldClasses
         // tracks only the most recently added one.
         private WorldObjectMoveable? _playerObject;
         private int _currentGameTick;
+
+        // Dialogue / interaction system
+        // Written by the sim thread at the end of each AdvanceBehaviors pass;
+        // read by the UI thread via SnapshotInteractions(). Volatile reference
+        // swap is sufficient — the array itself is immutable once published.
+        private volatile InteractionSnapshot[]? _interactionSnapshot;
 
         /// <summary>
         /// Set by the simulation loop when it faults. The UI timer checks this
@@ -273,6 +280,26 @@ namespace NPCChat.Core.WorldClasses
         }
 
         /// <summary>
+        /// Current absolute simulation tick (written by sim thread; int reads are atomic).
+        /// Safe to read from the UI thread for display and dialogue context purposes.
+        /// </summary>
+        public int CurrentGameTick => _currentGameTick;
+
+        /// <summary>Current in-game hour (0–23). Derived from CurrentGameTick.</summary>
+        public int CurrentGameHour => (_currentGameTick / _options.TicksPerGameHour) % 24;
+
+        /// <summary>
+        /// Returns the player WorldObjectMoveable, or null if no player has been added.
+        /// Safe to call from the UI thread.
+        /// </summary>
+        public WorldObjectMoveable? GetPlayer()
+        {
+            _worldLock.EnterReadLock();
+            try { return _playerObject; }
+            finally { _worldLock.ExitReadLock(); }
+        }
+
+        /// <summary>
         /// Returns a snapshot of all moveable objects' current positions.
         /// Safe to call from the UI thread.
         /// </summary>
@@ -288,6 +315,12 @@ namespace NPCChat.Core.WorldClasses
             }
             finally { _worldLock.ExitReadLock(); }
         }
+
+        /// <summary>
+        /// Returns the most recently published interaction snapshot array, or null if the
+        /// sim thread has not yet run a behaviour pass. Safe to call from the UI thread.
+        /// </summary>
+        public InteractionSnapshot[]? SnapshotInteractions() => _interactionSnapshot;
 
         /// <summary>
         /// Returns a snapshot of the remaining path steps for the given moveable.
@@ -710,6 +743,67 @@ namespace NPCChat.Core.WorldClasses
                 if (done)
                     component.ActionQueue.Dequeue();
             }
+
+            // 4. Publish interaction snapshots for actors within player perception range.
+            _interactionSnapshot = BuildInteractionSnapshots(snapshot, playerBounds, gameTick, gameHour);
+        }
+
+        private InteractionSnapshot[] BuildInteractionSnapshots(
+            WorldObjectMoveable[] actors,
+            Bounds? playerBounds,
+            int gameTick,
+            int gameHour)
+        {
+            if (playerBounds is null) return [];
+
+            WorldObjectMoveable? player;
+            _worldLock.EnterReadLock();
+            try { player = _playerObject; }
+            finally { _worldLock.ExitReadLock(); }
+
+            var results = new List<InteractionSnapshot>();
+
+            foreach (var actor in actors)
+            {
+                var component = actor.Actor;
+                if (component is null || component.DialogueTree is null) continue;
+                if (component.Interactions.Count == 0) continue;
+                if (!component.CanPerceive(actor.Bounds, playerBounds.Value)) continue;
+
+                var ctx = new DialogueContext
+                {
+                    Actor    = actor,
+                    Player   = player,
+                    GameHour = gameHour,
+                    GameTick = gameTick
+                };
+
+                // Collect visible entries ordered by priority descending, then label.
+                var visible = component.Interactions
+                    .Where(e => e.Condition is null || e.Condition(ctx))
+                    .OrderByDescending(e => e.Priority)
+                    .ThenBy(e => e.Label)
+                    .Take(9)
+                    .Select((e, i) => new InteractionOption
+                    {
+                        Label  = e.Label,
+                        NodeId = e.NodeId,
+                        Index  = i + 1
+                    })
+                    .ToArray();
+
+                if (visible.Length == 0) continue;
+
+                results.Add(new InteractionSnapshot
+                {
+                    ActorHandle = actor.Handle,
+                    ActorBounds = actor.Bounds,
+                    ActorName   = actor.Character?.Name,
+                    Options     = visible
+                });
+            }
+
+            return results.ToArray();
         }
 
         private bool IsNearbyPlayer(Bounds actorBounds, Bounds playerBounds)

@@ -21,5 +21,12 @@ namespace NPCChat.Core.DialogueClasses
 
         /// <summary>Absolute simulation tick count since the world started.</summary>
         public int GameTick { get; init; }
+
+        /// <summary>
+        /// Returns the quantity of an item in the player's inventory.
+        /// Thread-safe: implemented via WorldData.SnapshotInventoryCount under a read lock.
+        /// Null when no player exists in the world.
+        /// </summary>
+        public Func<string, int>? GetPlayerItemCount { get; init; }
     }
 }

@@ -107,6 +107,13 @@
                                    HorizontalAlignment="Right"
                                    Margin="0,8,8,0"
                                    Panel.ZIndex="20" />
+
+                <!-- Quest panel — floats over the map at the top-left -->
+                <uc:QuestPanel x:Name="QuestPanelControl"
+                               VerticalAlignment="Top"
+                               HorizontalAlignment="Left"
+                               Margin="8,8,0,0"
+                               Panel.ZIndex="20" />
             </Grid>
         </Grid>
     </Grid>

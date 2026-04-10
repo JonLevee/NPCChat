@@ -46,6 +46,9 @@ namespace NPCChat
         // Inventory state
         private bool _inventoryOpen;
 
+        // Quest panel state
+        private bool _questPanelOpen;
+
 
         public MainWindow(UserSettingsRepository userSettingsRepository, ChunkInfo chunkInfo)
         {
@@ -123,6 +126,10 @@ namespace NPCChat
                     if (_world.TryGetObject(handle, out var obj) && obj is WorldObjectMoveable m)
                         cs.UpdateActorDebugInfo(m.Actor);
                 }
+
+                // Refresh quest panel each tick to show live inventory progress.
+                if (_questPanelOpen)
+                    RefreshQuestPanel();
             }
         }
 
@@ -291,10 +298,20 @@ namespace NPCChat
                     e.Handled = true;
                     return;
 
+                case Key.J:
+                    ToggleQuestPanel();
+                    e.Handled = true;
+                    return;
+
                 case Key.Escape:
                     if (_inventoryOpen)
                     {
                         CloseInventory();
+                        e.Handled = true;
+                    }
+                    else if (_questPanelOpen)
+                    {
+                        CloseQuestPanel();
                         e.Handled = true;
                     }
                     else if (_dialogueSession is not null)
@@ -392,14 +409,47 @@ namespace NPCChat
             _inventoryOpen = false;
         }
 
+        private void ToggleQuestPanel()
+        {
+            if (_questPanelOpen)
+                CloseQuestPanel();
+            else
+                OpenQuestPanel();
+        }
+
+        private void OpenQuestPanel()
+        {
+            if (_world is null) return;
+            _questPanelOpen = true;
+            RefreshQuestPanel();
+        }
+
+        private void CloseQuestPanel()
+        {
+            QuestPanelControl.Hide();
+            _questPanelOpen = false;
+        }
+
+        private void RefreshQuestPanel()
+        {
+            if (_world is null) return;
+            var player = _world.GetPlayer();
+            QuestPanelControl.Refresh(
+                player?.QuestLog,
+                itemId => player is not null ? _world.SnapshotInventoryCount(player.Handle, itemId) : 0);
+        }
+
         private DialogueContext BuildDialogueContext(WorldObjectMoveable actor)
         {
+            var player = _world?.GetPlayer();
+            var playerHandle = player?.Handle ?? ObjectHandle.None;
             return new DialogueContext
             {
-                Actor    = actor,
-                Player   = _world?.GetPlayer(),
-                GameHour = _world?.CurrentGameHour ?? 0,
-                GameTick = _world?.CurrentGameTick ?? 0
+                Actor               = actor,
+                Player              = player,
+                GameHour            = _world?.CurrentGameHour ?? 0,
+                GameTick            = _world?.CurrentGameTick ?? 0,
+                GetPlayerItemCount  = itemId => _world?.SnapshotInventoryCount(playerHandle, itemId) ?? 0
             };
         }
     }

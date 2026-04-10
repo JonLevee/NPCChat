@@ -114,6 +114,13 @@
                                HorizontalAlignment="Left"
                                Margin="8,8,0,0"
                                Panel.ZIndex="20" />
+
+                <!-- Reputation panel — floats below quest panel at top-left -->
+                <uc:ReputationPanel x:Name="ReputationPanelControl"
+                                    VerticalAlignment="Top"
+                                    HorizontalAlignment="Left"
+                                    Margin="8,8,0,0"
+                                    Panel.ZIndex="20" />
             </Grid>
         </Grid>
     </Grid>

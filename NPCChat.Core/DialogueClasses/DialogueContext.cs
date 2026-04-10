@@ -28,5 +28,12 @@ namespace NPCChat.Core.DialogueClasses
         /// Null when no player exists in the world.
         /// </summary>
         public Func<string, int>? GetPlayerItemCount { get; init; }
+
+        /// <summary>
+        /// Returns the player's current reputation score with the given faction ID.
+        /// UI-thread-safe: reads directly from the player's ReputationLog (UI-thread-owned).
+        /// Null when no player exists in the world.
+        /// </summary>
+        public Func<string, int>? GetPlayerReputation { get; init; }
     }
 }

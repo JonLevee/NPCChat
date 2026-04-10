@@ -10,6 +10,8 @@ namespace NPCChat.Core.WorldBuilderTemplates
 {
     public partial class Templates
     {
+        private const string BlacksmithFaction = "townsfolk";
+
         /// <summary>
         /// Adds a Blacksmith NPC with a work/sleep schedule and a patrol route
         /// around their forge area. Adds a matching shop building at (shopX, shopY).
@@ -22,8 +24,13 @@ namespace NPCChat.Core.WorldBuilderTemplates
                 Handle    = ObjectHandle.None,
                 Bounds    = new Bounds(x, y, CharacterSize),
                 MaxSpeed  = DefaultMoveSpeed,
-                Character = new Character { Name = "Blacksmith", Archetype = "Blacksmith" },
-                Actor     = BuildBlacksmithActor(x, y)
+                Character = new Character
+                {
+                    Name      = "Blacksmith",
+                    Archetype = "Blacksmith",
+                    FactionId = BlacksmithFaction
+                },
+                Actor = BuildBlacksmithActor(x, y)
             };
 
             builder.World.AddObject(npc);
@@ -35,7 +42,7 @@ namespace NPCChat.Core.WorldBuilderTemplates
         {
             var actor = new ActorComponent
             {
-                PerceptionRange       = 8f,
+                PerceptionRange        = 8f,
                 DistantProcessInterval = 10
             };
 
@@ -61,7 +68,7 @@ namespace NPCChat.Core.WorldBuilderTemplates
             {
                 Priority = 5,
                 Trigger  = ctx => ctx.Actor.Actor?.Mode == "Sleep"
-                               && ctx.Actor.Movement.IsMoving == false
+                               && !ctx.Actor.Movement.IsMoving
                                && ctx.Actor.Actor.ActionQueue.TryPeekHighest() is not IdleTask,
                 ActionFactory = _ => new IdleTask(int.MaxValue, priority: 5)
             });
@@ -70,27 +77,31 @@ namespace NPCChat.Core.WorldBuilderTemplates
 
             actor.DialogueTree = BuildBlacksmithDialogueTree();
 
-            // Interaction verbs: "Talk" always visible; "Shop" only during business hours;
-            // "Quest" only during work hours
+            // "Talk" — always visible
             actor.Interactions.Add(new InteractionEntry
             {
                 Label    = "Talk",
                 NodeId   = "greet",
                 Priority = 10
             });
+            // "Shop" — business hours only, blocked if player is Hostile
             actor.Interactions.Add(new InteractionEntry
             {
                 Label     = "Shop",
                 NodeId    = "shop_menu",
                 Priority  = 20,
                 Condition = ctx => ctx.GameHour >= 6 && ctx.GameHour < 22
+                                && (ctx.GetPlayerReputation?.Invoke(BlacksmithFaction) ?? 0)
+                                   >= -25   // above Hostile threshold
             });
+            // "Quest" — business hours only, hidden after quest is complete
             actor.Interactions.Add(new InteractionEntry
             {
                 Label     = "Quest",
                 NodeId    = "quest_hub",
                 Priority  = 30,
                 Condition = ctx => ctx.GameHour >= 6 && ctx.GameHour < 22
+                                && ctx.Player?.QuestLog?.HasCompletedQuest("fetch_iron_ore") != true
             });
 
             return actor;
@@ -98,35 +109,58 @@ namespace NPCChat.Core.WorldBuilderTemplates
 
         private DialogueTree BuildBlacksmithDialogueTree()
         {
-            // Capture refs needed by dialogue effect lambdas.
-            var world       = builder.World;
-            var staticData  = builder.StaticData;
+            var world      = builder.World;
+            var staticData = builder.StaticData;
 
-            const string questId = "fetch_iron_ore";
-            const string oreId   = "iron_ore";
-            const int    oreReq  = 5;
+            const string questId  = "fetch_iron_ore";
+            const string oreId    = "iron_ore";
+            const int    oreReq   = 5;
+            const int    repReward = 25;   // reputation granted on quest completion
 
             return new DialogueTreeBuilder("blacksmith")
                 .MoodAxes(MoodAxes.Friendliness, MoodAxes.Irritability, MoodAxes.Trust)
 
                 // ── Talk entry ────────────────────────────────────────────────
+                //
+                // Greeting pool now contains rep-aware entries.
+                // Hostile rep (-25): curt, dismissive line.
+                // Friendly/Honored (>=50): warmer welcome.
+                // Default range: standard greetings.
 
                 .AddPool("greet",
                     pool => pool
+                        // Hostile — only shows at Hostile rep via requires gate (stat hack:
+                        // we use the mood-axis system as a proxy; for explicit rep gating we
+                        // use the node Condition on surrounding line nodes instead)
                         .Add("Aye, what can I do for ye?",
                              moodHints: new() { [MoodAxes.Friendliness] = 1f })
                         .Add("Hmph. What d'ye want.",
                              moodHints: new() { [MoodAxes.Irritability] = 1f })
                         .Add("Welcome! Browse around while I finish this.",
                              moodHints: new() { [MoodAxes.Friendliness] = 0.8f, [MoodAxes.Trust] = 0.5f }),
-                    nextNodeId: "main_menu")
+                    nextNodeId: "greet_rep_check")
+
+                // After the pool line, show an extra warm line if player is Friendly+,
+                // or a warning if Hostile. Both are conditional line nodes in a sequence.
+                .AddSequence("greet_rep_check",
+                    nodeIds: ["greet_friendly_bonus", "greet_hostile_warning", "main_menu"])
+
+                .AddNpcLine("greet_friendly_bonus",
+                    "Always good to see a friend of the town. What can I do for ye?",
+                    condition: ctx => (ctx.GetPlayerReputation?.Invoke(BlacksmithFaction) ?? 0) >= 50,
+                    nextNodeId: null)    // next is driven by the sequence (main_menu)
+
+                .AddNpcLine("greet_hostile_warning",
+                    "I know what the townsfolk say about ye. Don't push yer luck here.",
+                    condition: ctx => (ctx.GetPlayerReputation?.Invoke(BlacksmithFaction) ?? 0) < -25,
+                    nextNodeId: null)
 
                 .AddChoice("main_menu",
                     "What can I help ye with?",
                     choices => choices
-                        .Add("Tell me about yourself.",   nextNodeId: "about")
-                        .Add("I need something forged.",  nextNodeId: "forge_offer")
-                        .Add("Just browsing. Farewell.",  nextNodeId: null))
+                        .Add("Tell me about yourself.",  nextNodeId: "about")
+                        .Add("I need something forged.", nextNodeId: "forge_offer")
+                        .Add("Just browsing. Farewell.", nextNodeId: null))
 
                 .AddNpcLine("about",
                     "Been at the forge thirty years. Weapons and armour both. " +
@@ -143,9 +177,9 @@ namespace NPCChat.Core.WorldBuilderTemplates
                 .AddChoice("shop_menu",
                     "Good to see ye. Here's what I've got in stock.",
                     choices => choices
-                        .Add("Show me your weapons.",   nextNodeId: "shop_weapons")
-                        .Add("Show me your armour.",    nextNodeId: "shop_armour")
-                        .Add("Maybe another time.",     nextNodeId: null))
+                        .Add("Show me your weapons.",  nextNodeId: "shop_weapons")
+                        .Add("Show me your armour.",   nextNodeId: "shop_armour")
+                        .Add("Maybe another time.",    nextNodeId: null))
 
                 .AddNpcLine("shop_weapons",
                     "Blades, axes, hammers — all forged right here. Take a look.",
@@ -155,11 +189,7 @@ namespace NPCChat.Core.WorldBuilderTemplates
                     "Plate, chain, leather reinforcement. Made to last.",
                     nextNodeId: null)
 
-                // ── Quest hub (branching by quest state) ──────────────────────
-                //
-                // SequenceNode pushes all children onto the pending stack. Each child
-                // has a mutually-exclusive condition, so exactly one displays; the rest
-                // are silently skipped when the player advances past the shown node.
+                // ── Quest hub ─────────────────────────────────────────────────
 
                 .AddSequence("quest_hub",
                     nodeIds:
@@ -170,12 +200,10 @@ namespace NPCChat.Core.WorldBuilderTemplates
                         "quest_offer"
                     ])
 
-                // Branch 1: quest already completed
                 .AddNpcLine("quest_done_ack",
                     "Ye've already done me a fine service. I thank ye.",
                     condition: ctx => ctx.Player?.QuestLog?.HasCompletedQuest(questId) == true)
 
-                // Branch 2: quest active and player has enough ore — complete and reward
                 .AddLine("quest_give_reward",
                     speaker: "npc",
                     text: "Excellent work! Here be yer reward — ten gold coins, well earned.",
@@ -187,13 +215,16 @@ namespace NPCChat.Core.WorldBuilderTemplates
                         new DialogueEffect(ctx =>
                         {
                             if (ctx.Player is null) return;
+
                             ctx.Player.QuestLog?.TryComplete(questId);
 
-                            // Remove consumed ore (sim thread, via command channel).
+                            // Reputation reward (UI thread — ReputationLog is UI-thread-owned)
+                            ctx.Player.ReputationLog?.AddReputation(BlacksmithFaction, repReward);
+
+                            // Consume ore and grant gold via the sim-thread command channel
                             world.EnqueueQuestReward(new QuestRewardCommand(
                                 ctx.Player.Handle, oreId, ItemDef: null, oreReq, IsRemoval: true));
 
-                            // Grant gold reward (sim thread, via command channel).
                             var goldDef = staticData.GetItem("gold_coin");
                             if (goldDef is not null)
                                 world.EnqueueQuestReward(new QuestRewardCommand(
@@ -201,14 +232,12 @@ namespace NPCChat.Core.WorldBuilderTemplates
                         })
                     ])
 
-                // Branch 3: quest active but not enough ore yet
                 .AddNpcLine("quest_not_enough",
                     $"Ye don't have enough iron ore yet. I need {oreReq} pieces — bring them back when ye've got them.",
                     condition: ctx =>
                         ctx.Player?.QuestLog?.HasActiveQuest(questId) == true
                         && (ctx.GetPlayerItemCount?.Invoke(oreId) ?? 0) < oreReq)
 
-                // Branch 4: quest not yet taken — offer it
                 .AddChoice("quest_offer",
                     "I need five pieces of iron ore for me forge. The seam out east usually has some. Can ye fetch them for me?",
                     choices => choices

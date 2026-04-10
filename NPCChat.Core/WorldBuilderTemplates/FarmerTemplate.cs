@@ -8,6 +8,7 @@ namespace NPCChat.Core.WorldBuilderTemplates
 {
     public partial class Templates
     {
+        private const string FarmerFaction = "townsfolk";
         /// <summary>
         /// Adds a Farmer NPC with a work/rest schedule. During work hours the
         /// farmer wanders within the given radius; at night they idle.
@@ -20,7 +21,7 @@ namespace NPCChat.Core.WorldBuilderTemplates
                 Handle    = ObjectHandle.None,
                 Bounds    = new Bounds(x, y, CharacterSize),
                 MaxSpeed  = DefaultMoveSpeed,
-                Character = new Character { Name = "Farmer", Archetype = "Farmer" },
+                Character = new Character { Name = "Farmer", Archetype = "Farmer", FactionId = FarmerFaction },
                 Actor     = BuildFarmerActor(wanderRadius)
             };
 
@@ -65,13 +66,14 @@ namespace NPCChat.Core.WorldBuilderTemplates
                 NodeId   = "greet",
                 Priority = 10
             });
-            // "Quest" available only during work hours — placeholder for Phase 7
+            // "Quest" available only during work hours; hidden if player is Hostile
             actor.Interactions.Add(new InteractionEntry
             {
                 Label     = "Quest",
                 NodeId    = "quest_hint",
                 Priority  = 20,
                 Condition = ctx => ctx.GameHour >= 5 && ctx.GameHour < 19
+                                && (ctx.GetPlayerReputation?.Invoke(FarmerFaction) ?? 0) >= -25
             });
 
             return actor;

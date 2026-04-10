@@ -7,6 +7,7 @@ using System.Windows.Input;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using NPCChat.Core.DialogueClasses;
+using NPCChat.Core.LoadingProviderClasses;
 using NPCChat.Core.SupportClasses;
 using NPCChat.Core.Validation;
 using NPCChat.Editor;
@@ -26,6 +27,7 @@ namespace NPCChat
     {
         private WorldData _world = null!;
         private WorldDataBuilder _worldBuilder = null!;
+        private StaticData _staticData = null!;
         private IServiceScope serviceScope = null!;
 
         private readonly DispatcherTimer _gameTimer = new();
@@ -48,6 +50,9 @@ namespace NPCChat
 
         // Quest panel state
         private bool _questPanelOpen;
+
+        // Reputation panel state
+        private bool _repPanelOpen;
 
 
         public MainWindow(UserSettingsRepository userSettingsRepository, ChunkInfo chunkInfo)
@@ -130,6 +135,10 @@ namespace NPCChat
                 // Refresh quest panel each tick to show live inventory progress.
                 if (_questPanelOpen)
                     RefreshQuestPanel();
+
+                // Refresh reputation panel each tick to reflect any recent changes.
+                if (_repPanelOpen)
+                    RefreshReputationPanel();
             }
         }
 
@@ -145,6 +154,7 @@ namespace NPCChat
             serviceScope = App.Services.CreateScope();
             _worldBuilder = serviceScope.ServiceProvider.GetRequiredService<WorldDataBuilder>();
             _world = serviceScope.ServiceProvider.GetRequiredService<WorldData>();
+            _staticData = serviceScope.ServiceProvider.GetRequiredService<StaticData>();
             _world.StartSimulationProcessing();
             RefreshWorld();
         }
@@ -303,6 +313,11 @@ namespace NPCChat
                     e.Handled = true;
                     return;
 
+                case Key.R:
+                    ToggleReputationPanel();
+                    e.Handled = true;
+                    return;
+
                 case Key.Escape:
                     if (_inventoryOpen)
                     {
@@ -312,6 +327,11 @@ namespace NPCChat
                     else if (_questPanelOpen)
                     {
                         CloseQuestPanel();
+                        e.Handled = true;
+                    }
+                    else if (_repPanelOpen)
+                    {
+                        CloseReputationPanel();
                         e.Handled = true;
                     }
                     else if (_dialogueSession is not null)
@@ -439,17 +459,46 @@ namespace NPCChat
                 itemId => player is not null ? _world.SnapshotInventoryCount(player.Handle, itemId) : 0);
         }
 
+        private void ToggleReputationPanel()
+        {
+            if (_repPanelOpen)
+                CloseReputationPanel();
+            else
+                OpenReputationPanel();
+        }
+
+        private void OpenReputationPanel()
+        {
+            if (_world is null) return;
+            _repPanelOpen = true;
+            RefreshReputationPanel();
+        }
+
+        private void CloseReputationPanel()
+        {
+            ReputationPanelControl.Hide();
+            _repPanelOpen = false;
+        }
+
+        private void RefreshReputationPanel()
+        {
+            if (_world is null) return;
+            var player = _world.GetPlayer();
+            ReputationPanelControl.Refresh(player?.ReputationLog, _staticData);
+        }
+
         private DialogueContext BuildDialogueContext(WorldObjectMoveable actor)
         {
             var player = _world?.GetPlayer();
             var playerHandle = player?.Handle ?? ObjectHandle.None;
             return new DialogueContext
             {
-                Actor               = actor,
-                Player              = player,
-                GameHour            = _world?.CurrentGameHour ?? 0,
-                GameTick            = _world?.CurrentGameTick ?? 0,
-                GetPlayerItemCount  = itemId => _world?.SnapshotInventoryCount(playerHandle, itemId) ?? 0
+                Actor                = actor,
+                Player               = player,
+                GameHour             = _world?.CurrentGameHour ?? 0,
+                GameTick             = _world?.CurrentGameTick ?? 0,
+                GetPlayerItemCount   = itemId   => _world?.SnapshotInventoryCount(playerHandle, itemId) ?? 0,
+                GetPlayerReputation  = factionId => player?.ReputationLog?.GetReputation(factionId) ?? 0
             };
         }
     }

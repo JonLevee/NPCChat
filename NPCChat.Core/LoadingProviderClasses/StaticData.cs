@@ -1,5 +1,6 @@
 #nullable enable
 using NPCChat.Core.Attributes;
+using NPCChat.Core.FactionClasses;
 using NPCChat.Core.ItemClasses;
 using NPCChat.Core.QuestClasses;
 
@@ -13,11 +14,13 @@ namespace NPCChat.Core.LoadingProviderClasses
     [Singleton]
     public class StaticData
     {
-        private readonly Dictionary<string, ItemDef> _items = new(StringComparer.OrdinalIgnoreCase);
-        private readonly Dictionary<string, QuestDef> _quests = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, ItemDef>   _items   = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, QuestDef>  _quests  = new(StringComparer.OrdinalIgnoreCase);
+        private readonly Dictionary<string, FactionDef> _factions = new(StringComparer.OrdinalIgnoreCase);
 
-        public IReadOnlyDictionary<string, ItemDef> Items => _items;
-        public IReadOnlyDictionary<string, QuestDef> Quests => _quests;
+        public IReadOnlyDictionary<string, ItemDef>   Items    => _items;
+        public IReadOnlyDictionary<string, QuestDef>  Quests   => _quests;
+        public IReadOnlyDictionary<string, FactionDef> Factions => _factions;
 
         public void RegisterItem(ItemDef item)
         {
@@ -36,6 +39,15 @@ namespace NPCChat.Core.LoadingProviderClasses
 
         public QuestDef? GetQuest(string id)
             => _quests.TryGetValue(id, out var def) ? def : null;
+
+        public void RegisterFaction(FactionDef faction)
+        {
+            ArgumentNullException.ThrowIfNull(faction);
+            _factions[faction.Id] = faction;
+        }
+
+        public FactionDef? GetFaction(string id)
+            => _factions.TryGetValue(id, out var def) ? def : null;
 
         // Legacy: may be populated by future YAML loaders.
         public Dictionary<string, byte> DispositionIds { get; set; } = [];

@@ -5,6 +5,7 @@ using System.Drawing;
 using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
+using NPCChat.Core.AIClasses;
 using NPCChat.Core.Attributes;
 using NPCChat.Core.BehaviorClasses;
 using NPCChat.Core.DialogueClasses;
@@ -58,6 +59,9 @@ namespace NPCChat.Core.WorldClasses
         // tracks only the most recently added one.
         private WorldObjectMoveable? _playerObject;
         private int _currentGameTick;
+
+        // AI systems (sim-thread-only)
+        private readonly AlertBoard _alertBoard = new();
 
         // Dialogue / interaction system
         // Written by the sim thread at the end of each AdvanceBehaviors pass;
@@ -391,6 +395,38 @@ namespace NPCChat.Core.WorldClasses
         public void EnqueueQuestReward(QuestRewardCommand cmd)
         {
             _questRewardCommands.Writer.TryWrite(cmd);
+        }
+
+        /// <summary>
+        /// Returns true if there is an unobstructed line of sight between two bounds.
+        /// Samples half-tile steps along the segment and tests against all static obstacles.
+        /// Thread-safe: acquires its own read lock. May be called from the sim thread.
+        /// </summary>
+        public bool HasLineOfSight(Bounds observer, Bounds target)
+        {
+            var from = new Point(
+                observer.Left + observer.Width  / 2,
+                observer.Top  + observer.Height / 2);
+            var to = new Point(
+                target.Left + target.Width  / 2,
+                target.Top  + target.Height / 2);
+
+            if (from == to) return true;
+
+            List<Bounds> statics;
+            _worldLock.EnterReadLock();
+            try
+            {
+                var seen = new HashSet<ObjectHandle>();
+                statics = new List<Bounds>();
+                foreach (var chunk in _chunks.Values)
+                    foreach (var info in chunk.StaticInfos)
+                        if (seen.Add(info.Handle))
+                            statics.Add(info.Bounds);
+            }
+            finally { _worldLock.ExitReadLock(); }
+
+            return AIClasses.LineOfSight.Check(from, to, statics);
         }
 
         /// <summary>
@@ -890,6 +926,9 @@ namespace NPCChat.Core.WorldClasses
             int gameTick = _currentGameTick++;
             int gameHour = (gameTick / _options.TicksPerGameHour) % 24;
 
+            // Swap alert buffers so last tick's posts are readable this tick.
+            _alertBoard.BeginTick();
+
             foreach (var actor in snapshot)
             {
                 if (actor.Actor is not { } component) continue;
@@ -904,7 +943,11 @@ namespace NPCChat.Core.WorldClasses
                     component.TicksSinceLastProcess = 0;
                 }
 
-                var ctx = new SimContext(actor, playerBounds, gameTick, gameHour, EnqueueMoveCommand);
+                var ctx = new SimContext(
+                    actor, playerBounds, gameTick, gameHour, EnqueueMoveCommand,
+                    checkLineOfSight:  HasLineOfSight,
+                    postAlert:         _alertBoard.Post,
+                    getNearbyAlerts:   _alertBoard.GetNearbyAlerts);
 
                 // 1. Schedule check — transition mode if the time range changed.
                 var scheduledMode = component.Schedule.GetModeForTime(gameHour);

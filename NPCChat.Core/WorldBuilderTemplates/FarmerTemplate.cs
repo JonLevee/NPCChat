@@ -1,3 +1,4 @@
+using System.Drawing;
 using NPCChat.Core.BehaviorClasses;
 using NPCChat.Core.BehaviorClasses.Tasks;
 using NPCChat.Core.CharacterClasses;
@@ -54,6 +55,40 @@ namespace NPCChat.Core.WorldBuilderTemplates
                 Trigger  = ctx => ctx.Actor.Actor?.Mode == "Rest"
                                && ctx.Actor.Actor.ActionQueue.TryPeekHighest() is not IdleTask,
                 ActionFactory = _ => new IdleTask(int.MaxValue, priority: 5)
+            });
+
+            // Reactive rule: flee from threat when player enters perception range.
+            actor.ReactiveRules.Add(new BehaviorRule
+            {
+                Priority = 60,
+                Trigger = ctx =>
+                {
+                    if (ctx.PlayerBounds is not { } pb) return false;
+                    return ctx.Actor.Actor!.CanPerceive(ctx.Actor.Bounds, pb);
+                },
+                ActionFactory = _ => new FleeTask(priority: 60)
+            });
+
+            // Reactive rule: investigate a nearby alert (lower priority than flee).
+            actor.ReactiveRules.Add(new BehaviorRule
+            {
+                Priority = 20,
+                Trigger = ctx =>
+                {
+                    var center = new Point(
+                        ctx.Actor.Bounds.Left + ctx.Actor.Bounds.Width  / 2,
+                        ctx.Actor.Bounds.Top  + ctx.Actor.Bounds.Height / 2);
+                    var alerts = ctx.GetNearbyAlerts?.Invoke(center, 15);
+                    return alerts is { Length: > 0 };
+                },
+                ActionFactory = ctx =>
+                {
+                    var center = new Point(
+                        ctx.Actor.Bounds.Left + ctx.Actor.Bounds.Width  / 2,
+                        ctx.Actor.Bounds.Top  + ctx.Actor.Bounds.Height / 2);
+                    var alerts = ctx.GetNearbyAlerts?.Invoke(center, 15) ?? [];
+                    return new InvestigateTask(alerts[0].Position, priority: 20, lookDuration: 15);
+                }
             });
 
             // ── Dialogue ─────────────────────────────────────────────────────

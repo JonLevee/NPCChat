@@ -1,4 +1,6 @@
+#nullable enable
 using System.Collections.Generic;
+using NPCChat.Core.DialogueClasses;
 using NPCChat.Core.WorldClasses;
 
 namespace NPCChat.Core.BehaviorClasses
@@ -27,7 +29,7 @@ namespace NPCChat.Core.BehaviorClasses
 
         /// <summary>
         /// How far (in grid units) this actor can detect other world objects.
-        /// Line-of-sight is deferred to Phase 5; this is a range-only check.
+        /// Measured as Chebyshev distance (matches 8-directional grid movement).
         /// </summary>
         public float PerceptionRange { get; set; } = 8f;
 
@@ -39,6 +41,28 @@ namespace NPCChat.Core.BehaviorClasses
 
         /// <summary>Ticks accumulated since this actor was last processed (used for distant throttling).</summary>
         public int TicksSinceLastProcess { get; set; }
+
+        // ── Dialogue ──────────────────────────────────────────────────────────
+
+        /// <summary>
+        /// The NPC's dialogue graph. Null for actors that have no conversation (e.g. simple mobs).
+        /// Owned by the sim thread; read by the UI thread only during an active DialogueSession.
+        /// </summary>
+        public DialogueTree? DialogueTree { get; set; }
+
+        /// <summary>
+        /// Named entry points into DialogueTree exposed to nearby players.
+        /// Evaluated by the sim thread each tick; results published via InteractionSnapshot.
+        /// </summary>
+        public List<InteractionEntry> Interactions { get; } = [];
+
+        /// <summary>
+        /// Per-actor cooldown state for DialoguePoolNode picks.
+        /// Owned by the sim/UI thread depending on who last picked a line.
+        /// </summary>
+        public CooldownTracker DialogueCooldowns { get; } = new();
+
+        // ── Spatial helpers ───────────────────────────────────────────────────
 
         /// <summary>
         /// Returns true if the given bounds are within this actor's perception range.

@@ -11,7 +11,9 @@
       "Bash(git stash:*)",
       "Bash(powershell:*)",
       "Bash(r\\\\\" -Quiet\")",
-      "Bash(r)"
+      "Bash(r)",
+      "Bash(sed -i '1s/^/#nullable enable\\\\n/' \"/c/Source/NPCChat/NPCChat.Core/DialogueClasses/DialogueContext.cs\" \"/c/Source/NPCChat/NPCChat.Core/DialogueClasses/DialogueChoice.cs\")",
+      "Bash(sed -i '1s/^/#nullable enable\\\\n/' \"/c/Source/NPCChat/NPCChat.Core/BehaviorClasses/ActorComponent.cs\")"
     ]
   }
 }

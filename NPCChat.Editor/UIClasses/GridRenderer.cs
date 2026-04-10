@@ -5,10 +5,11 @@ using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Shapes;
 using NPCChat.Core.SupportClasses;
-using NPCChatLib.WorldClasses;
+using NPCChat.Core.WorldClasses;
 using Brush = System.Windows.Media.Brush;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
+using DrawingPoint = System.Drawing.Point;
 
 namespace NPCChat.Editor.UIClasses
 {
@@ -21,6 +22,7 @@ namespace NPCChat.Editor.UIClasses
         private readonly ChunkInfo _chunkInfo;
 
         private readonly Dictionary<ObjectHandle, Polygon> _polygonMap = new();
+        private readonly Dictionary<ObjectHandle, TextBlock> _labelMap = new();
         private ObjectHandle _highlightedHandle = ObjectHandle.None;
         private ObjectHandle _selectedHandle = ObjectHandle.None;
 
@@ -28,6 +30,7 @@ namespace NPCChat.Editor.UIClasses
         public event Action<WorldObject?>? ObjectSelected;
 
         public IsometricTransform? IsoTransform { get; private set; }
+        public ObjectHandle SelectedHandle => _selectedHandle;
 
         public GridRenderer(MainWindow window, ChunkInfo chunkInfo)
         {
@@ -93,7 +96,7 @@ namespace NPCChat.Editor.UIClasses
             {
                 var obj = (WorldObject)polygon.Tag!;
                 polygon.Stroke = Brushes.Black;
-                polygon.StrokeThickness = obj.Category == WorldObjectCategory.Dynamic ? 1.5 : 1.0;
+                polygon.StrokeThickness = obj is WorldObjectMoveable ? 1.5 : 1.0;
             }
         }
 
@@ -101,6 +104,7 @@ namespace NPCChat.Editor.UIClasses
         {
             var objects = world.EnumerateWorldObjects();
             _polygonMap.Clear();
+            _labelMap.Clear();
             _highlightedHandle = ObjectHandle.None;
             _selectedHandle = ObjectHandle.None;
             _mapCanvas.Children.Clear();
@@ -126,16 +130,16 @@ namespace NPCChat.Editor.UIClasses
 
             var sorted = objects
                 .OrderBy(o => o.Bounds.Right + o.Bounds.Bottom)
-                .ThenBy(o => o.Category == WorldObjectCategory.Dynamic ? 1 : 0);
+                .ThenBy(o => o is WorldObjectMoveable ? 1 : 0);
 
             foreach (var obj in sorted)
                 DrawObject(obj);
 
             _statusTextBlock.Text =
                 $"Objects: {objects.Count}" +
-                $"   |   Static: {objects.Count(x => x.Category == WorldObjectCategory.Static)}" +
-                $"   |   Dynamic: {objects.Count(x => x.Category == WorldObjectCategory.Dynamic)}" +
-                $"   |   Chunks: {world.Chunks.Count}" +
+                $"   |   Static: {objects.Count(x => x is WorldObjectStatic)}" +
+                $"   |   Moveable: {objects.Count(x => x is WorldObjectMoveable)}" +
+                $"   |   Chunks: {world.ChunkCount}" +
                 $"   |   ChunkSize: {_chunkInfo.ChunkSize}";
         }
 
@@ -186,7 +190,7 @@ namespace NPCChat.Editor.UIClasses
                 Points = new PointCollection { top, right, bottom, left },
                 Fill = GetFillBrush(obj),
                 Stroke = Brushes.Black,
-                StrokeThickness = obj.Category == WorldObjectCategory.Dynamic ? 1.5 : 1.0,
+                StrokeThickness = obj is WorldObjectMoveable ? 1.5 : 1.0,
                 ToolTip = $"{obj.Kind}\n{obj.Category}\n{obj.Bounds}\n{obj.Handle}",
                 Tag = obj
             };
@@ -210,6 +214,7 @@ namespace NPCChat.Editor.UIClasses
             Canvas.SetLeft(label, center.X - RenderScale * 0.15);
             Canvas.SetTop(label,  center.Y - RenderScale * 0.22);
             _mapCanvas.Children.Add(label);
+            _labelMap[obj.Handle] = label;
         }
 
         private static Brush GetFillBrush(WorldObject obj) =>
@@ -217,7 +222,7 @@ namespace NPCChat.Editor.UIClasses
             {
                 WorldObjectKind.Building => CreateBrush(59, 130, 246),
                 WorldObjectKind.Player   => CreateBrush(34, 197, 94),
-                WorldObjectKind.Npc      => CreateBrush(245, 158, 11),
+                WorldObjectKind.NPC      => CreateBrush(245, 158, 11),
                 WorldObjectKind.Mob      => CreateBrush(239, 68, 68),
                 _                        => CreateBrush(148, 163, 184)
             };
@@ -230,10 +235,76 @@ namespace NPCChat.Editor.UIClasses
             {
                 WorldObjectKind.Building        => "B",
                 WorldObjectKind.Player          => "P",
-                WorldObjectKind.Npc             => "N",
+                WorldObjectKind.NPC             => "N",
                 WorldObjectKind.Mob             => "M",
                 WorldObjectKind.DungeonEntrance => "D",
                 _                               => "?"
             };
+
+        /// <summary>
+        /// Moves moveable polygons and their labels to reflect current world positions.
+        /// Called from the UI timer without a full redraw.
+        /// </summary>
+        public void UpdateMoveablePositions((ObjectHandle Handle, Bounds Bounds)[] positions)
+        {
+            if (IsoTransform is null) return;
+            foreach (var (handle, bounds) in positions)
+            {
+                if (!_polygonMap.TryGetValue(handle, out var polygon)) continue;
+
+                var top    = IsoTransform.GridToScreen(bounds.Left,  bounds.Top);
+                var right  = IsoTransform.GridToScreen(bounds.Right, bounds.Top);
+                var bottom = IsoTransform.GridToScreen(bounds.Right, bounds.Bottom);
+                var left   = IsoTransform.GridToScreen(bounds.Left,  bounds.Bottom);
+                polygon.Points = new PointCollection { top, right, bottom, left };
+
+                if (_labelMap.TryGetValue(handle, out var label))
+                {
+                    var center = IsoTransform.GridToScreen(
+                        (bounds.Left + bounds.Right) / 2.0,
+                        (bounds.Top  + bounds.Bottom) / 2.0);
+                    Canvas.SetLeft(label, center.X - RenderScale * 0.15);
+                    Canvas.SetTop(label,  center.Y - RenderScale * 0.22);
+                }
+            }
+        }
+
+        private const string PathPreviewTag = "PathPreview";
+
+        /// <summary>
+        /// Draws path preview lines for the selected object's remaining path steps.
+        /// Pass an empty array to clear without drawing.
+        /// </summary>
+        public void DrawPathPreview(DrawingPoint[] path)
+        {
+            ClearPathPreview();
+            if (IsoTransform is null || path.Length < 2) return;
+
+            for (int i = 0; i < path.Length - 1; i++)
+            {
+                var from = IsoTransform.GridToScreen(path[i].X + 0.5, path[i].Y + 0.5);
+                var to   = IsoTransform.GridToScreen(path[i + 1].X + 0.5, path[i + 1].Y + 0.5);
+                _mapCanvas.Children.Add(new Line
+                {
+                    X1 = from.X, Y1 = from.Y,
+                    X2 = to.X,   Y2 = to.Y,
+                    Stroke = Brushes.Cyan,
+                    StrokeThickness = 1.5,
+                    Opacity = 0.65,
+                    IsHitTestVisible = false,
+                    Tag = PathPreviewTag
+                });
+            }
+        }
+
+        public void ClearPathPreview()
+        {
+            var toRemove = _mapCanvas.Children
+                .OfType<Line>()
+                .Where(l => PathPreviewTag.Equals(l.Tag))
+                .ToList();
+            foreach (var line in toRemove)
+                _mapCanvas.Children.Remove(line);
+        }
     }
 }

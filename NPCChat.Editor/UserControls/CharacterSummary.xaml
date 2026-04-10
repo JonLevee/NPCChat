@@ -16,6 +16,8 @@
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />
@@ -35,11 +37,31 @@
             <Label Grid.Row="1" Grid.Column="0"
                    Content="Category"
                    Foreground="#94A3B8"
-                   Padding="0,0,8,0" />
+                   Padding="0,0,8,2" />
             <Label x:Name="CategoryValue"
                    Grid.Row="1" Grid.Column="1"
                    Content="{Binding Category}"
                    Foreground="AntiqueWhite"
+                   Padding="0,0,0,2" />
+
+            <Label Grid.Row="2" Grid.Column="0"
+                   Content="Mode"
+                   Foreground="#94A3B8"
+                   Padding="0,0,8,2" />
+            <Label x:Name="ModeValue"
+                   Grid.Row="2" Grid.Column="1"
+                   Content="—"
+                   Foreground="#86EFAC"
+                   Padding="0,0,0,2" />
+
+            <Label Grid.Row="3" Grid.Column="0"
+                   Content="Task"
+                   Foreground="#94A3B8"
+                   Padding="0,0,8,0" />
+            <Label x:Name="TaskValue"
+                   Grid.Row="3" Grid.Column="1"
+                   Content="—"
+                   Foreground="#86EFAC"
                    Padding="0" />
         </Grid>
     </Border>

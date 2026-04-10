@@ -12,10 +12,10 @@ using NPCChat.Editor;
 using NPCChat.Editor.Persistence;
 using NPCChat.Editor.UIClasses;
 using NPCChat.Editor.UserControls;
-using NPCChatLib.Builders;
-using NPCChatLib.Extensions;
-using NPCChatLib.WorldBuilderTemplates;
-using NPCChatLib.WorldClasses;
+using NPCChat.Core.Builders;
+using NPCChat.Core.Extensions;
+using NPCChat.Core.WorldBuilderTemplates;
+using NPCChat.Core.WorldClasses;
 using Point = System.Windows.Point;
 
 namespace NPCChat
@@ -86,6 +86,28 @@ namespace NPCChat
                 StartStopButton_Click(this, new RoutedEventArgs());
                 BuildDemoTownButton_Click(this, new RoutedEventArgs());
             }
+
+            // Surface any simulation fault on the UI thread so it is not silently swallowed.
+            if (_world?.SimulationFault is { } fault)
+                throw new AggregateException("Simulation loop faulted.", fault);
+
+            if (_world is not null)
+            {
+                _gridRenderer.UpdateMoveablePositions(_world.SnapshotMoveablePositions());
+
+                var selected = _gridRenderer.SelectedHandle;
+                if (selected != ObjectHandle.None)
+                    _gridRenderer.DrawPathPreview(_world.SnapshotPath(selected));
+                else
+                    _gridRenderer.ClearPathPreview();
+
+                // Update actor debug info (Mode/Task) for all NPC summaries.
+                foreach (var (handle, cs) in _summaryMap)
+                {
+                    if (_world.TryGetObject(handle, out var obj) && obj is WorldObjectMoveable m)
+                        cs.UpdateActorDebugInfo(m.Actor);
+                }
+            }
         }
 
         private void ClearWorld()
@@ -100,6 +122,7 @@ namespace NPCChat
             serviceScope = App.Services.CreateScope();
             _worldBuilder = serviceScope.ServiceProvider.GetRequiredService<WorldDataBuilder>();
             _world = serviceScope.ServiceProvider.GetRequiredService<WorldData>();
+            _world.StartSimulationProcessing();
             RefreshWorld();
         }
 
@@ -110,7 +133,7 @@ namespace NPCChat
             var objects = _world.EnumerateWorldObjects();
             var player = objects.FirstOrDefault(o => o.Kind == WorldObjectKind.Player);
             var npcs = objects
-                .Where(o => o.Kind == WorldObjectKind.Npc)
+                .Where(o => o.Kind == WorldObjectKind.NPC)
                 .OrderBy(o => o.Category);
 
             _summaryMap.Clear();
@@ -202,6 +225,21 @@ namespace NPCChat
         {
             lastMousePosition = e.GetPosition(this.MapCanvas);
             UpdateTitle();
+        }
+
+        private void MapCanvas_MouseRightButtonUp(object sender, MouseButtonEventArgs e)
+        {
+            if (_world is null || _gridRenderer.IsoTransform is null) return;
+
+            var selected = _gridRenderer.SelectedHandle;
+            if (selected == ObjectHandle.None) return;
+            if (!_world.TryGetObject(selected, out var obj) || obj is not WorldObjectMoveable) return;
+
+            var screenPos = e.GetPosition(MapCanvas);
+            var (gx, gy) = _gridRenderer.IsoTransform.ScreenToGrid(screenPos);
+            _world.EnqueueMoveCommand(new MoveCommand(selected, new System.Drawing.Point(gx, gy)));
+
+            e.Handled = true;
         }
 
         private string GridCoordLabel(Point screenPoint)

@@ -1,8 +1,8 @@
-﻿using NPCChatLib.Attributes;
-using NPCChatLib.WorldBuilderTemplates;
-using NPCChatLib.WorldClasses;
+﻿using NPCChat.Core.Attributes;
+using NPCChat.Core.WorldBuilderTemplates;
+using NPCChat.Core.WorldClasses;
 
-namespace NPCChatLib.Builders
+namespace NPCChat.Core.Builders
 {
     [Scoped]
     public class WorldDataBuilder(

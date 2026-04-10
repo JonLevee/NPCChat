@@ -6,7 +6,12 @@
       "Bash(git commit:*)",
       "Bash(xargs grep:*)",
       "Bash(ls:*)",
-      "Bash(dotnet build:*)"
+      "Bash(dotnet build:*)",
+      "Bash(dotnet test:*)",
+      "Bash(git stash:*)",
+      "Bash(powershell:*)",
+      "Bash(r\\\\\" -Quiet\")",
+      "Bash(r)"
     ]
   }
 }

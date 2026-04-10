@@ -1,8 +1,8 @@
 ﻿using System.Drawing;
 using NPCChat.Core.Validation;
-using NPCChatLib.LocalEventArgs;
+using NPCChat.Core.LocalEventArgs;
 
-namespace NPCChatLib.YamlImport
+namespace NPCChat.Core.YamlImport
 {
     public class YamlOccupied
     {

@@ -1,6 +1,6 @@
 ﻿using System.Drawing;
 
-namespace NPCChatLib.YamlImport
+namespace NPCChat.Core.YamlImport
 {
     public class YamlCharacter : YamlObjectBase
     {

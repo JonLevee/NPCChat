@@ -1,7 +1,7 @@
 ﻿using System.Collections.Generic;
 
 
-namespace NPCChatLib.WorldClasses
+namespace NPCChat.Core.WorldClasses
 {
     public interface IObjectHandle
     {

@@ -1,11 +1,11 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NPCChatLib.Attributes;
+using NPCChat.Core.Attributes;
 using System.IO;
 using System.Linq;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace NPChat.CharacterClasses
+namespace NPCChat.Core.CharacterClasses
 {
     [Singleton]
     public class CharacterCoreMetadataProvider

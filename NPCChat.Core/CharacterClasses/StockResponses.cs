@@ -1,12 +1,13 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Linq;
+using NPCChat.Core.Attributes;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace NPChat.CharacterClasses
+namespace NPCChat.Core.CharacterClasses
 {
     // StockResponses.cs
     // Requires NuGet: YamlDotNet
@@ -160,9 +161,10 @@ namespace NPChat.CharacterClasses
 
     #region Loader
 
-    public static class StockResponsesLoader
+    [Singleton]
+    public class StockResponsesLoader
     {
-        public static StockResponsesDb LoadFromFile(string path)
+        public StockResponsesDb LoadFromFile(string path)
         {
             var yaml = File.ReadAllText(path);
 
@@ -175,7 +177,7 @@ namespace NPChat.CharacterClasses
             return BuildRuntimeDb(root);
         }
 
-        public static StockResponsesDb LoadFromText(string yamlText)
+        public StockResponsesDb LoadFromText(string yamlText)
         {
             var deserializer = new DeserializerBuilder()
                 .WithNamingConvention(UnderscoredNamingConvention.Instance)
@@ -313,14 +315,15 @@ namespace NPChat.CharacterClasses
 
     #region Helpers: gates, affinity, cooldown, selection
 
-    public static class DialogueHelpers
+    [Singleton]
+    public class DialogueHelpers
     {
         /// <summary>
         /// Evaluate hard gates: requires (all must pass), forbids (none may match).
         /// npcStats are expected normalized 0..1 for these gates (recommended).
         /// Missing stat => fail requires, and does NOT trigger forbids.
         /// </summary>
-        public static bool PassHardGates(
+        public bool PassHardGates(
             StockResponse r,
             IReadOnlyDictionary<string, float> npcStats01)
         {
@@ -349,7 +352,7 @@ namespace NPChat.CharacterClasses
         /// Dot-product affinity, clamped to [0..1] (negative = "actively wrong").
         /// Assumes npcMoodUnit and response.MoodVecUnit are unit vectors.
         /// </summary>
-        public static float Affinity01(float[] npcMoodUnit, StockResponse r)
+        public float Affinity01(float[] npcMoodUnit, StockResponse r)
         {
             float dot = 0f;
             var a = npcMoodUnit;
@@ -363,7 +366,7 @@ namespace NPChat.CharacterClasses
         /// Intent filter: if desiredIntent is null/empty, pass everything.
         /// If the response has no intents, treat it as "generic" and pass.
         /// </summary>
-        public static bool PassIntent(StockResponse r, string? desiredIntent)
+        public bool PassIntent(StockResponse r, string? desiredIntent)
         {
             if (string.IsNullOrWhiteSpace(desiredIntent)) return true;
             if (r.Intent.Length == 0) return true;
@@ -426,8 +429,16 @@ namespace NPChat.CharacterClasses
         private static string MakeGroupKey(string speakerId, string group) => speakerId + "||G||" + group;
     }
 
-    public static class DialoguePicker
+    [Singleton]
+    public class DialoguePicker
     {
+        private readonly DialogueHelpers _helpers;
+
+        public DialoguePicker(DialogueHelpers helpers)
+        {
+            _helpers = helpers;
+        }
+
         /// <summary>
         /// End-to-end pick:
         /// - gate context/role/target (cheap)
@@ -438,7 +449,7 @@ namespace NPChat.CharacterClasses
         /// - weight/freshness
         /// - weighted-random among topN using score^exponent
         /// </summary>
-        public static StockResponse? PickOne(
+        public StockResponse? PickOne(
             IEnumerable<StockResponse> responses,
             string context,
             string role,
@@ -473,11 +484,11 @@ namespace NPChat.CharacterClasses
             foreach (var r in responses)
             {
                 if (!ContextMatch(r) || !RoleMatch(r) || !TargetMatch(r)) continue;
-                if (!DialogueHelpers.PassIntent(r, desiredIntent)) continue;
-                if (!DialogueHelpers.PassHardGates(r, npcStats01)) continue;
+                if (!_helpers.PassIntent(r, desiredIntent)) continue;
+                if (!_helpers.PassHardGates(r, npcStats01)) continue;
                 if (!cooldowns.IsOffCooldown(speakerId, r, nowSeconds)) continue;
 
-                var affinity = DialogueHelpers.Affinity01(npcMoodUnit, r);
+                var affinity = _helpers.Affinity01(npcMoodUnit, r);
                 if (affinity < r.MinAffinity) continue;
 
                 var freshness = freshnessByResponseId?.Invoke(r.Id) ?? 1.0f;
@@ -518,13 +529,14 @@ namespace NPChat.CharacterClasses
 
     #region Example: building NPC mood vector from stats
 
-    public static class MoodVectorBuilder
+    [Singleton]
+    public class MoodVectorBuilder
     {
         /// <summary>
         /// Build NPC mood vector in the DB axis order.
         /// statSigned could be already in [-1..+1]. Missing => 0 (neutral).
         /// </summary>
-        public static float[] BuildNpcMoodUnit(StockResponsesDb db, IReadOnlyDictionary<string, float> statSignedMinus1ToPlus1)
+        public float[] BuildNpcMoodUnit(StockResponsesDb db, IReadOnlyDictionary<string, float> statSignedMinus1ToPlus1)
         {
             var v = new float[db.MoodAxes.Length];
             for (int i = 0; i < db.MoodAxes.Length; i++)

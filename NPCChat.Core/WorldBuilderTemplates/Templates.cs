@@ -1,10 +1,10 @@
-﻿using System;
+using System;
 using System.Drawing;
-using NPCChatLib.Attributes;
-using NPCChatLib.Builders;
-using NPCChatLib.WorldClasses;
+using NPCChat.Core.Attributes;
+using NPCChat.Core.Builders;
+using NPCChat.Core.WorldClasses;
 
-namespace NPCChatLib.WorldBuilderTemplates
+namespace NPCChat.Core.WorldBuilderTemplates
 {
     public static class BuildingSize
     {
@@ -17,15 +17,15 @@ namespace NPCChatLib.WorldBuilderTemplates
     [Transient]
     public partial class Templates(WorldDataBuilder builder) : IDisposable
     {
-        private readonly Size CharacterSize = new Size(2,2);
+        private const float DefaultMoveSpeed = 4.0f; // grid units per second
+        private readonly Size CharacterSize = new Size(2, 2);
 
-        public Templates AddPlayer(int x, int y) => Add(WorldObjectCategory.Dynamic, WorldObjectKind.Player, x, y, CharacterSize);
-        public Templates AddNPC(int x, int y) => Add(WorldObjectCategory.Dynamic, WorldObjectKind.Npc, x, y, CharacterSize);
-        public Templates AddShop(int x, int y, Size size) => Add(WorldObjectCategory.Static, WorldObjectKind.Building, x, y, size);
+        public Templates AddPlayer(int x, int y) => AddMoveable(WorldObjectKind.Player, x, y, CharacterSize);
+        public Templates AddNPC(int x, int y) => AddMoveable(WorldObjectKind.NPC, x, y, CharacterSize);
+        public Templates AddShop(int x, int y, Size size) => AddStatic(WorldObjectKind.Building, x, y, size);
 
         public Templates AddSmallTown()
         {
-            AddShop(2, 2, BuildingSize.Small);
             AddShop(10, 2, BuildingSize.Small);
             AddShop(18, 2, BuildingSize.Small);
             AddShop(2, 8, BuildingSize.Small);
@@ -34,8 +34,8 @@ namespace NPCChatLib.WorldBuilderTemplates
             AddShop(6, 16, BuildingSize.Small);
             AddShop(20, 16, BuildingSize.Small);
             AddPlayer(16, 14);
-            AddNPC(8, 14);
-            AddNPC(24, 14);
+            AddBlacksmith(8, 14, shopX: 2, shopY: 2);
+            AddFarmer(24, 14);
 
             return this;
         }
@@ -45,12 +45,25 @@ namespace NPCChatLib.WorldBuilderTemplates
             GC.SuppressFinalize(this);
         }
 
-        private Templates Add(WorldObjectCategory category, WorldObjectKind kind, int x, int y, Size size)
+        private Templates AddMoveable(WorldObjectKind kind, int x, int y, Size size)
         {
-            var o = new WorldObject
+            var o = new WorldObjectMoveable
             {
                 Kind = kind,
-                Category = category,
+                Handle = ObjectHandle.None,
+                Bounds = new Bounds(x, y, size),
+                MaxSpeed = DefaultMoveSpeed
+            };
+
+            builder.World.AddObject(o);
+            return this;
+        }
+
+        private Templates AddStatic(WorldObjectKind kind, int x, int y, Size size)
+        {
+            var o = new WorldObjectStatic
+            {
+                Kind = kind,
                 Handle = ObjectHandle.None,
                 Bounds = new Bounds(x, y, size)
             };

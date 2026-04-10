@@ -2,7 +2,7 @@
 using System.Runtime.InteropServices;
 
 
-namespace NPCChatLib.WorldClasses
+namespace NPCChat.Core.WorldClasses
 {
     public readonly record struct ChunkPosition(int X, int Y);
 }

@@ -1,7 +1,7 @@
-﻿using NPCChatLib.Attributes;
+﻿using NPCChat.Core.Attributes;
 using YamlDotNet.Serialization;
 
-namespace NPChat.CharacterClasses
+namespace NPCChat.Core.CharacterClasses
 {
     public enum TraitName
     {
@@ -37,11 +37,6 @@ namespace NPChat.CharacterClasses
     {
         public List<string> Traits { get; set; } = new List<string>();
         public Dictionary<string, CharacterPersonality> Archetypes { get; set; } = new Dictionary<string, CharacterPersonality>();
-    }
-
-    public class Character
-    {
-
     }
 
     [Transient]

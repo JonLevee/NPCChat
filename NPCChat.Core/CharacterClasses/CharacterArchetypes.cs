@@ -1,8 +1,8 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
-using NPCChatLib.Attributes;
+using NPCChat.Core.Attributes;
 using System.Collections.Generic;
 
-namespace NPChat.CharacterClasses
+namespace NPCChat.Core.CharacterClasses
 {
     [Singleton]
     public class CharacterArchetypes : Dictionary<string, CharacterArchetype>

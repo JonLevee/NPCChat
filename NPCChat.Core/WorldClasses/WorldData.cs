@@ -280,6 +280,26 @@ namespace NPCChat.Core.WorldClasses
         }
 
         /// <summary>
+        /// Current absolute simulation tick (written by sim thread; int reads are atomic).
+        /// Safe to read from the UI thread for display and dialogue context purposes.
+        /// </summary>
+        public int CurrentGameTick => _currentGameTick;
+
+        /// <summary>Current in-game hour (0–23). Derived from CurrentGameTick.</summary>
+        public int CurrentGameHour => (_currentGameTick / _options.TicksPerGameHour) % 24;
+
+        /// <summary>
+        /// Returns the player WorldObjectMoveable, or null if no player has been added.
+        /// Safe to call from the UI thread.
+        /// </summary>
+        public WorldObjectMoveable? GetPlayer()
+        {
+            _worldLock.EnterReadLock();
+            try { return _playerObject; }
+            finally { _worldLock.ExitReadLock(); }
+        }
+
+        /// <summary>
         /// Returns a snapshot of all moveable objects' current positions.
         /// Safe to call from the UI thread.
         /// </summary>

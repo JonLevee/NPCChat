@@ -6,6 +6,7 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
+using NPCChat.Core.DialogueClasses;
 using NPCChat.Core.SupportClasses;
 using NPCChat.Core.Validation;
 using NPCChat.Editor;
@@ -16,6 +17,7 @@ using NPCChat.Core.Builders;
 using NPCChat.Core.Extensions;
 using NPCChat.Core.WorldBuilderTemplates;
 using NPCChat.Core.WorldClasses;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using Point = System.Windows.Point;
 
 namespace NPCChat
@@ -37,6 +39,9 @@ namespace NPCChat
         private readonly ChunkInfo _chunkInfo;
         private GridRenderer _gridRenderer = null!;
         private readonly Dictionary<ObjectHandle, CharacterSummary> _summaryMap = new();
+
+        // Dialogue state
+        private DialogueSession? _dialogueSession;
 
 
         public MainWindow(UserSettingsRepository userSettingsRepository, ChunkInfo chunkInfo)
@@ -61,6 +66,8 @@ namespace NPCChat
                 if (obj is not null && _summaryMap.TryGetValue(obj.Handle, out var summary))
                     summary.SetHighlighted(true);
             };
+
+            _gridRenderer.InteractionOptionSelected += OnInteractionOptionSelected;
 
             Title = "NPCChat Sandbox - Map View";
             _gameTimer.Interval = TimeSpan.FromMilliseconds(20);
@@ -100,6 +107,12 @@ namespace NPCChat
                     _gridRenderer.DrawPathPreview(_world.SnapshotPath(selected));
                 else
                     _gridRenderer.ClearPathPreview();
+
+                // Interaction overlays — hidden while a dialogue is open.
+                if (_dialogueSession is null)
+                    _gridRenderer.UpdateInteractionOverlays(_world.SnapshotInteractions());
+                else
+                    _gridRenderer.ClearInteractionOverlays();
 
                 // Update actor debug info (Mode/Task) for all NPC summaries.
                 foreach (var (handle, cs) in _summaryMap)
@@ -247,6 +260,98 @@ namespace NPCChat
             if (_gridRenderer.IsoTransform is null) return screenPoint.ToString();
             var (gx, gy) = _gridRenderer.IsoTransform.ScreenToGrid(screenPoint);
             return $"({gx}, {gy})";
+        }
+
+        // ── Dialogue ──────────────────────────────────────────────────────────
+
+        private void OnInteractionOptionSelected(ObjectHandle actorHandle, InteractionOption option)
+        {
+            if (_world is null) return;
+            if (!_world.TryGetObject(actorHandle, out var obj) || obj is not WorldObjectMoveable actor) return;
+            if (actor.Actor?.DialogueTree is null) return;
+
+            // Close any existing session before starting a new one.
+            CloseDialogue();
+
+            _dialogueSession = new DialogueSession(actor, option.NodeId);
+            var ctx = BuildDialogueContext(actor);
+            _dialogueSession.Advance(ctx);
+            RefreshDialoguePanel();
+        }
+
+        private void Window_KeyDown(object sender, KeyEventArgs e)
+        {
+            if (_dialogueSession is null) return;
+
+            var ctx = BuildDialogueContext(_dialogueSession.Actor);
+
+            switch (e.Key)
+            {
+                case Key.Escape:
+                    CloseDialogue();
+                    e.Handled = true;
+                    break;
+
+                case Key.Space:
+                case Key.Enter:
+                    if (_dialogueSession.State == DialogueSessionState.NpcLine)
+                    {
+                        _dialogueSession.Advance(ctx);
+                        RefreshDialoguePanel();
+                        e.Handled = true;
+                    }
+                    break;
+
+                case >= Key.D1 and <= Key.D9:
+                    if (_dialogueSession.State == DialogueSessionState.PlayerChoice)
+                    {
+                        int idx = e.Key - Key.D1 + 1;
+                        _dialogueSession.Select(idx, ctx);
+                        RefreshDialoguePanel();
+                        e.Handled = true;
+                    }
+                    break;
+
+                case >= Key.NumPad1 and <= Key.NumPad9:
+                    if (_dialogueSession.State == DialogueSessionState.PlayerChoice)
+                    {
+                        int idx = e.Key - Key.NumPad1 + 1;
+                        _dialogueSession.Select(idx, ctx);
+                        RefreshDialoguePanel();
+                        e.Handled = true;
+                    }
+                    break;
+            }
+        }
+
+        private void RefreshDialoguePanel()
+        {
+            if (_dialogueSession is null) return;
+
+            if (_dialogueSession.State == DialogueSessionState.Complete)
+            {
+                CloseDialogue();
+                return;
+            }
+
+            DialoguePanelControl.Refresh(_dialogueSession);
+        }
+
+        private void CloseDialogue()
+        {
+            _dialogueSession = null;
+            DialoguePanelControl.Hide();
+        }
+
+        private DialogueContext BuildDialogueContext(WorldObjectMoveable actor)
+        {
+            return new DialogueContext
+            {
+                Actor    = actor,
+                Player   = _world?.GetPlayer(),
+                GameHour = _world?.CurrentGameHour ?? 0,
+                GameTick = _world?.CurrentGameTick ?? 0
+            };
         }
     }
 }

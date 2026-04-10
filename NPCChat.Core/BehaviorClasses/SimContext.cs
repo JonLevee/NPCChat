@@ -1,5 +1,8 @@
-using NPCChat.Core.WorldClasses;
+#nullable enable
+using System;
 using System.Drawing;
+using NPCChat.Core.AIClasses;
+using NPCChat.Core.WorldClasses;
 
 namespace NPCChat.Core.BehaviorClasses
 {
@@ -29,18 +32,42 @@ namespace NPCChat.Core.BehaviorClasses
         /// </summary>
         public Action<MoveCommand> EnqueueMove { get; }
 
+        /// <summary>
+        /// Returns true if there is an unobstructed line of sight between two bounds.
+        /// Null when not available (e.g. during tests). Thread-safe: acquires read lock internally.
+        /// </summary>
+        public Func<Bounds, Bounds, bool>? CheckLineOfSight { get; }
+
+        /// <summary>
+        /// Posts an alert event so that nearby actors can react on the next tick.
+        /// Sim-thread-only. Null when not available.
+        /// </summary>
+        public Action<AlertEvent>? PostAlert { get; }
+
+        /// <summary>
+        /// Returns alerts from the previous tick within a given Chebyshev radius of a center tile.
+        /// Sim-thread-only. Null when not available.
+        /// </summary>
+        public Func<Point, int, AlertEvent[]>? GetNearbyAlerts { get; }
+
         public SimContext(
             WorldObjectMoveable actor,
             Bounds? playerBounds,
             int gameTick,
             int gameHour,
-            Action<MoveCommand> enqueueMove)
+            Action<MoveCommand> enqueueMove,
+            Func<Bounds, Bounds, bool>? checkLineOfSight = null,
+            Action<AlertEvent>? postAlert = null,
+            Func<Point, int, AlertEvent[]>? getNearbyAlerts = null)
         {
-            Actor = actor;
-            PlayerBounds = playerBounds;
-            GameTick = gameTick;
-            GameHour = gameHour;
-            EnqueueMove = enqueueMove;
+            Actor            = actor;
+            PlayerBounds     = playerBounds;
+            GameTick         = gameTick;
+            GameHour         = gameHour;
+            EnqueueMove      = enqueueMove;
+            CheckLineOfSight = checkLineOfSight;
+            PostAlert        = postAlert;
+            GetNearbyAlerts  = getNearbyAlerts;
         }
     }
 }

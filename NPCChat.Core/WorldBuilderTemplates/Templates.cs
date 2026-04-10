@@ -151,6 +151,13 @@ namespace NPCChat.Core.WorldBuilderTemplates
             AddBlacksmith(8, 14, shopX: 2, shopY: 2);
             AddFarmer(24, 14);
 
+            // Two guards patrol near the town centre, within alert range of each other.
+            // Guard A patrols the western square; Guard B patrols the eastern square.
+            // When one spots the player it broadcasts a PlayerDetected alert that the
+            // other guard receives and investigates, demonstrating group-alert propagation.
+            AddGuard(10, 10, patrolRadius: 3);
+            AddGuard(18, 10, patrolRadius: 3);
+
             // Scatter a few items for auto-pickup testing.
             AddItem("gold_coin", 19, 14, quantity: 10);
             AddItem("health_potion", 16, 16, quantity: 2);

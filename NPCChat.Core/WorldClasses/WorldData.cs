@@ -43,6 +43,13 @@ namespace NPCChat.Core.WorldClasses
                   SingleReader = true,
                   SingleWriter = false
               });
+        private readonly Channel<QuestRewardCommand> _questRewardCommands =
+              Channel.CreateBounded<QuestRewardCommand>(new BoundedChannelOptions(64)
+              {
+                  FullMode = BoundedChannelFullMode.DropOldest,
+                  SingleReader = true,
+                  SingleWriter = false
+              });
         private Task _simulationProcessingTask = null!;
         private CancellationTokenSource _cancellationTokenSource = null!;
 
@@ -135,9 +142,12 @@ namespace NPCChat.Core.WorldClasses
                         budget--;
                     }
 
-                    // Drain drop commands first, then move and behave.
+                    // Drain drop and quest-reward commands first, then move and behave.
                     while (_dropCommands.Reader.TryRead(out var drop))
                         ProcessDropCommand(drop);
+
+                    while (_questRewardCommands.Reader.TryRead(out var reward))
+                        ProcessQuestRewardCommand(reward);
 
                     AdvanceMoveables();
                     AdvanceBehaviors();
@@ -372,6 +382,32 @@ namespace NPCChat.Core.WorldClasses
         public void EnqueueDropCommand(DropCommand cmd)
         {
             _dropCommands.Writer.TryWrite(cmd);
+        }
+
+        /// <summary>
+        /// Enqueues a quest reward (item add or remove) from the UI thread. Never blocks.
+        /// The simulation loop processes it on the next tick under the write lock.
+        /// </summary>
+        public void EnqueueQuestReward(QuestRewardCommand cmd)
+        {
+            _questRewardCommands.Writer.TryWrite(cmd);
+        }
+
+        /// <summary>
+        /// Returns the total quantity of a specific item in the given handle's inventory.
+        /// Returns 0 if the handle is unknown or has no inventory.
+        /// Safe to call from the UI thread.
+        /// </summary>
+        public int SnapshotInventoryCount(ObjectHandle handle, string itemId)
+        {
+            _worldLock.EnterReadLock();
+            try
+            {
+                if (!TryGetObject(handle, out var obj) || obj?.Inventory is not { } inv)
+                    return 0;
+                return inv.CountOf(itemId);
+            }
+            finally { _worldLock.ExitReadLock(); }
         }
 
         /// <summary>
@@ -761,6 +797,22 @@ namespace NPCChat.Core.WorldClasses
                 carryable.Handle = handle;
                 AddObjectToChunks(carryable);
                 _carryableObjects.Add(carryable);
+            }
+            finally { _worldLock.ExitWriteLock(); }
+        }
+
+        private void ProcessQuestRewardCommand(QuestRewardCommand cmd)
+        {
+            _worldLock.EnterWriteLock();
+            try
+            {
+                if (!TryGetObject(cmd.Target, out var obj) || obj?.Inventory is not { } inv)
+                    return;
+
+                if (cmd.IsRemoval)
+                    inv.TryRemove(cmd.ItemId, cmd.Quantity, out _);
+                else if (cmd.ItemDef is not null)
+                    inv.TryAdd(cmd.ItemDef, cmd.Quantity, out _);
             }
             finally { _worldLock.ExitWriteLock(); }
         }

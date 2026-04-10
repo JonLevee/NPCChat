@@ -1,6 +1,7 @@
 #nullable enable
 using NPCChat.Core.BehaviorClasses;
 using NPCChat.Core.CharacterClasses;
+using NPCChat.Core.QuestClasses;
 
 namespace NPCChat.Core.WorldClasses
 {
@@ -47,5 +48,11 @@ namespace NPCChat.Core.WorldClasses
         /// 0 = auto-harvest disabled.
         /// </summary>
         public float ResourcePickupRadius { get; init; }
+
+        /// <summary>
+        /// Quest journal. Non-null for the player; null for NPCs and mobs.
+        /// Accessed exclusively on the UI thread.
+        /// </summary>
+        public QuestLog? QuestLog { get; set; }
     }
 }

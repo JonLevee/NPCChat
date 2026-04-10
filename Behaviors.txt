@@ -137,3 +137,23 @@ Upcoming Phases
     │ 11    │ Combat                                                                                                             │
     └───────┴─────────────────────────────────────────────────────────────────────────────────────────────
 
+
+
+  ┌───────┬──────────────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Phase │        Topic         │                                                                                   Key Work                                                                                   │     ├───────┼──────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 7     │ Quests               │ Quest definition model, active quest tracking on player, quest-giver dialogue hooks, journal UI panel                                                                        │     ├───────┼──────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 8     │ Factions &           │ Faction registry in StaticData, per-actor faction membership, reputation scores on player, dialogue/interaction conditions based on rep                                      │
+  │       │ Reputation           │                                                                                                                                                                              │
+  ├───────┼──────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 9     │ Advanced AI          │ More actor tasks (flee, chase, combat-ready, investigate), line-of-sight, noise/alert propagation, group behaviors                                                           │
+  ├───────┼──────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 10    │ Shopkeepers &        │ Shop inventory on NPCs, buy/sell transactions via dialogue, price modifiers (faction rep, haggle), gold transfer                                                             │
+  │       │ Economy              │                                                                                                                                                                              │
+  ├───────┼──────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 11    │ Combat               │ Attack/defend tasks, hit resolution, health/damage on WorldObjectMoveable, death/loot-drop, player combat input                                                              │
+  ├───────┼──────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 12    │ Serialization        │ YAML loader for starting world (NPCs, buildings, dialogue trees, quests), JSON save/load for in-progress game state, shared abstraction layer — then author the real         │
+  │       │                      │ starting world in data                                                                                                                                                       │
+  └───────┴──────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  The natural next phase is 7 (Quests), since quests build directly on the dialogue system (quest-givers trigger via choice nodes) and the inventory system (item delivery objectives).

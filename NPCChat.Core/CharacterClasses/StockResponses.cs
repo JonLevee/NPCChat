@@ -7,7 +7,7 @@ using NPCChat.Core.Attributes;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace NPChat.CharacterClasses
+namespace NPCChat.Core.CharacterClasses
 {
     // StockResponses.cs
     // Requires NuGet: YamlDotNet

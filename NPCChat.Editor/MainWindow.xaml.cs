@@ -100,6 +100,13 @@ namespace NPCChat
                     _gridRenderer.DrawPathPreview(_world.SnapshotPath(selected));
                 else
                     _gridRenderer.ClearPathPreview();
+
+                // Update actor debug info (Mode/Task) for all NPC summaries.
+                foreach (var (handle, cs) in _summaryMap)
+                {
+                    if (_world.TryGetObject(handle, out var obj) && obj is WorldObjectMoveable m)
+                        cs.UpdateActorDebugInfo(m.Actor);
+                }
             }
         }
 

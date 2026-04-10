@@ -26,7 +26,6 @@ namespace NPCChat.Core.WorldBuilderTemplates
 
         public Templates AddSmallTown()
         {
-            AddShop(2, 2, BuildingSize.Small);
             AddShop(10, 2, BuildingSize.Small);
             AddShop(18, 2, BuildingSize.Small);
             AddShop(2, 8, BuildingSize.Small);
@@ -35,8 +34,8 @@ namespace NPCChat.Core.WorldBuilderTemplates
             AddShop(6, 16, BuildingSize.Small);
             AddShop(20, 16, BuildingSize.Small);
             AddPlayer(16, 14);
-            AddNPC(8, 14);
-            AddNPC(24, 14);
+            AddBlacksmith(8, 14, shopX: 2, shopY: 2);
+            AddFarmer(24, 14);
 
             return this;
         }

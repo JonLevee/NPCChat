@@ -5,7 +5,7 @@ using System.Linq;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
-namespace NPChat.CharacterClasses
+namespace NPCChat.Core.CharacterClasses
 {
     [Singleton]
     public class CharacterCoreMetadataProvider

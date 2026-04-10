@@ -1,3 +1,4 @@
+#nullable enable
 using System;
 using System.Collections.Generic;
 using System.Drawing;
@@ -5,6 +6,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Channels;
 using NPCChat.Core.Attributes;
+using NPCChat.Core.BehaviorClasses;
 using NPCChat.Core.Exceptions;
 using NPCChat.Core.Extensions;
 using NPCChat.Core.PathfindingClasses;
@@ -33,12 +35,18 @@ namespace NPCChat.Core.WorldClasses
         private Task _simulationProcessingTask = null!;
         private CancellationTokenSource _cancellationTokenSource = null!;
 
+        // Behavior system
+        // Assumption: single player. If a second Player object is added, _playerObject
+        // tracks only the most recently added one.
+        private WorldObjectMoveable? _playerObject;
+        private int _currentGameTick;
+
         /// <summary>
         /// Set by the simulation loop when it faults. The UI timer checks this
         /// each tick and rethrows on the UI thread so the error is visible.
         /// Null while the simulation is healthy.
         /// </summary>
-        public Exception SimulationFault { get; private set; }
+        public Exception? SimulationFault { get; private set; }
 
         public WorldData(IWorldOptions options, ObjectHandleManager handleManager, AStarPathfinder pathfinder)
         {
@@ -111,6 +119,7 @@ namespace NPCChat.Core.WorldClasses
                     }
 
                     AdvanceMoveables();
+                    AdvanceBehaviors();
 
                     await Task.Delay(_options.SimTickMs, ct);
                 }
@@ -327,7 +336,11 @@ namespace NPCChat.Core.WorldClasses
                 AddObjectToChunks(obj);
 
                 if (obj is WorldObjectMoveable moveable)
+                {
                     _moveableObjects.Add(moveable);
+                    if (moveable.Kind == WorldObjectKind.Player)
+                        _playerObject = moveable;
+                }
 
                 return handle;
             }
@@ -346,7 +359,11 @@ namespace NPCChat.Core.WorldClasses
                 RemoveObjectFromChunks(obj);
 
                 if (obj is WorldObjectMoveable moveable)
+                {
                     _moveableObjects.Remove(moveable);
+                    if (moveable == _playerObject)
+                        _playerObject = null;
+                }
 
                 _handleManager.RemoveSlot(handle);
             }
@@ -356,7 +373,7 @@ namespace NPCChat.Core.WorldClasses
             }
         }
 
-        public bool TryGetObject(ObjectHandle handle, out WorldObject obj)
+        public bool TryGetObject(ObjectHandle handle, out WorldObject? obj)
         {
             obj = null;
             if (_handleManager.TryGetSlot(handle, out ObjectSlot slot))
@@ -615,6 +632,94 @@ namespace NPCChat.Core.WorldClasses
             if (remainder != 0 && ((remainder < 0) != (divisor < 0)))
                 quotient--;
             return quotient;
+        }
+
+        private void AdvanceBehaviors()
+        {
+            // Snapshot under read lock — same pattern as AdvanceMoveables.
+            WorldObjectMoveable[] snapshot;
+            Bounds? playerBounds;
+            _worldLock.EnterReadLock();
+            try
+            {
+                snapshot = _moveableObjects.ToArray();
+                playerBounds = _playerObject?.Bounds;
+            }
+            finally { _worldLock.ExitReadLock(); }
+
+            int gameTick = _currentGameTick++;
+            int gameHour = (gameTick / _options.TicksPerGameHour) % 24;
+
+            foreach (var actor in snapshot)
+            {
+                if (actor.Actor is not { } component) continue;
+
+                // Proximity partitioning: distant actors run every N ticks.
+                bool isNearby = playerBounds is null || IsNearbyPlayer(actor.Bounds, playerBounds.Value);
+                if (!isNearby)
+                {
+                    component.TicksSinceLastProcess++;
+                    if (component.TicksSinceLastProcess < component.DistantProcessInterval)
+                        continue;
+                    component.TicksSinceLastProcess = 0;
+                }
+
+                var ctx = new SimContext(actor, playerBounds, gameTick, gameHour, EnqueueMoveCommand);
+
+                // 1. Schedule check — transition mode if the time range changed.
+                var scheduledMode = component.Schedule.GetModeForTime(gameHour);
+                if (!string.IsNullOrEmpty(scheduledMode) && scheduledMode != component.Mode)
+                    component.Mode = scheduledMode;
+
+                // 2. Reactive rules — inject a task if a higher-priority trigger fires.
+                var currentTask = component.ActionQueue.TryPeekHighest();
+                int currentPriority = currentTask?.Priority ?? int.MinValue;
+
+                foreach (var rule in component.ReactiveRules)
+                {
+                    if (rule.Priority <= currentPriority) continue;
+                    if (!rule.Trigger(ctx)) continue;
+
+                    // Higher-priority task wins: interrupt the current one.
+                    if (currentTask is not null)
+                    {
+                        component.ActionQueue.Dequeue();
+                        currentTask.Interrupt(ctx);
+                    }
+
+                    component.ActionQueue.Enqueue(rule.ActionFactory(ctx));
+                    break;
+                }
+
+                // 3. Tick current task.
+                var task = component.ActionQueue.TryPeekHighest();
+                if (task is null) continue;
+
+                // Call Begin on the first tick.
+                if (task.TurnsElapsed == 0)
+                    task.Begin(ctx);
+
+                // Enforce MaxTurns guard.
+                if (task.TurnsElapsed >= task.MaxTurns)
+                {
+                    component.ActionQueue.Dequeue();
+                    continue;
+                }
+
+                bool done = task.Tick(ctx);
+                if (done)
+                    component.ActionQueue.Dequeue();
+            }
+        }
+
+        private bool IsNearbyPlayer(Bounds actorBounds, Bounds playerBounds)
+        {
+            int chunkSize = _options.ChunkInfo.ChunkSize;
+            int ax = actorBounds.Left / chunkSize;
+            int ay = actorBounds.Top / chunkSize;
+            int px = playerBounds.Left / chunkSize;
+            int py = playerBounds.Top / chunkSize;
+            return Math.Abs(ax - px) <= 2 && Math.Abs(ay - py) <= 2;
         }
 
         public void Dispose()

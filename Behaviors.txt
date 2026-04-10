@@ -1,0 +1,139 @@
+
+
+Summary of our previous phases:
+  - Phase 0 — Data model refactor: WorldObject hierarchy (Static/Carryable/Moveable), MovementState, MoveCommand, Direction8, WorldObjectCategory
+  - Phase 1 — Threading infrastructure: ReaderWriterLockSlim, Channel<MoveCommand>, sim loop, SimulationFault surfacing
+  - Phase 2 — A* pathfinding: PathGrid, AStarPathfinder, wired into SimulationProcessingAsync with path budget and centering logic (plus the static→singleton cleanup just done)
+  - Phase 3 — Step-by-step movement: the sim loop advances each WorldObjectMoveable one tile per tick along its Movement.Path, updates
+  Facing, calls MoveDynamicObjectBetweenChunks, and the Editor renders the current position each frame. This is where objects actually
+  walk across the map.
+
+Next phases will include:
+  - Phase 4 — Behaviors: NPCs will have a list of behaviors with trigger conditions and actions.
+  - Phase 5 — Dialogue: NPCs will have dialogue trees that can be triggered by the player, allowing for more complex interactions and quests.
+  - Phase 6 — Inventory and Loot: NPCs and the player will be able to pick up and drop items, with an inventory system to manage them.
+  - Phase 7 — Quests: NPCs will be able to give quests to the player, with objectives and rewards.
+  - Phase 8 — Factions and Reputation: NPCs will belong to factions and the player's actions will affect their reputation with those factions, leading to different interactions and consequences.
+  - Phase 9 — Advanced AI: NPCs will have more complex behaviors and decision-making, allowing for more dynamic and unpredictable interactions with the player.
+  - Phase 10 - Shopkeepers and Economy: NPCs will be able to buy and sell items, with a dynamic economy that responds to supply and demand.
+  - Phase 11 — Combat: NPCs and the player will be able to attack each other, with health, damage, and death mechanics.
+
+Phase 4 details:
+
+Here is my high level brainstorming.  Please review and evaluate, offering alternative strategies if appropriate.
+* Some WorldObjects will have a list of behaviors that they can perform (we will call these Actors). For this phase, only NPC WorldObjects will have behaviors but eventually other 
+WorldObjectKind types will have behaviors.  Examples of future types would be dungeon bosses, wandering unique mobs, NPC's who join the PC party (and would have their own "behavior" 
+or scripts to drive combat and internal team conversations). 
+These behaviors will be initially creating using the Templates class, eventually the WorldData object (which currently holds instances to all runtime game data) will 
+be persisted/loaded as either YAML or JSON.
+* Each behavior will have a trigger condition and an action. The trigger condition will be evaluated each turn and if it is true, the action will be performed.
+* The trigger condition will be a simple expression that can reference the WorldObject's properties and the properties of other WorldObjects in the same location. 
+For example, a trigger condition could be "if there is a player in the same location" or "if the NPC's health is below 50%".
+* Actors that are in the same location (chunk) or in adjacent locations to the player will be processed each turn. This will allow for NPCs to react to the player's 
+presence and actions in a timely manner, without having to process every single NPC in the game world every turn. 
+* Actors outside of the player's location and adjacent locations will be processed less frequently, perhaps every 10 turns, to allow for behaviors that are not directly related to the 
+player, such as wandering or patrolling.  Note that the Actor's behaviors in this situation are simply shortened, they will still end up completing the same actions, just at a faster rate
+and with less impact on the CPU loop cost.  
+
+Here are some examples of behaviors that NPCs could have:
+NPC Name:  Weapons Blacksmith
+Kind: NPC
+Modes:  (what activity the NPC is currently performing, which can affect their behavior triggers and actions)
+  - Idle
+  - Forging (the blacksmith is forging weapons for customers, subtasks include heating, hammering, quenching, heating, hammering, quenching, heating, hammering, quenching, wrapping, sharpening)
+  - Repairing (the blacksmith is repairing weapons for customers, same subtasks as Forging)
+  - Transacting (allows the player to buy/sell items)
+  - Wandering (the blacksmith is wandering around the town, perhaps taking a break from work or looking for inspiration)
+  - Sleeping (the blacksmith is sleeping in their home, not available for interactions)
+  - GoingToWork (the blacksmith is walking to their workplace, not available for interactions)
+  - GoingHome (the blacksmith is walking home from work, not available for interactions)
+Other details:
+  - The blacksmith will have a schedule that determines when they are in each mode. For example, they might be in the Idle mode from 8am to 9am, then switch to Forging mode from 9am to 5pm, 
+  then switch to Transacting mode from 5pm to 6pm, then switch to Wandering mode from 6pm to 10pm, and finally switch to Sleeping mode from 10pm to 8am.
+  - The blacksmith's behaviors will be triggered by the player's presence and actions. For example, if the player enters the blacksmith's shop while they are in Forging mode, the blacksmith
+  will continue forging but will also greet the player and offer to sell them weapons after they finish the current subtask. This implies that the blacksmith's behavior is self-modifying, 
+  the trigger condition that checks for the player's presence will add a higher priority action that allows them to interact with the player after completing their current task.  The
+  new action will be removed once the player leaves the shop or after a certain amount of time has passed without the player interacting with the blacksmith.  The new action priority will
+  be higher than the current forging task but lower than the current subtask, so the blacksmith will finish their current subtask before offering to sell them weapons.
+  - The blacksmith will have quests available based on the players level and progress in the game. For example, if the player has reached level 5 and has completed a certain quest, the 
+  blacksmith might offer them a quest to forge a special weapon for a powerful enemy. This implies that the blacksmith's behavior is also influenced by the player's progress in the game, 
+  and that certain behaviors and interactions will only be available to the player once they have reached certain milestones.
+  - The blacksmith will also relay quests from other NPCs. For example, if the player has completed a quest for a farmer NPC, the blacksmith might offer them a quest to forge a tool for 
+  the farmer in exchange for a reward.
+
+Other NPC examples:
+  - Farmer: has behaviors related to farming, such as planting, watering, harvesting, and selling crops. They might also have a schedule that determines when they are in each mode, such as 
+  working on the farm during the day and resting at night. They might also have quests related to farming, such as asking the player to help them with a pest problem or to deliver crops to a 
+  market.
+  - Guard: has behaviors related to patrolling, standing guard, and responding to threats. They might have a schedule that determines when they are on duty and when they are off duty. 
+  They might also have quests related to security, such as asking the player to help them investigate a crime or to protect a valuable item.
+  - Merchant: has behaviors related to buying and selling items, as well as interacting with customers. They might have a schedule that determines when they are open for business and 
+  when they are closed. They might also have quests related to trade, such as asking the player to deliver goods to another merchant or to find a rare item for them.
+  - Armor Blacksmith: very similar to Weapons Blacksmith, except has behaviors related to forging and repairing armor
+  - Tavern Keeper: has behaviors related to serving food and drinks, as well as interacting with customers. They might have a schedule that determines when they are open for business and 
+  when they are closed. They might also have quests related to the tavern, such as asking the player to help them find a missing ingredient for a special dish or to deliver a message to 
+  a customer.
+  - Other NPCs: there are many other types of NPCs that could have a wide variety of behaviors, such as quest givers, trainers, healers, entertainers, gossipers, etc. 
+  Each type of NPC would have its own unique set of behaviors and interactions with the player.
+
+When to implement Perception and Interaction?
+With behaviors implemented, we will need a way to allow the PC and Actors to interact with each other.  This will likely involve a dialogue system, which will be implemented in the next phase, 
+but we can start laying the groundwork for it in this phase by allowing Actors to expose their available interactions and quests to the player when they are within a certain proximity.  
+This proximity will be defined by the Perception property of the Actor, which will determine how far away they can detect the player and other WorldObjects.  When the player is within the Actor's 
+Perception range, the Actor will expose their available interactions and quests to the player, allowing them to choose which ones they want to engage with.  The choices should display near the 
+Actor on the map, and the player should be able to select them using the mouse or keyboard (for keyboard, the interaction list near the Actor should display a number from 1-9, initially we 
+will limit the number of available interations to 9).  The available interactions and quests will be determined by the Actor's current mode and the player's progress in the game, as well as any 
+other relevant conditions (such as the player's level, reputation, inventory, etc.) and the interaction list will dynamically update in real time.
+Which phase should we implement Perception in?
+
+
+I agree with your assessment and suggestions for "Key Concerns" but want to discuss "1. Trigger+Action vs. the subtask problem"
+
+Here's how I was thinking of what happens when the Blacksmith is in Forging mode, want to check and see if we are on the same page:
+ 1) A forging task (for a specific weapon) is added to the Blacksmith's ActionQueue
+ 2) The forging task has a list of subtasks that need to be completed in order to forge the weapon.  For example, the subtasks for forging a sword might be: 
+ - heat the metal (interruptible, takes 3 turns.  Blacksmith will not be happy to pause during this step, but will grudgingly attend customer)
+ - hammer the metal (non-interruptible, takes 2 turns)
+ - quench the metal (non-interruptible, takes 2 turns)
+ - evaluate progress and decide whether to repeat the heating, hammering, and quenching steps (this is where the trigger+action system comes in, the trigger condition 
+ would be something like "if the weapon is not yet forged to the desired quality level")
+ * (once the weapon is forged to the desired quality level) 
+ - wrap the handle (interruptible, takes 2 turns)
+ - sharpen the blade (interruptible, takes 2 turns)
+ 3) If the player enters the shop while the blacksmith is in the middle of an interruptable subtask, the blacksmith will pause the forging task until the player interactions are completed or
+ it's time to go home for the day.  
+ 4) If the blacksmith is in the middle of an uninterruptable subtask, the blacksmith will greet the PC, invite them to look around, and let them know that it will 
+ be a couple minutes.  For example, once the heating metal subtask is complete, the blacksmith will continue (uninterrupted) with the hammering and quenching sub-tasks before attending to the 
+ customer.
+
+I like the CurrentSubTaskIndex and TurnsRemainingInSubTask properties that you suggested.
+With this architecture, does that mean we will have two queues:  One for Tasks and one for Subtasks?  Or will the Subtasks just be a property of the Task?  
+Also, rather than a loop construct should we just have subtasks have the ability to append/insert other subtasks?  For instance (haven't completely thought through this), when the
+quenching subtask is complete, the next subtask (evauluate) would decide if it adds the wrapping and sharpening subtasks, or it could add the previous steps again 
+(heating,hammering,quenching,evaluation).
+This would allow for more dynamic, flexible, and complex task structures, as the subtasks can be modified based on the progress of the main task and the conditions of the world. It would also
+keep the queues smaller and more manageable.
+Thoughts?
+
+Upcoming Phases
+
+    ┌───────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+    │ Phase │                                                      Summary                                                       │
+    ├───────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+    │ 4     │ Behaviors — Actors with modes, schedules, action queues, subtasks, reactive trigger+action rules, perception range │
+    ├───────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+    │ 5     │ Dialogue — Dialogue trees, interaction UI near actors, player selection via mouse/keyboard                         │
+    ├───────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+    │ 6     │ Inventory & Loot                                                                                                   │
+    ├───────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+    │ 7     │ Quests                                                                                                             │
+    ├───────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+    │ 8     │ Factions & Reputation                                                                                              │
+    ├───────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+    │ 9     │ Advanced AI                                                                                                        │
+    ├───────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+    │ 10    │ Shopkeepers & Economy                                                                                              │
+    ├───────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+    │ 11    │ Combat                                                                                                             │
+    └───────┴─────────────────────────────────────────────────────────────────────────────────────────────
+

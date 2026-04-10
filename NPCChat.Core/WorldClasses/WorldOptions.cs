@@ -35,6 +35,12 @@ namespace NPCChat.Core.WorldClasses
         /// Has no effect in Unity builds (debug aid only).
         /// </summary>
         bool ShowPathPreview { get; set; }
+
+        /// <summary>
+        /// Number of sim ticks that equal one in-game hour.
+        /// Default: 72 ticks → at 20 ticks/sec one game day lasts ~86 real seconds.
+        /// </summary>
+        int TicksPerGameHour { get; }
     }
 
     [Scoped(serviceType: typeof(IWorldOptions))]
@@ -46,6 +52,7 @@ namespace NPCChat.Core.WorldClasses
         public int PathBudgetPerTick { get; set; } = 20;
         public int MaxPathIterations { get; set; } = 50_000;
         public bool ShowPathPreview { get; set; } = false;
+        public int TicksPerGameHour { get; set; } = 72;
 
         public WorldOptions(ChunkInfo chunkInfo)
         {

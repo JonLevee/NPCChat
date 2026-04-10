@@ -5,7 +5,7 @@ using System.Reflection;
 using Microsoft.Extensions.DependencyInjection;
 using NPCChat.Core.Attributes;
 using NPCChat.Core.Extensions;
-using NPChat.CharacterClasses;
+using NPCChat.Core.CharacterClasses;
 
 // To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.

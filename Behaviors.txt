@@ -157,3 +157,23 @@ Upcoming Phases
   └───────┴──────────────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
 
   The natural next phase is 7 (Quests), since quests build directly on the dialogue system (quest-givers trigger via choice nodes) and the inventory system (item delivery objectives).
+
+  Phase 10 — Shopkeepers & Economy: complete
+                                                                                                                                                           New files:
+  - ShopClasses/ShopEntry.cs — one item line: ItemId, ItemDef, PriceMultiplier, computed BuyPrice
+  - ShopClasses/ShopComponent.cs — merchant attachment: Stock list (infinite supply), SellMultiplier (50%), GetSellPrice()
+  - WorldClasses/ShopTransactionCommand.cs — sim-thread command: buy (debit gold, credit item) or sell (debit item, credit gold); includes GoldItemDef so
+   gold can be credited even if the player holds none
+  - Editor/UserControls/ShopPanel.xaml + .xaml.cs — floating panel with Buy/Sell tabs, item lists, gold display, BuyOne/SellOne events
+
+  Modified files:
+  - WorldObjectMoveable.cs — added ShopComponent? Shop
+  - WorldData.cs — Channel<ShopTransactionCommand>, EnqueueShopTransaction(), ProcessShopTransaction(), SnapshotShopStock(), SnapshotInventoryDetailed()
+  - BlacksmithTemplate.cs — BuildBlacksmithShop() adds iron sword (40g), leather armour (30g), health potion (18g), iron ore (8g), wood plank (2g) with a
+   50% sell-back rate
+  - MainWindow.xaml — ShopPanel overlay (ZIndex 25, centered)
+  - MainWindow.xaml.cs — intercepts "Shop" interaction for actors with a ShopComponent; OpenShop / CloseShop / RefreshShopPanel; Escape closes shop
+  first; tick refresh while open
+
+  How to use: walk near the Blacksmith → click "Shop" → Buy/Sell tabs appear; each tick gold and inventory refresh live.
+

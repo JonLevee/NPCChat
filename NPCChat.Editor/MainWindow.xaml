@@ -121,6 +121,12 @@
                                     HorizontalAlignment="Left"
                                     Margin="8,8,0,0"
                                     Panel.ZIndex="20" />
+
+                <!-- Shop panel — floats over the map at the centre when a shop is open -->
+                <uc:ShopPanel x:Name="ShopPanelControl"
+                              VerticalAlignment="Center"
+                              HorizontalAlignment="Center"
+                              Panel.ZIndex="25" />
             </Grid>
         </Grid>
     </Grid>

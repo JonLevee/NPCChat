@@ -8,6 +8,7 @@ using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using NPCChat.Core.DialogueClasses;
 using NPCChat.Core.LoadingProviderClasses;
+using NPCChat.Core.ShopClasses;
 using NPCChat.Core.SupportClasses;
 using NPCChat.Core.Validation;
 using NPCChat.Editor;
@@ -54,6 +55,10 @@ namespace NPCChat
         // Reputation panel state
         private bool _repPanelOpen;
 
+        // Shop panel state
+        private bool _shopPanelOpen;
+        private WorldObjectMoveable? _shopActor;
+
 
         public MainWindow(UserSettingsRepository userSettingsRepository, ChunkInfo chunkInfo)
         {
@@ -79,6 +84,9 @@ namespace NPCChat
             };
 
             _gridRenderer.InteractionOptionSelected += OnInteractionOptionSelected;
+
+            ShopPanelControl.BuyOne  += OnShopBuyOne;
+            ShopPanelControl.SellOne += OnShopSellOne;
 
             Title = "NPCChat Sandbox - Map View";
             _gameTimer.Interval = TimeSpan.FromMilliseconds(20);
@@ -139,6 +147,10 @@ namespace NPCChat
                 // Refresh reputation panel each tick to reflect any recent changes.
                 if (_repPanelOpen)
                     RefreshReputationPanel();
+
+                // Refresh shop panel each tick to reflect gold/inventory changes.
+                if (_shopPanelOpen)
+                    RefreshShopPanel();
             }
         }
 
@@ -288,6 +300,15 @@ namespace NPCChat
         {
             if (_world is null) return;
             if (!_world.TryGetObject(actorHandle, out var obj) || obj is not WorldObjectMoveable actor) return;
+
+            // If the actor has a shop and the player chose "Shop", open the shop panel.
+            if (actor.Shop is not null && option.Label == "Shop")
+            {
+                CloseDialogue();
+                OpenShop(actor);
+                return;
+            }
+
             if (actor.Actor?.DialogueTree is null) return;
 
             // Close any existing session before starting a new one.
@@ -319,7 +340,12 @@ namespace NPCChat
                     return;
 
                 case Key.Escape:
-                    if (_inventoryOpen)
+                    if (_shopPanelOpen)
+                    {
+                        CloseShop();
+                        e.Handled = true;
+                    }
+                    else if (_inventoryOpen)
                     {
                         CloseInventory();
                         e.Handled = true;
@@ -500,6 +526,78 @@ namespace NPCChat
                 GetPlayerItemCount   = itemId   => _world?.SnapshotInventoryCount(playerHandle, itemId) ?? 0,
                 GetPlayerReputation  = factionId => player?.ReputationLog?.GetReputation(factionId) ?? 0
             };
+        }
+
+        // ── Shop ─────────────────────────────────────────────────────────────
+
+        private void OpenShop(WorldObjectMoveable actor)
+        {
+            _shopActor     = actor;
+            _shopPanelOpen = true;
+            RefreshShopPanel();
+        }
+
+        private void CloseShop()
+        {
+            ShopPanelControl.Hide();
+            _shopPanelOpen = false;
+            _shopActor     = null;
+        }
+
+        private void RefreshShopPanel()
+        {
+            if (_world is null || _shopActor is null || _shopActor.Shop is null) return;
+            var player = _world.GetPlayer();
+            if (player is null) return;
+
+            var stock       = _world.SnapshotShopStock(_shopActor.Handle);
+            var playerItems = _world.SnapshotInventoryDetailed(player.Handle);
+            var gold        = _world.SnapshotInventoryCount(player.Handle, "gold_coin");
+            var name        = _shopActor.Character?.Name ?? "Merchant";
+
+            ShopPanelControl.Refresh(name, stock, playerItems, _shopActor.Shop.SellMultiplier, gold);
+        }
+
+        private void OnShopBuyOne(string itemId)
+        {
+            if (_world is null || _shopActor?.Shop is null) return;
+            var player = _world.GetPlayer();
+            if (player is null) return;
+
+            var entry = _shopActor.Shop.Stock.Find(e => e.ItemId == itemId);
+            if (entry is null) return;
+
+            _world.EnqueueShopTransaction(new ShopTransactionCommand(
+                PlayerHandle: player.Handle,
+                ItemId:       itemId,
+                ItemDef:      entry.ItemDef,
+                Quantity:     1,
+                GoldCost:     entry.BuyPrice,
+                IsBuy:        true));
+        }
+
+        private void OnShopSellOne(string itemId)
+        {
+            if (_world is null || _shopActor?.Shop is null) return;
+            var player = _world.GetPlayer();
+            if (player is null) return;
+
+            // Snapshot the item detail to get BaseValue for price calculation.
+            var items = _world.SnapshotInventoryDetailed(player.Handle);
+            var item  = Array.Find(items, i => i.ItemId == itemId);
+            if (item == default || item.Quantity == 0) return;
+
+            var goldDef = _staticData.GetItem("gold_coin");
+            int sellPrice = Math.Max(1, (int)Math.Floor(item.BaseValue * _shopActor.Shop.SellMultiplier));
+
+            _world.EnqueueShopTransaction(new ShopTransactionCommand(
+                PlayerHandle: player.Handle,
+                ItemId:       itemId,
+                ItemDef:      _staticData.GetItem(itemId)!,
+                Quantity:     1,
+                GoldCost:     sellPrice,
+                IsBuy:        false,
+                GoldItemDef:  goldDef));
         }
     }
 }

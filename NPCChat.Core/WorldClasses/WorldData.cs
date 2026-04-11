@@ -14,6 +14,7 @@ using NPCChat.Core.Extensions;
 using NPCChat.Core.InventoryClasses;
 using NPCChat.Core.ItemClasses;
 using NPCChat.Core.PathfindingClasses;
+using NPCChat.Core.ShopClasses;
 
 namespace NPCChat.Core.WorldClasses
 {
@@ -46,6 +47,13 @@ namespace NPCChat.Core.WorldClasses
               });
         private readonly Channel<QuestRewardCommand> _questRewardCommands =
               Channel.CreateBounded<QuestRewardCommand>(new BoundedChannelOptions(64)
+              {
+                  FullMode = BoundedChannelFullMode.DropOldest,
+                  SingleReader = true,
+                  SingleWriter = false
+              });
+        private readonly Channel<ShopTransactionCommand> _shopTransactions =
+              Channel.CreateBounded<ShopTransactionCommand>(new BoundedChannelOptions(64)
               {
                   FullMode = BoundedChannelFullMode.DropOldest,
                   SingleReader = true,
@@ -152,6 +160,9 @@ namespace NPCChat.Core.WorldClasses
 
                     while (_questRewardCommands.Reader.TryRead(out var reward))
                         ProcessQuestRewardCommand(reward);
+
+                    while (_shopTransactions.Reader.TryRead(out var tx))
+                        ProcessShopTransaction(tx);
 
                     AdvanceMoveables();
                     AdvanceBehaviors();
@@ -395,6 +406,50 @@ namespace NPCChat.Core.WorldClasses
         public void EnqueueQuestReward(QuestRewardCommand cmd)
         {
             _questRewardCommands.Writer.TryWrite(cmd);
+        }
+
+        /// <summary>
+        /// Enqueues a shop buy or sell transaction from the UI thread. Never blocks.
+        /// Processed next tick under the write lock.
+        /// </summary>
+        public void EnqueueShopTransaction(ShopTransactionCommand cmd)
+        {
+            _shopTransactions.Writer.TryWrite(cmd);
+        }
+
+        /// <summary>
+        /// Returns the shop stock for the given actor, or an empty array if the actor
+        /// has no ShopComponent. Safe to call from the UI thread — Stock is immutable
+        /// after world construction.
+        /// </summary>
+        public ShopEntry[] SnapshotShopStock(ObjectHandle actorHandle)
+        {
+            _worldLock.EnterReadLock();
+            try
+            {
+                if (!TryGetObject(actorHandle, out var obj) || obj is not WorldObjectMoveable m)
+                    return [];
+                return m.Shop?.Stock.ToArray() ?? [];
+            }
+            finally { _worldLock.ExitReadLock(); }
+        }
+
+        /// <summary>
+        /// Returns a detailed inventory snapshot including ItemId and BaseValue,
+        /// used by the shop sell tab. Safe to call from the UI thread.
+        /// </summary>
+        public (string ItemId, string Name, int Quantity, int BaseValue)[] SnapshotInventoryDetailed(ObjectHandle handle)
+        {
+            _worldLock.EnterReadLock();
+            try
+            {
+                if (!TryGetObject(handle, out var obj) || obj?.Inventory is not { } inv)
+                    return [];
+                return inv.Slots
+                    .Select(s => (s.Item.Id, s.Item.Name, s.Quantity, (int)s.Item.BaseValue))
+                    .ToArray();
+            }
+            finally { _worldLock.ExitReadLock(); }
         }
 
         /// <summary>
@@ -849,6 +904,34 @@ namespace NPCChat.Core.WorldClasses
                     inv.TryRemove(cmd.ItemId, cmd.Quantity, out _);
                 else if (cmd.ItemDef is not null)
                     inv.TryAdd(cmd.ItemDef, cmd.Quantity, out _);
+            }
+            finally { _worldLock.ExitWriteLock(); }
+        }
+
+        private void ProcessShopTransaction(ShopTransactionCommand cmd)
+        {
+            _worldLock.EnterWriteLock();
+            try
+            {
+                if (!TryGetObject(cmd.PlayerHandle, out var obj) || obj?.Inventory is not { } inv)
+                    return;
+
+                if (cmd.IsBuy)
+                {
+                    // Verify player has enough gold before completing purchase.
+                    if (inv.CountOf("gold_coin") < cmd.GoldCost) return;
+                    inv.TryRemove("gold_coin", cmd.GoldCost, out _);
+                    inv.TryAdd(cmd.ItemDef, cmd.Quantity, out _);
+                }
+                else
+                {
+                    // Verify player has the item before selling.
+                    if (inv.CountOf(cmd.ItemId) < cmd.Quantity) return;
+                    inv.TryRemove(cmd.ItemId, cmd.Quantity, out _);
+
+                    if (cmd.GoldItemDef is not null)
+                        inv.TryAdd(cmd.GoldItemDef, cmd.GoldCost, out _);
+                }
             }
             finally { _worldLock.ExitWriteLock(); }
         }

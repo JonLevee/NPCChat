@@ -4,6 +4,7 @@ using NPCChat.Core.BehaviorClasses;
 using NPCChat.Core.BehaviorClasses.Tasks;
 using NPCChat.Core.CharacterClasses;
 using NPCChat.Core.DialogueClasses;
+using NPCChat.Core.ShopClasses;
 using NPCChat.Core.WorldClasses;
 
 namespace NPCChat.Core.WorldBuilderTemplates
@@ -30,7 +31,8 @@ namespace NPCChat.Core.WorldBuilderTemplates
                     Archetype = "Blacksmith",
                     FactionId = BlacksmithFaction
                 },
-                Actor = BuildBlacksmithActor(x, y)
+                Actor = BuildBlacksmithActor(x, y),
+                Shop  = BuildBlacksmithShop()
             };
 
             builder.World.AddObject(npc);
@@ -261,6 +263,31 @@ namespace NPCChat.Core.WorldBuilderTemplates
 
                 .Root("greet")
                 .Build();
+        }
+
+        private ShopComponent BuildBlacksmithShop()
+        {
+            var shop = new ShopComponent { SellMultiplier = 0.5f };
+
+            void AddStock(string id, float priceMult = 1.0f)
+            {
+                var def = builder.StaticData.GetItem(id);
+                if (def is null) return;
+                shop.Stock.Add(new ShopEntry
+                {
+                    ItemId          = id,
+                    ItemDef         = def,
+                    PriceMultiplier = priceMult
+                });
+            }
+
+            AddStock("iron_sword");                // 40 gold — base price
+            AddStock("leather_armour");            // 30 gold — base price
+            AddStock("health_potion",  priceMult: 1.2f); // 18 gold — slight markup
+            AddStock("iron_ore",       priceMult: 1.5f); // 8 gold  — selling raw materials premium
+            AddStock("wood_plank",     priceMult: 1.0f); // 2 gold
+
+            return shop;
         }
     }
 }

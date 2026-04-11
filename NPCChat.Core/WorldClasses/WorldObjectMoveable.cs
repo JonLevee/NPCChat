@@ -3,6 +3,7 @@ using NPCChat.Core.BehaviorClasses;
 using NPCChat.Core.CharacterClasses;
 using NPCChat.Core.FactionClasses;
 using NPCChat.Core.QuestClasses;
+using NPCChat.Core.ShopClasses;
 
 namespace NPCChat.Core.WorldClasses
 {
@@ -61,5 +62,12 @@ namespace NPCChat.Core.WorldClasses
         /// Accessed exclusively on the UI thread.
         /// </summary>
         public ReputationLog? ReputationLog { get; set; }
+
+        /// <summary>
+        /// Shop component. Non-null for merchant NPCs; null for all others.
+        /// Stock is set at world-build time and never mutated, so it is safe to
+        /// read from the UI thread without locking.
+        /// </summary>
+        public ShopComponent? Shop { get; set; }
     }
 }

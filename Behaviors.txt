@@ -239,7 +239,37 @@ Upcoming Phases
 
 
 
+OK, on to phase 13 - Serialization
+Let's discuss the approach to serialization.  
+
+I think we should have a single abstraction layer for loading and saving game data, which can support multiple formats (YAML for static data, JSON for save/load).  
+This abstraction layer would be responsible for converting between the in-memory data structures (WorldData, WorldObject, Actor, Behavior, etc.) and the serialized formats.  
+This would allow us to keep the loading/saving logic separate from the core game logic, and also make it easier to switch out or add new serialization formats in the future if needed.
+
+The player will have a username, and each game they create will have a player character name that is stored with the that save state.  
+The player will also have a current level, progress in the game, gold, inventory (.etc) which will also be stored in the save state.  
+I recommend that we have a single directory to store all game data, including the starting world data (NPC definitions, dialogue trees, item definitions, etc.) and the players save states.
+
+There are 3 types of data we need to serialize:
+1) Static data: this includes things like the world layout, NPC definitions, dialogue trees, item definitions, etc.  This data is read-only and will be loaded at the start of the game.  
+We need a format like YAML for this, which is human-readable and easy to edit.
+I suggest we use this filename template for static data: StaticData[data name].yaml.  
+For example, StaticData[NPCDefinitions].yaml, StaticData[DialogueTrees].yaml, StaticData[ItemDefinitions].yaml, etc.
+2) Dynamic save state data: this includes things like the current state of the world, the player's inventory, the NPCs' current modes and tasks, etc.  
+This data is read-write and needs to be loaded once then saved during the game.  When the player starts a new game, we need to copy the game starting (default) data to the players 
+save state.  Then we can load the players save state normally.  Assume we have one directory to store data, players save states should be prefixed with the , and any other files we need to persist.
+We need a format like JSON for this, which is faster for machine parsing than YAML.
+I suggest we use this filename template for dynamic data: [username]_[charactername]_[save timestamp].json.
+For example, if the player is named "Alice" and their character is named "Warrior", their save state file might be named "Alice_Warrior_2024-06-01T12-00-00.json".
+3) Starting world data: this includes the default state of the world when the player starts a new game.  This data is read-only and will be copied to the players save state when they start a new game.
+We need a format like JSON for this, which is faster for machine parsing than YAML.
+I suggest we use this filename template for starting world data: StartGameData[data name].yaml.
+For example, if we have a default starting state that we want to copy to the players save state when they start a new game, we might name it StartGameData[InitialState].yaml.
+
+Please summarize the key concerns and tradeoffs, and propose a strategy for how to implement it in a way that is maintainable, flexible, and efficient.  
+Consider things like: performance, ease of use, compatibility with existing data structures, and support for multiple formats.
+  
 
 
-  new things to add:
-  * when I left-click and hold, I want to be able to move the map.
+new things to add:
+* when I left-click and hold, I want to be able to move the map.

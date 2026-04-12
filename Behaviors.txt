@@ -466,7 +466,7 @@ This is a meaty design discussion. Let me read the current static data and world
 ----------------------------------------------------------------------------------------------------------------------------------
 Answers to your assessment:
 "WorldObjectMoveable"
-I agree with your lambda construction proposal, create templates for each lambda so they can be serialized/deserialized properly.  We should be able to use attributes to keep the serializer from fretting about the lambdas.
+See my "Circling back to the lambda serialization problem" point below.
 "Inconsistency in #3"
 You are right, my inconsistency stems from the fact that I know the save state needs to be in JSON but I do want the starting game save state in YAML.  We will need to read in the starting game state using YAML and persist it to the save file as JSON.
 "Bracket characters in filenames"
@@ -479,9 +479,33 @@ What does domain mapping and DTO mean (in this context)?  Is this for converting
 
 "What gets serialized (and what doesn't)"
 I think all state information (i.e. ActionQueue / live tasks) need to get serialized.  When the game is loaded, all NPC's and mobs should resume what they were previously doing.  Thoughts?
+
+"The NPC template problem in detail"
+I don't think we need to save any information about the NPC templates.  We can just save the current state of the NPC (position, HP, mode, dialogue cooldowns) and then on load we can 
+reconstruct the NPC from the template based on its position in the world and overlay the saved state.  This way we don't have to worry about template IDs or factories.  My intention when
+I created the template factory was to have an easy way to create a world that I can use to test the Core game engine.  Once the serialization is done, I will PROBABLY just switch to using
+YAML/JSON for my testing templates.  So I think it's best if we keep that logic in code and not try to serialize it.
+Thoughts?
+
+"Dialogue tree serialization — the tricky part"
+Makes sense.  Please go ahead with the custom type converter for YamlDotNet.  For the case-insensitive comparer, I think we can just serialize the dictionary as a list of key-value 
+pairs and then reconstruct the dictionary with the correct comparer on deserialization.  Thoughts?
+
+"The new-game flow"
+Sounds good.
+
+"Recommended sub-phases"
+Please make sure you leave the Templates in place.  After this work is done, the unit tests will still be using the templates.  We can add more tests later that utilize the YAML/JSON loading instead of the templates, but for now let's keep the templates in place and just add the YAML/JSON loading as an additional way to create the world.
+
+Circling back to the lambda serialization problem, I think it might be best if we created a state token to place in the action queue that contains the name of the action and any parameters needed to execute it.  
+Then we can have a mapping ([Singleton] class MoveableActionsFactory?)of action name → lambda that we can use to reconstruct the ActionQueue on load.  
+This way we can serialize the state token instead of the lambda itself, which should be straightforward.  Thoughts?
+
+One thing to add to our worklist:
+* when I left-click and hold, I want to be able to move the map.
+
+Create a new phase for this, maybe Phase 14 — Map Interaction.  
+
+I'll review your answers to my questions here before we proceed.
 ----------------------------------------------------------------------------------------------------------------------------------
 
-
-
-new things to add:
-* when I left-click and hold, I want to be able to move the map.

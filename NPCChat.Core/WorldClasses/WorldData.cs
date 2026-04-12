@@ -844,6 +844,34 @@ namespace NPCChat.Core.WorldClasses
             return quotient;
         }
 
+        private void ProcessDeaths(WorldObjectMoveable[] snapshot)
+        {
+            foreach (var actor in snapshot)
+            {
+                if (actor.Combat?.IsDead != true) continue;
+                // Guard: verify object still lives before removing (could have been removed by
+                // a previous iteration if the same handle somehow appeared twice).
+                _worldLock.EnterReadLock();
+                bool stillAlive;
+                try { stillAlive = _handleManager.TryGetSlot(actor.Handle, out _); }
+                finally { _worldLock.ExitReadLock(); }
+
+                if (stillAlive)
+                    RemoveObject(actor.Handle);
+            }
+        }
+
+        private WorldObjectMoveable? GetMoveableByHandle(ObjectHandle handle)
+        {
+            _worldLock.EnterReadLock();
+            try
+            {
+                if (!_handleManager.TryGetSlot(handle, out var slot)) return null;
+                return slot.Object as WorldObjectMoveable;
+            }
+            finally { _worldLock.ExitReadLock(); }
+        }
+
         private void ProcessDropCommand(DropCommand cmd)
         {
             // Must run outside write lock — AddObject acquires write lock internally.
@@ -998,11 +1026,13 @@ namespace NPCChat.Core.WorldClasses
             // Snapshot under read lock — same pattern as AdvanceMoveables.
             WorldObjectMoveable[] snapshot;
             Bounds? playerBounds;
+            ObjectHandle? playerHandle;
             _worldLock.EnterReadLock();
             try
             {
-                snapshot = _moveableObjects.ToArray();
+                snapshot     = _moveableObjects.ToArray();
                 playerBounds = _playerObject?.Bounds;
+                playerHandle = _playerObject?.Handle;
             }
             finally { _worldLock.ExitReadLock(); }
 
@@ -1030,7 +1060,9 @@ namespace NPCChat.Core.WorldClasses
                     actor, playerBounds, gameTick, gameHour, EnqueueMoveCommand,
                     checkLineOfSight:  HasLineOfSight,
                     postAlert:         _alertBoard.Post,
-                    getNearbyAlerts:   _alertBoard.GetNearbyAlerts);
+                    getNearbyAlerts:   _alertBoard.GetNearbyAlerts,
+                    playerHandle:      playerHandle,
+                    getMoveable:       GetMoveableByHandle);
 
                 // 1. Schedule check — transition mode if the time range changed.
                 var scheduledMode = component.Schedule.GetModeForTime(gameHour);
@@ -1079,6 +1111,9 @@ namespace NPCChat.Core.WorldClasses
 
             // 4. Publish interaction snapshots for actors within player perception range.
             _interactionSnapshot = BuildInteractionSnapshots(snapshot, playerBounds, gameTick, gameHour);
+
+            // 5. Remove actors that died this tick (deferred so tasks complete cleanly).
+            ProcessDeaths(snapshot);
         }
 
         private InteractionSnapshot[] BuildInteractionSnapshots(

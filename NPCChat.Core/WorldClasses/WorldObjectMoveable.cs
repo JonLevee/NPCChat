@@ -1,6 +1,7 @@
 #nullable enable
 using NPCChat.Core.BehaviorClasses;
 using NPCChat.Core.CharacterClasses;
+using NPCChat.Core.CombatClasses;
 using NPCChat.Core.FactionClasses;
 using NPCChat.Core.QuestClasses;
 using NPCChat.Core.ShopClasses;
@@ -69,5 +70,13 @@ namespace NPCChat.Core.WorldClasses
         /// read from the UI thread without locking.
         /// </summary>
         public ShopComponent? Shop { get; set; }
+
+        /// <summary>
+        /// Combat statistics (health, damage, range, cooldown).
+        /// Non-null for actors that participate in combat (enemies, player).
+        /// Null for non-combatants (merchants, ambient NPCs).
+        /// Owned by the simulation thread.
+        /// </summary>
+        public CombatStats? Combat { get; set; }
     }
 }

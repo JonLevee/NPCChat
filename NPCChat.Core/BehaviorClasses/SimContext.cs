@@ -50,6 +50,18 @@ namespace NPCChat.Core.BehaviorClasses
         /// </summary>
         public Func<Point, int, AlertEvent[]>? GetNearbyAlerts { get; }
 
+        /// <summary>
+        /// Handle of the current player object, or null when no player exists.
+        /// Used by combat tasks to look up the player's health component.
+        /// </summary>
+        public ObjectHandle? PlayerHandle { get; }
+
+        /// <summary>
+        /// Resolves a handle to its <see cref="WorldObjectMoveable"/>, or null if not found.
+        /// Sim-thread-only. Null when not available (e.g. during tests that don't need it).
+        /// </summary>
+        public Func<ObjectHandle, WorldObjectMoveable?>? GetMoveable { get; }
+
         public SimContext(
             WorldObjectMoveable actor,
             Bounds? playerBounds,
@@ -58,7 +70,9 @@ namespace NPCChat.Core.BehaviorClasses
             Action<MoveCommand> enqueueMove,
             Func<Bounds, Bounds, bool>? checkLineOfSight = null,
             Action<AlertEvent>? postAlert = null,
-            Func<Point, int, AlertEvent[]>? getNearbyAlerts = null)
+            Func<Point, int, AlertEvent[]>? getNearbyAlerts = null,
+            ObjectHandle? playerHandle = null,
+            Func<ObjectHandle, WorldObjectMoveable?>? getMoveable = null)
         {
             Actor            = actor;
             PlayerBounds     = playerBounds;
@@ -68,6 +82,8 @@ namespace NPCChat.Core.BehaviorClasses
             CheckLineOfSight = checkLineOfSight;
             PostAlert        = postAlert;
             GetNearbyAlerts  = getNearbyAlerts;
+            PlayerHandle     = playerHandle;
+            GetMoveable      = getMoveable;
         }
     }
 }

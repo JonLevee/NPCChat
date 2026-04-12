@@ -269,6 +269,218 @@ For example, if we have a default starting state that we want to copy to the pla
 Please summarize the key concerns and tradeoffs, and propose a strategy for how to implement it in a way that is maintainable, flexible, and efficient.  
 Consider things like: performance, ease of use, compatibility with existing data structures, and support for multiple formats.
   
+----------------------------------------------------------------------------------------------------------------------------------
+This is a meaty design discussion. Let me read the current static data and world builder code to ground my analysis in the actual codebase before
+  responding.
+
+  Searched for 5 patterns, read 8 files (ctrl+o to expand)
+
+● Good. Now I have the full picture. Here's my analysis:
+
+  ---
+  Phase 13 Serialization — Key Concerns, Tradeoffs, and Strategy
+
+  The hard constraint you need to know first
+
+  BehaviorRule.Trigger and BehaviorRule.ActionFactory are Func<SimContext, bool> and Func<SimContext, IActorTask>. InteractionEntry.Condition is another
+  Func<>. These are compiled lambda closures — completely unserializable, by any format. The same applies to live IActorTask instances sitting in an
+  ActionQueue.
+
+  This one fact shapes the entire strategy. An NPC save file cannot be a serialized WorldObjectMoveable. It must be a template reference (which NPC type with
+  what parameters) plus instance state (current position, HP, cooldowns). On load: reconstruct from the template in code, then overlay the saved state. The
+  behavior wiring stays in C#.
+
+  ---
+  Your proposal — a few items to clarify
+
+  Inconsistency in #3: You said "JSON format" for starting world data, then .yaml extension and the type name StartGameData[*].yaml. Which is it? My
+  recommendation is YAML — starting world layout is authored content (content creators may want to edit it), and it's only loaded once at new-game creation, so
+   parsing speed is irrelevant. JSON should be reserved for runtime-generated saves only.
+
+  Bracket characters in filenames (StaticData[NPCDefinitions].yaml): Valid on Windows and Linux, but unusual and mildly risky in shell scripts and web paths.
+  Consider underscores or dots instead: static_npc_definitions.yaml or StaticData.NPCDefinitions.yaml.
+
+  Save timestamps: Alice_Warrior_2024-06-01T12-00-00.json uses hyphens to replace the colons in ISO 8601 — this works but make sure you round-trip it
+  consistently. 20240601T120000Z is also common and avoids delimiter ambiguity.
+
+  ---
+  The three-layer architecture
+
+                       ┌──────────────────────────────────┐
+   Application code    │       GameDataRepository          │   (knows paths, naming,
+                       │  Load/Save/NewGame/ListSaves       │    delegates, new-game flow)
+                       └──────────────┬───────────────────┘
+                                      │ uses
+                       ┌──────────────▼───────────────────┐
+   Domain mapping      │        Domain ↔ DTO mapping        │   (converts WorldObjectMoveable
+                       │  (Assemblers / mappers per type)   │    ↔ NpcInstanceDto, etc.)
+                       └──────────────┬───────────────────┘
+                                      │ uses
+                       ┌──────────────▼───────────────────┐
+   Format adapters     │  IDataFormat: Serialize/Deserialize│   YamlFormat (YamlDotNet)
+                       │  (thin, dumb, no game knowledge)   │   JsonFormat (System.Text.Json)
+                       └──────────────────────────────────┘
+
+  Layer 1 — IDataFormat: A single generic interface: T Deserialize<T>(Stream) / void Serialize<T>(T, Stream). Two implementations. No game knowledge.
+
+  Layer 2 — DTOs and assemblers: Serialization-safe records that mirror domain types, plus assemblers that translate in both directions. The DTO layer is the
+  schema boundary — when the domain changes, you update the assembler, not the domain class. This is where versioning lives.
+
+  Layer 3 — GameDataRepository: Knows about directories, filename templates, the new-game flow, the NPC template factory, and save file enumeration. This is
+  what the application calls.
+
+  ---
+  What gets serialized (and what doesn't)
+
+  ┌───────────────────────────────────────┬────────┬──────────────────────────────────┬─────────────────────────────────────────┐
+  │                 Data                  │ Format │       Serializable as-is?        │                  Notes                  │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ ItemDef, QuestDef, FactionDef         │ YAML   │ Yes — clean init props           │ Direct DTO mapping                      │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ DialogueTree + nodes                  │ YAML   │ Careful — polymorphic node types │ Need type discriminator field           │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ NPC template definitions              │ YAML   │ No — behaviors are delegates     │ Template name + params only             │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ Starting world layout                 │ YAML   │ No (same reason)                 │ NPC placements: templateId + position   │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ Player state (inventory, quests, rep) │ JSON   │ Yes — clean mutable state        │ Item slots store item IDs, not ItemDefs │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ NPC instance state                    │ JSON   │ Partial                          │ Position, HP, mode, dialogue cooldowns  │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ ActionQueue / live tasks              │ —      │ Never                            │ Re-initialize from template on load     │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ BehaviorRule delegates                │ —      │ Never                            │ Reconstructed by template factory       │
+  └───────────────────────────────────────┴────────┴──────────────────────────────────┴─────────────────────────────────────────┘
+
+  ---
+  The NPC template problem in detail
+
+  Each NPC's ActorComponent is built by a template factory today (GuardTemplate.BuildGuardActor). For save/load to work:
+
+  1. Assign every NPC a template ID at creation time and store it on the object (e.g., Actor.TemplateId = "Guard").
+  2. Register an INpcTemplateFactory that maps (templateId, params) → WorldObjectMoveable (same code that lives in GuardTemplate today).
+  3. Save file: { "templateId": "Guard", "params": { "patrolRadius": 4 }, "position": { "x": 10, "y": 5 }, "hp": 80, "mode": "Work", "cooldowns": {...} }
+  4. Load: call factory → get a fully-wired NPC → apply overrides.
+
+  If you rename a template, saves break. Mitigate: keep a stable templateId string separate from the C# class name, and add a migration table for renames.
+
+  ---
+  Dialogue tree serialization — the tricky part
+
+  DialogueNode has four subtypes: Line, Choice, Pool, Sequence. YAML and JSON both need a type discriminator to deserialize polymorphic nodes. System.Text.Json
+   supports this natively with [JsonPolymorphic] and [JsonDerivedType] in .NET 7+. YamlDotNet needs a custom type converter.
+
+  DialoguePoolEntry.Requires and Forbids are Dictionary<string, MinMax> with OrdinalIgnoreCase comparer. The case-insensitive comparer won't round-trip through
+   JSON by default — you'll need to reconstruct it on deserialization rather than serialize the comparer itself.
+
+  ---
+  Player save file structure
+
+  {
+    "version": 1,
+    "savedAt": "2024-06-01T12:00:00Z",
+    "username": "Alice",
+    "characterName": "Warrior",
+    "player": {
+      "position": { "x": 10, "y": 20 },
+      "hp": 85,
+      "inventory": [
+        { "itemId": "iron_sword", "quantity": 1 },
+        { "itemId": "gold_coin",  "quantity": 42 }
+      ],
+      "quests": {
+        "active":    ["find_sword"],
+        "completed": ["kill_rats"]
+      },
+      "reputation": {
+        "guards":   120,
+        "thieves": -50
+      }
+    },
+    "world": {
+      "npcs": [
+        {
+          "templateId": "Guard",
+          "params": { "patrolRadius": 4 },
+          "position": { "x": 15, "y": 8 },
+          "hp": 100,
+          "mode": "Work",
+          "dialogueCooldowns": { "guard_greet_0": 1240 }
+        }
+      ],
+      "droppedItems": [
+        { "itemId": "iron_ore", "quantity": 3, "position": { "x": 5, "y": 5 } }
+      ]
+    }
+  }
+
+  version is critical. Every save file must have it, and GameDataRepository.Load must check it before deserializing. Start at version 1 now.
+
+  ---
+  The new-game flow
+
+  "Copy starting world data to player save" is not a file copy — the formats differ. It's:
+
+  1. Deserialize StartingWorld.yaml → StartingWorldDto
+  2. Deserialize StartingPlayer.yaml → PlayerDto
+  3. Merge into a WorldSaveDto
+  4. Serialize to Alice_Warrior_20240601T120000.json
+
+  The starting world YAML specifies which NPC templates to place where. It does not duplicate the template definitions.
+
+  ---
+  Recommended sub-phases
+
+
+  ┌───────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Sub-phase │                                                   Scope                                                    │
+  ├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 13-A      │ IDataFormat, YamlFormat (YamlDotNet), JsonFormat (System.Text.Json); DTO records for all static types      │
+  ├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 13-B      │ Static data serialization: ItemDef, QuestDef, FactionDef → YAML roundtrip + unit tests                     │
+  ├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 13-C      │ DialogueTree → YAML roundtrip (polymorphic nodes, MinMax dictionaries); this is the hardest sub-phase      │
+  ├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 13-D      │ Player save DTO + assembler: inventory, quests, reputation, position, HP; JSON roundtrip + unit tests      │
+  ├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 13-E      │ NPC instance save: templateId, template params, instance state overrides; INpcTemplateFactory registration │
+  ├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 13-F      │ GameDataRepository: file path logic, new-game flow, save enumeration; integration tests                    │
+  ├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 13-G      │ Starting world YAML replacing hardcoded WorldDataBuilder template calls                                    │
+  └───────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  I'd treat 13-C as the risk item that deserves a spike before committing to the rest. If DialogueTree YAML becomes too cumbersome (due to the polymorphic
+  nodes and MinMax dictionaries), you might decide dialogue trees stay in code and only get the YAML file path reference, which significantly simplifies the
+  overall effort.
+
+  ---
+  Package choices
+
+  - YAML: YamlDotNet (only serious option for .NET; actively maintained)
+  - JSON: System.Text.Json — already in .NET 8, no dependency to add, [JsonPolymorphic] support covers the node types
+
+  ---
+  Want to proceed with 13-A, or discuss any of these concerns further before starting?
+
+----------------------------------------------------------------------------------------------------------------------------------
+Answers to your assessment:
+"WorldObjectMoveable"
+I agree with your lambda construction proposal, create templates for each lambda so they can be serialized/deserialized properly.  We should be able to use attributes to keep the serializer from fretting about the lambdas.
+"Inconsistency in #3"
+You are right, my inconsistency stems from the fact that I know the save state needs to be in JSON but I do want the starting game save state in YAML.  We will need to read in the starting game state using YAML and persist it to the save file as JSON.
+"Bracket characters in filenames"
+Let's use underscores, and use a double underscore to escape user input underscores.
+"Save timestamps"
+Let's use hyphens so they are easier for humans to read.
+
+"Domain mapping"
+What does domain mapping and DTO mean (in this context)?  Is this for converting types that are not directly convertable to YAML or JSON?  If yes, I have handled this in the past by marking properties that aren't directly serializable with a [Ignore] type attribute (depending on the serializer) and adding another property whose get/set methods do the conversion.  Thoughts?
+
+"What gets serialized (and what doesn't)"
+I think all state information (i.e. ActionQueue / live tasks) need to get serialized.  When the game is loaded, all NPC's and mobs should resume what they were previously doing.  Thoughts?
+----------------------------------------------------------------------------------------------------------------------------------
+
 
 
 new things to add:

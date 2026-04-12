@@ -177,3 +177,43 @@ Upcoming Phases
 
   How to use: walk near the Blacksmith → click "Shop" → Buy/Sell tabs appear; each tick gold and inventory refresh live.
 
+
+  Phase 11 — Unit Tests (partially complete)                                                                                                             
+  Core tests: done (212 new tests, all passing).                                                                                                         
+  Remaining:
+  - UserSettingsRepositoryTests.cs — Editor window persistence (low priority; internal tool only)
+
+  ---
+  Phase 12 — Combat
+
+  Nothing is formally spec'd, but the existing code already has scaffolding:
+  - CombatReadyTask, ChaseTask, FleeTask exist but contain no damage logic
+  - AlertKind.PlayerDetected implies combat-triggering detection
+  - FactionDef.HostileThreshold / ReputationTier.Hostile imply combat gating by faction
+
+  Likely sub-phases:
+  1. Combat stats — health, attack, defense on Character; death state on WorldObjectMoveable
+  2. Melee mechanics — attack range check, hit/damage calculation, cooldown between strikes
+  3. Combat AI — connect CombatReadyTask/ChaseTask to the damage system; aggro via AlertBoard
+  4. Death & loot — drop inventory on death; remove from world; respawn or despawn logic
+  5. Faction combat — Hostile reputation tier automatically triggers combat behaviors
+
+  ---
+  Phase 13 — YAML World Serialization
+
+  The YamlImport/ directory already has model classes (YamlWorld, YamlCharacter, YamlBuilding, YamlObject, YamlOccupied, YamlArchetype,
+  YamlImportMoodAxes) and /Data/CoreMetadata.yaml exists. The loading provider wiring is not yet implemented.
+
+  Likely sub-phases:
+  1. World layout — parse buildings, static objects, chunk placement from YAML
+  2. NPC/Character definitions — archetypes, schedules, mood vectors, faction IDs from YAML
+  3. Dialogue trees — YAML format for DialogueTreeBuilder output (replaces hardcoded templates)
+  4. Static data — items, quests, factions loaded from YAML instead of RegisterSeed*() code
+
+  ---
+  Beyond Phase 13 (not formally planned)
+
+  The README describes full scenario content (blacksmith NPC, trader, town gossip) with detailed behavior specs. That's likely a content/scenario phase
+  after the engine is serialization-complete. A Unity port is also implied by the Core/Editor split and the test strategy decision to avoid
+  MSTest-specific attributes.
+

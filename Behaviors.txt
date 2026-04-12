@@ -217,3 +217,29 @@ Upcoming Phases
   after the engine is serialization-complete. A Unity port is also implied by the Core/Editor split and the test strategy decision to avoid
   MSTest-specific attributes.
 
+  Phase 12 is complete. Here's a summary of what was delivered:
+
+  ---                                                                                                                                                      Phase 12 — Combat
+                                                                                                                                                           New files:
+  - NPCChat.Core/CombatClasses/CombatStats.cs — health, damage, attack range, cooldown; TakeDamage/Heal with clamping; TickCooldown/ResetCooldown;
+  IsDead/CanAttack
+  - NPCChat.Core/BehaviorClasses/Tasks/AttackTask.cs — halts actor, attacks player on cooldown while in Chebyshev range, posts CombatNoise alert, yields
+  when player backs away
+  - NPCChat.Tests/CombatStatsTests.cs — 16 tests
+  - NPCChat.Tests/AttackTaskTests.cs — 12 tests
+
+  Modified files:
+  - WorldObjectMoveable.cs — added CombatStats? Combat
+  - AlertKind.cs — added CombatNoise
+  - SimContext.cs — added PlayerHandle? and GetMoveable? (optional, backward-compatible)
+  - WorldData.cs — wires playerHandle/GetMoveableByHandle into SimContext; ProcessDeaths() removes dead actors after each behavior pass
+
+  Result: 256/256 tests passing.
+
+
+
+
+
+
+  new things to add:
+  * when I left-click and hold, I want to be able to move the map.

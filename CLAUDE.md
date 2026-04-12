@@ -23,7 +23,7 @@ dotnet clean
 
 ## Architecture Overview
 
-NPCChat is a multi-threaded WPF RPG world simulation engine (Phase 10 of ~12 complete). Three projects:
+NPCChat is a multi-threaded WPF RPG world simulation engine (Phase 12 of ~13 complete). Three projects:
 
 - **NPCChat.Core** — all simulation/game logic, class library
 - **NPCChat.Editor** — WPF desktop app, renders the world, drives UI
@@ -60,7 +60,7 @@ Each NPC has an `ActorComponent` with:
 
 **`IActorTask`** lifecycle: `Begin()` → `Tick()` (returns true when done) → `Interrupt()`. Tasks hold `SubTasks: LinkedList<SubTask>` that can be extended dynamically via `OnComplete` callbacks. `MaxTurns` is a safety ceiling.
 
-**`SimContext`** is a readonly struct passed to all behavior delegates — contains Actor, PlayerBounds, GameTick, GameHour, and delegates like `EnqueueMove`, `CheckLineOfSight`, `PostAlert`, `GetNearbyAlerts`.
+**`SimContext`** is a readonly struct passed to all behavior delegates — contains Actor, PlayerBounds, GameTick, GameHour, and delegates like `EnqueueMove`, `CheckLineOfSight`, `PostAlert`, `GetNearbyAlerts`, `GetMoveable`, plus `PlayerHandle?` for combat tasks.
 
 ### Dialogue System
 
@@ -137,6 +137,8 @@ Test files map to subsystems:
 | `AlertBoardTests.cs` | Double-buffered alert bus |
 | `LineOfSightTests.cs` | Ray-march LOS |
 | `StaticDataTests.cs` | Item/quest/faction registry |
+| `CombatStatsTests.cs` | Health, damage, heal, cooldown |
+| `AttackTaskTests.cs` | Melee attack task, damage, cooldown, alerts |
 | `UserSettingsRepositoryTests.cs` | Editor window persistence (low priority) |
 
 See `phase11-unit-tests.md` for the full test case list per file.
@@ -145,4 +147,4 @@ See `phase11-unit-tests.md` for the full test case list per file.
 
 ### Project Status
 
-Phases 0–10 complete. Phase 11 is unit test coverage (see `phase11-unit-tests.md`). After that: Phase 12 (Combat), Phase 13 (YAML world serialization).
+Phases 0–12 complete. Phase 13 is YAML world serialization.

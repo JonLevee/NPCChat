@@ -14,7 +14,8 @@
       "Bash(r)",
       "Bash(sed -i '1s/^/#nullable enable\\\\n/' \"/c/Source/NPCChat/NPCChat.Core/DialogueClasses/DialogueContext.cs\" \"/c/Source/NPCChat/NPCChat.Core/DialogueClasses/DialogueChoice.cs\")",
       "Bash(sed -i '1s/^/#nullable enable\\\\n/' \"/c/Source/NPCChat/NPCChat.Core/BehaviorClasses/ActorComponent.cs\")",
-      "Bash(grep -v \"^$\")"
+      "Bash(grep -v \"^$\")",
+      "Bash(dotnet:*)"
     ]
   }
 }

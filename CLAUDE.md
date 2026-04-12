@@ -110,6 +110,39 @@ Currently populated via `WorldDataBuilder.GetTemplates()` code. YAML loading (Ph
 - **LinkedList<SubTask>** allows tasks to chain new work dynamically in `OnComplete` callbacks
 - **Perception-based LOD**: `DistantProcessInterval` on `ActorComponent` skips ticks for far-away actors
 
+### Test Organization
+
+Tests live in **NPCChat.Tests**. Core tests are the priority — the Core library will eventually move to Unity and the Editor is internal tooling only.
+
+Test files map to subsystems:
+
+| File | Subsystem |
+|------|-----------|
+| `AStarPathfinderTests.cs` | Pathfinding (well-covered) |
+| `PathGridTests.cs` | PathGrid passability |
+| `DialoguePickerTests.cs` | Mood scoring, gates, cooldowns, weighted random |
+| `CooldownTrackerTests.cs` | Self/group dialogue cooldowns |
+| `DialogueTreeBuilderTests.cs` | Fluent tree construction |
+| `DialogueSessionTests.cs` | Conversation state machine |
+| `MinMaxTests.cs` | Stat range gates |
+| `ActionQueueTests.cs` | Priority task queue |
+| `ActorScheduleTests.cs` | Hour-to-mode schedule |
+| `ActorComponentPerceptionTests.cs` | Chebyshev perception range |
+| `BoundsTests.cs` | AABB spatial math |
+| `ObjectHandleManagerTests.cs` | Handle allocation/recycling |
+| `MovementStateTests.cs` | Path/facing state |
+| `QuestLogTests.cs` | Quest active/complete tracking |
+| `InventoryComponentTests.cs` | Slot management, stacking |
+| `ReputationLogTests.cs` | Faction rep scores and tiers |
+| `AlertBoardTests.cs` | Double-buffered alert bus |
+| `LineOfSightTests.cs` | Ray-march LOS |
+| `StaticDataTests.cs` | Item/quest/faction registry |
+| `UserSettingsRepositoryTests.cs` | Editor window persistence (low priority) |
+
+See `phase11-unit-tests.md` for the full test case list per file.
+
+**Unity note**: Avoid MSTest-specific `[DataTestMethod]`/`[DataRow]` attributes in new Core tests — Unity uses NUnit. Use plain `[TestMethod]` with separate methods instead. `DialoguePicker` tests must pass a seeded `new Random(seed)` to be deterministic.
+
 ### Project Status
 
-Phases 0–10 complete. Upcoming: Phase 11 (Combat), Phase 12 (YAML world serialization).
+Phases 0–10 complete. Phase 11 is unit test coverage (see `phase11-unit-tests.md`). After that: Phase 12 (Combat), Phase 13 (YAML world serialization).

@@ -14,6 +14,9 @@ namespace NPCChat.Core.BehaviorClasses
 
         public bool IsEmpty => _tasks.Count == 0;
 
+        /// <summary>Read-only view of all queued tasks, highest priority first.</summary>
+        public IReadOnlyList<IActorTask> AllTasks => _tasks;
+
         /// <summary>Inserts the task in priority order (highest priority first).</summary>
         public void Enqueue(IActorTask task)
         {

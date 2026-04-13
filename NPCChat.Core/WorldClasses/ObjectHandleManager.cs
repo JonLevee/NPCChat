@@ -22,8 +22,19 @@ namespace NPCChat.Core.WorldClasses
         // packed list of currently active handles, if you later want iteration
         public readonly HashSet<ObjectHandle> ActiveHandles = [];
 
+        // Non-recycling world ID counter. 0 is reserved (means unassigned).
+        private int _nextWorldId = 1;
+
+        /// <summary>The next value that will be assigned as a WorldId. Persist this in the save file header.</summary>
+        public int NextWorldId => _nextWorldId;
+
+        /// <summary>Restores the counter after loading a save file so new objects get unique IDs.</summary>
+        public void RestoreNextWorldId(int value) => _nextWorldId = value;
+
         public ObjectHandle GetNewHandle(WorldObject obj)
         {
+            obj.WorldId = _nextWorldId++;
+
             int slotId;
             byte generation;
 

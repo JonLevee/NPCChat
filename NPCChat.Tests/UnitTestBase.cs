@@ -9,7 +9,6 @@ namespace NPCChat.Tests
     {
         protected IServiceProvider Services { get; private set; } = null!;
         protected StaticData Data { get; private set; } = null!;
-        protected LoadingProviderFactory LoadingFactory { get; private set; } = null!;
 
         [TestInitialize]
         public void TestInitializeBase()
@@ -17,7 +16,7 @@ namespace NPCChat.Tests
             IServiceCollection services = new ServiceCollection();
             ConfigureServices.Configure(services);
             Services = services.BuildServiceProvider();
-            LoadingFactory = Services.Get<LoadingProviderFactory>();
+            Data = Services.Get<StaticData>()!;
         }
     }
 

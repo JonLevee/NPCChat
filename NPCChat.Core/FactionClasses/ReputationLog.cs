@@ -35,6 +35,15 @@ namespace NPCChat.Core.FactionClasses
         /// </summary>
         public IReadOnlyDictionary<string, int> AllScores => _scores;
 
+        // ── Serialization ─────────────────────────────────────────────────────
+
+        /// <summary>Restores faction scores from a save record, replacing any existing scores.</summary>
+        public void RestoreState(IEnumerable<KeyValuePair<string, int>> scores)
+        {
+            _scores.Clear();
+            foreach (var kv in scores) _scores[kv.Key] = kv.Value;
+        }
+
         /// <summary>
         /// Returns the reputation tier for a given faction based on <paramref name="def"/>'s thresholds.
         /// </summary>

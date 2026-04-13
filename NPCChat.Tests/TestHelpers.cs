@@ -22,6 +22,7 @@ namespace NPCChat.Tests
         public void Begin(in SimContext ctx) { }
         public bool Tick(in SimContext ctx) { TurnsElapsed++; return false; }
         public void Interrupt(in SimContext ctx) { }
+        public ITaskToken ToToken() => throw new NotSupportedException("StubTask is not serializable.");
     }
 
     // ── NPC actor factory ────────────────────────────────────────────────────────

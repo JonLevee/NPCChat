@@ -43,6 +43,27 @@ namespace NPCChat.Core.DialogueClasses
                 _lastByGroupKey[GroupKey(speakerId, entry.Cooldown.Group!)] = nowSeconds;
         }
 
+        // ── Serialization ─────────────────────────────────────────────────────
+
+        /// <summary>
+        /// Returns the raw key→timestamp dictionaries for serialization.
+        /// Keys use the internal compound format and do not need further processing.
+        /// </summary>
+        public (IReadOnlyDictionary<string, double> Self, IReadOnlyDictionary<string, double> Group)
+            SaveState() => (_lastBySelfKey, _lastByGroupKey);
+
+        /// <summary>Restores cooldown state from a save record.</summary>
+        public void RestoreState(
+            IEnumerable<KeyValuePair<string, double>> self,
+            IEnumerable<KeyValuePair<string, double>> group)
+        {
+            _lastBySelfKey.Clear();
+            foreach (var kv in self)  _lastBySelfKey[kv.Key]  = kv.Value;
+
+            _lastByGroupKey.Clear();
+            foreach (var kv in group) _lastByGroupKey[kv.Key] = kv.Value;
+        }
+
         private static string SelfKey(string speakerId, string entryId)  => speakerId + "||" + entryId;
         private static string GroupKey(string speakerId, string group)    => speakerId + "||G||" + group;
     }

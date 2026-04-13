@@ -1,3 +1,9 @@
+next:
+    we can persist Id's, when we load we can confir
+use /rename and /resume
+
+
+
 
 
 Summary of our previous phases:
@@ -614,4 +620,6 @@ identify them.  The ID can be a simple integer that increments with each new obj
 as damage (requiring repairing or sharpening), .etc. We will still be able to create new WorldObjects (bumping the id).
 
 Once you confirm these points, you can proceed with the implementation.  You can order/prioritize the sub-phases as you see fit.
+
+----------------------------------------------------------------------------------------------------------------------------------
 

@@ -35,6 +35,32 @@ namespace NPCChat.Core.QuestClasses
             _active.Add(new QuestRecord(def));
         }
 
+        // ── Serialization ─────────────────────────────────────────────────────
+
+        /// <summary>Returns active quest IDs and completed quest IDs for serialization.</summary>
+        public (IEnumerable<string> ActiveIds, IEnumerable<string> CompletedIds) SaveState()
+            => (_active.Select(r => r.Def.Id), _completedIds);
+
+        /// <summary>
+        /// Restores quest state from a save record.
+        /// Unknown quest IDs (no longer in StaticData) are silently skipped.
+        /// </summary>
+        public void RestoreState(
+            IEnumerable<string> activeIds,
+            IEnumerable<string> completedIds,
+            Func<string, QuestDef?> getQuest)
+        {
+            _active.Clear();
+            _completedIds.Clear();
+            foreach (var id in completedIds)
+                _completedIds.Add(id);
+            foreach (var id in activeIds)
+            {
+                var def = getQuest(id);
+                if (def is not null) _active.Add(new QuestRecord(def));
+            }
+        }
+
         /// <summary>
         /// Marks the quest complete and moves it to the completed set.
         /// Returns true on success, false if the quest was not active.

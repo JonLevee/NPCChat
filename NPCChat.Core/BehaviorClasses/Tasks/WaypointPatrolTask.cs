@@ -57,5 +57,12 @@ namespace NPCChat.Core.BehaviorClasses.Tasks
             ctx.EnqueueMove(new MoveCommand(ctx.Actor.Handle, _waypoints[_waypointIndex]));
             _waitingForArrival = true;
         }
+
+        public override ITaskToken ToToken()
+        {
+            var pts = new Point[_waypoints.Count];
+            for (int i = 0; i < _waypoints.Count; i++) pts[i] = _waypoints[i];
+            return new WaypointPatrolTaskToken(Priority, pts);
+        }
     }
 }

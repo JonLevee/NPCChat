@@ -18,7 +18,7 @@ namespace NPCChat.Tests
             board.Post(Alert(0, 0));
             // BeginTick not called yet — read buffer is empty
             var result = board.GetNearbyAlerts(new Point(0, 0), 10);
-            Assert.AreEqual(0, result.Length);
+            Assert.IsEmpty(result);
         }
 
         [TestMethod]
@@ -28,7 +28,7 @@ namespace NPCChat.Tests
             board.Post(Alert(0, 0));
             board.BeginTick();
             var result = board.GetNearbyAlerts(new Point(0, 0), 10);
-            Assert.AreEqual(1, result.Length);
+            Assert.HasCount(1, result);
         }
 
         [TestMethod]
@@ -39,7 +39,7 @@ namespace NPCChat.Tests
             board.BeginTick();           // tick 1: alert visible
             board.BeginTick();           // tick 2: no new posts, read buffer cleared
             var result = board.GetNearbyAlerts(new Point(0, 0), 10);
-            Assert.AreEqual(0, result.Length);
+            Assert.IsEmpty(result);
         }
 
         [TestMethod]
@@ -49,7 +49,7 @@ namespace NPCChat.Tests
             board.BeginTick();
             board.Post(Alert(5, 5));     // posted to write buffer after swap
             var result = board.GetNearbyAlerts(new Point(5, 5), 10);
-            Assert.AreEqual(0, result.Length); // not yet visible
+            Assert.IsEmpty(result); // not yet visible
         }
 
         // ── Proximity filtering ──────────────────────────────────────────────────
@@ -59,7 +59,7 @@ namespace NPCChat.Tests
         {
             var board = new AlertBoard();
             board.BeginTick();
-            Assert.AreEqual(0, board.GetNearbyAlerts(new Point(0, 0), 10).Length);
+            Assert.IsEmpty(board.GetNearbyAlerts(new Point(0, 0), 10));
         }
 
         [TestMethod]
@@ -69,7 +69,7 @@ namespace NPCChat.Tests
             board.Post(Alert(3, 0));
             board.BeginTick();
             var result = board.GetNearbyAlerts(new Point(0, 0), 5);
-            Assert.AreEqual(1, result.Length);
+            Assert.HasCount(1, result);
         }
 
         [TestMethod]
@@ -79,7 +79,7 @@ namespace NPCChat.Tests
             board.Post(Alert(10, 0));
             board.BeginTick();
             var result = board.GetNearbyAlerts(new Point(0, 0), 5);
-            Assert.AreEqual(0, result.Length);
+            Assert.IsEmpty(result);
         }
 
         [TestMethod]
@@ -90,7 +90,7 @@ namespace NPCChat.Tests
             board.BeginTick();
             // Chebyshev distance = 5, radius = 5 → should be included
             var result = board.GetNearbyAlerts(new Point(0, 0), 5);
-            Assert.AreEqual(1, result.Length);
+            Assert.HasCount(1, result);
         }
 
         [TestMethod]
@@ -101,7 +101,7 @@ namespace NPCChat.Tests
             board.Post(Alert(5, 5));
             board.BeginTick();
             var result = board.GetNearbyAlerts(new Point(0, 0), 5);
-            Assert.AreEqual(1, result.Length);
+            Assert.HasCount(1, result);
 
             // Manhattan would be 10, so this confirms Chebyshev is used
         }
@@ -115,7 +115,7 @@ namespace NPCChat.Tests
             board.Post(Alert(0, 4));   // within radius 5
             board.BeginTick();
             var result = board.GetNearbyAlerts(new Point(0, 0), 5);
-            Assert.AreEqual(2, result.Length);
+            Assert.HasCount(2, result);
         }
 
         [TestMethod]
@@ -125,8 +125,8 @@ namespace NPCChat.Tests
             board.Post(new AlertEvent
             {
                 Position = new Point(0, 0),
-                Kind     = AlertKind.PlayerDetected,
-                Tick     = 42
+                Kind = AlertKind.PlayerDetected,
+                Tick = 42
             });
             board.BeginTick();
             var result = board.GetNearbyAlerts(new Point(0, 0), 1);

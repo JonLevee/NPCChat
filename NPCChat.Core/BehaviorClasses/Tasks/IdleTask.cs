@@ -26,5 +26,7 @@ namespace NPCChat.Core.BehaviorClasses.Tasks
             if (_durationTicks == int.MaxValue) return false;
             return --_ticksRemaining <= 0;
         }
+
+        public override ITaskToken ToToken() => new IdleTaskToken(Priority, _durationTicks);
     }
 }

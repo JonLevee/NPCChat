@@ -62,6 +62,8 @@ namespace NPCChat.Core.BehaviorClasses.Tasks
             return false;
         }
 
+        public override ITaskToken ToToken() => new CombatReadyTaskToken(Priority, _closeRange, _timeoutTicks);
+
         private static bool IsWithin(Bounds a, Bounds b, float range)
         {
             float dx = (a.Left + a.Width  * 0.5f) - (b.Left + b.Width  * 0.5f);

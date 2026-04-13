@@ -63,5 +63,8 @@ namespace NPCChat.Core.CombatClasses
         {
             _cooldownRemaining = AttackCooldownTicks;
         }
+
+        /// <summary>Restores <see cref="CurrentHp"/> from a save record. Clamped to [0, MaxHp].</summary>
+        public void RestoreCurrentHp(int hp) => CurrentHp = Math.Clamp(hp, 0, MaxHp);
     }
 }

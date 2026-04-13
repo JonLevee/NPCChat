@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
@@ -8,6 +9,7 @@ using System.Windows.Threading;
 using Microsoft.Extensions.DependencyInjection;
 using NPCChat.Core.DialogueClasses;
 using NPCChat.Core.LoadingProviderClasses;
+using NPCChat.Core.SaveClasses;
 using NPCChat.Core.ShopClasses;
 using NPCChat.Core.SupportClasses;
 using NPCChat.Core.Validation;
@@ -226,6 +228,8 @@ namespace NPCChat
                     CreateWorldScope();
                     BuildDemoTownButton.IsEnabled = true;
                     RedrawButton.IsEnabled = true;
+                    SaveButton.IsEnabled = true;
+                    LoadButton.IsEnabled = true;
                     CellSizeListBox.IsEnabled = false;
                     StartStopButton.Content = "Stop";
                     break;
@@ -233,6 +237,8 @@ namespace NPCChat
                     ClearWorldScope();
                     BuildDemoTownButton.IsEnabled = false;
                     RedrawButton.IsEnabled = false;
+                    SaveButton.IsEnabled = false;
+                    LoadButton.IsEnabled = false;
                     CellSizeListBox.IsEnabled = true;
                     StartStopButton.Content = "Start";
                     break;
@@ -252,6 +258,83 @@ namespace NPCChat
         private void RedrawButton_Click(object sender, RoutedEventArgs e)
         {
             RefreshWorld();
+        }
+
+        private void SaveButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_world is null) return;
+
+            var dlg = new Microsoft.Win32.SaveFileDialog
+            {
+                Title            = "Save Game",
+                Filter           = "Save files (*.json)|*.json",
+                DefaultExt       = ".json",
+                FileName         = $"save_{DateTime.Now:yyyy-MM-dd_HH-mm-ss}.json",
+                InitialDirectory = SaveDirectory(),
+            };
+
+            if (dlg.ShowDialog(this) != true) return;
+
+            try
+            {
+                var saveService = serviceScope.ServiceProvider.Get<SaveGameService>()!;
+                var handles     = serviceScope.ServiceProvider.Get<ObjectHandleManager>()!;
+                saveService.SaveToFile(_world, handles, dlg.FileName);
+                StatusTextBlock.Text = $"Saved → {Path.GetFileName(dlg.FileName)}";
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(this, $"Save failed:\n{ex.Message}", "Save Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private void LoadButton_Click(object sender, RoutedEventArgs e)
+        {
+            if (_world is null) return;
+
+            var dlg = new Microsoft.Win32.OpenFileDialog
+            {
+                Title            = "Load Game",
+                Filter           = "Save files (*.json)|*.json",
+                DefaultExt       = ".json",
+                InitialDirectory = SaveDirectory(),
+            };
+
+            if (dlg.ShowDialog(this) != true) return;
+
+            try
+            {
+                // Stop sim, rebuild world from definition, overlay save state, restart.
+                _world.StopSimulationProcessing();
+
+                ClearWorld();
+                using var templates = _worldBuilder.GetTemplates();
+                templates.AddSmallTown();
+
+                var loadService = serviceScope.ServiceProvider.Get<LoadGameService>()!;
+                var handles     = serviceScope.ServiceProvider.Get<ObjectHandleManager>()!;
+                loadService.LoadFromFile(dlg.FileName, _world, handles, _staticData);
+
+                _world.StartSimulationProcessing();
+
+                RefreshWorld();
+                StatusTextBlock.Text = $"Loaded ← {Path.GetFileName(dlg.FileName)}";
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show(this, $"Load failed:\n{ex.Message}", "Load Error",
+                    MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+
+        private static string SaveDirectory()
+        {
+            var dir = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.MyDocuments),
+                "NPCChat", "Saves");
+            Directory.CreateDirectory(dir);
+            return dir;
         }
 
         private void CellSizeListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)

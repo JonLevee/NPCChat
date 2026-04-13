@@ -1,0 +1,178 @@
+# world.yaml — New-game world definition.
+# Equivalent to Templates.AddSmallTown() in code.
+# Loaded by YamlWorldLoader on new game.
+
+static_data:
+
+  items:
+    - id: iron_sword
+      name: Iron Sword
+      kind: Weapon
+      max_stack: 1
+      weight: 3.0
+      base_value: 40
+
+    - id: leather_armour
+      name: Leather Armour
+      kind: Armour
+      max_stack: 1
+      weight: 5.0
+      base_value: 30
+
+    - id: health_potion
+      name: Health Potion
+      kind: Consumable
+      max_stack: 10
+      weight: 0.5
+      base_value: 15
+      description: Restores health.
+
+    - id: iron_ore
+      name: Iron Ore
+      kind: Material
+      max_stack: 50
+      weight: 2.0
+      base_value: 5
+
+    - id: gold_coin
+      name: Gold Coin
+      kind: Currency
+      max_stack: 9999
+      weight: 0.01
+      base_value: 1
+
+    - id: arrow
+      name: Arrow
+      kind: Weapon
+      max_stack: 99
+      weight: 0.1
+      base_value: 1
+
+    - id: wood_plank
+      name: Wood Plank
+      kind: Material
+      max_stack: 50
+      weight: 1.0
+      base_value: 2
+
+    - id: bread
+      name: Bread
+      kind: Consumable
+      max_stack: 10
+      weight: 0.3
+      base_value: 3
+      description: Simple food.
+
+  factions:
+    - id: townsfolk
+      name: Townsfolk
+      description: The ordinary people of the town — merchants, farmers, and craftspeople.
+      friendly_threshold: 50
+      hostile_threshold: -25
+
+  quests:
+    - id: fetch_iron_ore
+      name: Iron Ore Delivery
+      description: The blacksmith needs iron ore for his forge.
+      objectives:
+        - id: collect_iron_ore
+          kind: CollectItem
+          description: Collect iron ore
+          target_id: iron_ore
+          required_count: 5
+      rewards:
+        - item_id: gold_coin
+          quantity: 10
+
+objects:
+
+  player:
+    x: 16
+    y: 14
+
+  # Static buildings.
+  # Note: the blacksmith's shop is created automatically by the blacksmith NPC entry.
+  static:
+    - kind: Building
+      x: 10
+      y: 2
+      w: 5
+      h: 3
+
+    - kind: Building
+      x: 18
+      y: 2
+      w: 5
+      h: 3
+
+    - kind: Building
+      x: 2
+      y: 8
+      w: 5
+      h: 3
+
+    - kind: Building
+      x: 12
+      y: 9
+      w: 5
+      h: 3
+
+    - kind: Building
+      x: 22
+      y: 8
+      w: 5
+      h: 3
+
+    - kind: Building
+      x: 6
+      y: 16
+      w: 5
+      h: 3
+
+    - kind: Building
+      x: 20
+      y: 16
+      w: 5
+      h: 3
+
+  npcs:
+    # Blacksmith — creates both the NPC and its shop building at shop_x/shop_y
+    - behavior_type: blacksmith
+      x: 8
+      y: 14
+      params:
+        shop_x: "2"
+        shop_y: "2"
+
+    - behavior_type: farmer
+      x: 24
+      y: 14
+
+    # Two guards patrol near the town centre, within alert range of each other.
+    - behavior_type: guard
+      x: 10
+      y: 10
+      params:
+        patrol_radius: "3"
+
+    - behavior_type: guard
+      x: 18
+      y: 10
+      params:
+        patrol_radius: "3"
+
+  carryable:
+    - item_id: gold_coin
+      x: 19
+      y: 14
+      quantity: 10
+
+    - item_id: health_potion
+      x: 16
+      y: 16
+      quantity: 2
+
+    - item_id: iron_ore
+      x: 18
+      y: 15
+      quantity: 3

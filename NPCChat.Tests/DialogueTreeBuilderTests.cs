@@ -95,7 +95,7 @@ namespace NPCChat.Tests
             var node = tree.GetNode("c1") as DialogueChoiceNode;
             Assert.IsNotNull(node);
             Assert.AreEqual("What do you want?", node.NpcText);
-            Assert.AreEqual(2, node.Choices.Count);
+            Assert.HasCount(2, node.Choices);
             Assert.AreEqual("Buy something", node.Choices[0].Label);
         }
 
@@ -131,7 +131,7 @@ namespace NPCChat.Tests
 
             var node = tree.GetNode("p1") as DialoguePoolNode;
             Assert.IsNotNull(node);
-            Assert.AreEqual(2, node.Entries.Count);
+            Assert.HasCount(2, node.Entries);
         }
 
         [TestMethod]
@@ -148,8 +148,8 @@ namespace NPCChat.Tests
                 .Build();
 
             var pool = (DialoguePoolNode)tree.GetNode("p1")!;
-            var ids  = pool.Entries.Select(e => e.Id).ToList();
-            Assert.AreEqual(ids.Distinct().Count(), ids.Count);
+            var ids = pool.Entries.Select(e => e.Id).ToList();
+            Assert.HasCount(ids.Distinct().Count(), ids);
         }
 
         [TestMethod]
@@ -160,8 +160,8 @@ namespace NPCChat.Tests
                 .AddPool("p1", b => b.Add("Hi"))
                 .Build();
 
-            var pool  = (DialoguePoolNode)tree.GetNode("p1")!;
-            Assert.IsTrue(pool.Entries[0].Id.StartsWith("myTree"));
+            var pool = (DialoguePoolNode)tree.GetNode("p1")!;
+            Assert.StartsWith("myTree", pool.Entries[0].Id);
         }
 
         // ── AddSequence ──────────────────────────────────────────────────────────
@@ -178,7 +178,7 @@ namespace NPCChat.Tests
 
             var node = tree.GetNode("seq1") as DialogueSequenceNode;
             Assert.IsNotNull(node);
-            Assert.AreEqual(2, node.NodeIds.Count);
+            Assert.HasCount(2, node.NodeIds);
             Assert.AreEqual("n1", node.NodeIds[0]);
             Assert.AreEqual("n2", node.NodeIds[1]);
         }
@@ -194,9 +194,9 @@ namespace NPCChat.Tests
                 .AddNpcLine("n1", "Hi")
                 .Build();
 
-            Assert.AreEqual(2, tree.MoodAxes.Length);
+            Assert.HasCount(2, tree.MoodAxes);
             Assert.AreEqual("friendliness", tree.MoodAxes[0]);
-            Assert.AreEqual("greed",        tree.MoodAxes[1]);
+            Assert.AreEqual("greed", tree.MoodAxes[1]);
         }
 
         [TestMethod]
@@ -215,10 +215,10 @@ namespace NPCChat.Tests
                 })
                 .Build();
 
-            var pool  = (DialoguePoolNode)tree.GetNode("p1")!;
-            var v     = pool.Entries[0].MoodVector;
+            var pool = (DialoguePoolNode)tree.GetNode("p1")!;
+            var v = pool.Entries[0].MoodVector;
             // Vector (3,4) has magnitude 5; normalized = (0.6, 0.8)
-            Assert.AreEqual(2, v.Length);
+            Assert.HasCount(2, v);
             Assert.AreEqual(0.6f, v[0], 1e-5f);
             Assert.AreEqual(0.8f, v[1], 1e-5f);
         }
@@ -236,6 +236,7 @@ namespace NPCChat.Tests
 
             var node = (DialogueLineNode)tree.GetNode("n1")!;
             Assert.IsNotNull(node.Condition);
+            Assert.IsFalse(triggered, "Condition must not be invoked during tree construction.");
         }
 
         [TestMethod]
@@ -249,7 +250,8 @@ namespace NPCChat.Tests
                 .Build();
 
             var node = (DialogueLineNode)tree.GetNode("n1")!;
-            Assert.AreEqual(1, node.OnEnterEffects.Count);
+            Assert.HasCount(1, node.OnEnterEffects);
+            Assert.IsFalse(fired, "OnEnter effect must not fire during tree construction.");
         }
     }
 }

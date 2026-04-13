@@ -8,9 +8,9 @@ namespace NPCChat.Tests
         private static FactionDef DefaultFaction(string id = "guards")
             => new FactionDef
             {
-                Id               = id,
+                Id = id,
                 FriendlyThreshold = 50,
-                HostileThreshold  = -25
+                HostileThreshold = -25
             };
 
         // ── GetReputation ────────────────────────────────────────────────────────
@@ -166,7 +166,7 @@ namespace NPCChat.Tests
             var log = new ReputationLog();
             log.AddReputation("guards", 100);
             log.AddReputation("thieves", -50);
-            Assert.AreEqual(2, log.AllScores.Count);
+            Assert.HasCount(2, log.AllScores);
             Assert.AreEqual(100, log.AllScores["guards"]);
             Assert.AreEqual(-50, log.AllScores["thieves"]);
         }

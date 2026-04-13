@@ -55,6 +55,8 @@ namespace NPCChat.Core.BehaviorClasses.Tasks
             return false;
         }
 
+        public override ITaskToken ToToken() => new AttackTaskToken(Priority);
+
         public override void Interrupt(in SimContext ctx)
             => ctx.Actor.Movement.ClearMovement();
 

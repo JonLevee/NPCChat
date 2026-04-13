@@ -60,5 +60,7 @@ namespace NPCChat.Core.BehaviorClasses.Tasks
         {
             ctx.Actor.Movement.ClearMovement();
         }
+
+        public override ITaskToken ToToken() => new WanderTaskToken(Priority, _wanderRadius);
     }
 }

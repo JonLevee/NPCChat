@@ -41,6 +41,8 @@ namespace NPCChat.Core.BehaviorClasses.Tasks
             return --_lookTicks <= 0;
         }
 
+        public override ITaskToken ToToken() => new InvestigateTaskToken(Priority, _target.X, _target.Y, _lookTicks);
+
         public override void Interrupt(in SimContext ctx)
             => ctx.Actor.Movement.ClearMovement();
     }

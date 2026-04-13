@@ -82,5 +82,7 @@ namespace NPCChat.Core.BehaviorClasses.Tasks
         protected virtual bool OnAllSubTasksComplete(in SimContext ctx) => true;
 
         public virtual void Interrupt(in SimContext ctx) { }
+
+        public abstract ITaskToken ToToken();
     }
 }

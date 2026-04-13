@@ -1,3 +1,9 @@
+next:
+    we can persist Id's, when we load we can confir
+use /rename and /resume
+
+
+
 
 
 Summary of our previous phases:
@@ -239,7 +245,385 @@ Upcoming Phases
 
 
 
+OK, on to phase 13 - Serialization
+Let's discuss the approach to serialization.  
+
+I think we should have a single abstraction layer for loading and saving game data, which can support multiple formats (YAML for static data, JSON for save/load).  
+This abstraction layer would be responsible for converting between the in-memory data structures (WorldData, WorldObject, Actor, Behavior, etc.) and the serialized formats.  
+This would allow us to keep the loading/saving logic separate from the core game logic, and also make it easier to switch out or add new serialization formats in the future if needed.
+
+The player will have a username, and each game they create will have a player character name that is stored with the that save state.  
+The player will also have a current level, progress in the game, gold, inventory (.etc) which will also be stored in the save state.  
+I recommend that we have a single directory to store all game data, including the starting world data (NPC definitions, dialogue trees, item definitions, etc.) and the players save states.
+
+There are 3 types of data we need to serialize:
+1) Static data: this includes things like the world layout, NPC definitions, dialogue trees, item definitions, etc.  This data is read-only and will be loaded at the start of the game.  
+We need a format like YAML for this, which is human-readable and easy to edit.
+I suggest we use this filename template for static data: StaticData[data name].yaml.  
+For example, StaticData[NPCDefinitions].yaml, StaticData[DialogueTrees].yaml, StaticData[ItemDefinitions].yaml, etc.
+2) Dynamic save state data: this includes things like the current state of the world, the player's inventory, the NPCs' current modes and tasks, etc.  
+This data is read-write and needs to be loaded once then saved during the game.  When the player starts a new game, we need to copy the game starting (default) data to the players 
+save state.  Then we can load the players save state normally.  Assume we have one directory to store data, players save states should be prefixed with the , and any other files we need to persist.
+We need a format like JSON for this, which is faster for machine parsing than YAML.
+I suggest we use this filename template for dynamic data: [username]_[charactername]_[save timestamp].json.
+For example, if the player is named "Alice" and their character is named "Warrior", their save state file might be named "Alice_Warrior_2024-06-01T12-00-00.json".
+3) Starting world data: this includes the default state of the world when the player starts a new game.  This data is read-only and will be copied to the players save state when they start a new game.
+We need a format like JSON for this, which is faster for machine parsing than YAML.
+I suggest we use this filename template for starting world data: StartGameData[data name].yaml.
+For example, if we have a default starting state that we want to copy to the players save state when they start a new game, we might name it StartGameData[InitialState].yaml.
+
+Please summarize the key concerns and tradeoffs, and propose a strategy for how to implement it in a way that is maintainable, flexible, and efficient.  
+Consider things like: performance, ease of use, compatibility with existing data structures, and support for multiple formats.
+  
+----------------------------------------------------------------------------------------------------------------------------------
+This is a meaty design discussion. Let me read the current static data and world builder code to ground my analysis in the actual codebase before
+  responding.
+
+  Searched for 5 patterns, read 8 files (ctrl+o to expand)
+
+● Good. Now I have the full picture. Here's my analysis:
+
+  ---
+  Phase 13 Serialization — Key Concerns, Tradeoffs, and Strategy
+
+  The hard constraint you need to know first
+
+  BehaviorRule.Trigger and BehaviorRule.ActionFactory are Func<SimContext, bool> and Func<SimContext, IActorTask>. InteractionEntry.Condition is another
+  Func<>. These are compiled lambda closures — completely unserializable, by any format. The same applies to live IActorTask instances sitting in an
+  ActionQueue.
+
+  This one fact shapes the entire strategy. An NPC save file cannot be a serialized WorldObjectMoveable. It must be a template reference (which NPC type with
+  what parameters) plus instance state (current position, HP, cooldowns). On load: reconstruct from the template in code, then overlay the saved state. The
+  behavior wiring stays in C#.
+
+  ---
+  Your proposal — a few items to clarify
+
+  Inconsistency in #3: You said "JSON format" for starting world data, then .yaml extension and the type name StartGameData[*].yaml. Which is it? My
+  recommendation is YAML — starting world layout is authored content (content creators may want to edit it), and it's only loaded once at new-game creation, so
+   parsing speed is irrelevant. JSON should be reserved for runtime-generated saves only.
+
+  Bracket characters in filenames (StaticData[NPCDefinitions].yaml): Valid on Windows and Linux, but unusual and mildly risky in shell scripts and web paths.
+  Consider underscores or dots instead: static_npc_definitions.yaml or StaticData.NPCDefinitions.yaml.
+
+  Save timestamps: Alice_Warrior_2024-06-01T12-00-00.json uses hyphens to replace the colons in ISO 8601 — this works but make sure you round-trip it
+  consistently. 20240601T120000Z is also common and avoids delimiter ambiguity.
+
+  ---
+  The three-layer architecture
+
+                       ┌──────────────────────────────────┐
+   Application code    │       GameDataRepository          │   (knows paths, naming,
+                       │  Load/Save/NewGame/ListSaves       │    delegates, new-game flow)
+                       └──────────────┬───────────────────┘
+                                      │ uses
+                       ┌──────────────▼───────────────────┐
+   Domain mapping      │        Domain ↔ DTO mapping        │   (converts WorldObjectMoveable
+                       │  (Assemblers / mappers per type)   │    ↔ NpcInstanceDto, etc.)
+                       └──────────────┬───────────────────┘
+                                      │ uses
+                       ┌──────────────▼───────────────────┐
+   Format adapters     │  IDataFormat: Serialize/Deserialize│   YamlFormat (YamlDotNet)
+                       │  (thin, dumb, no game knowledge)   │   JsonFormat (System.Text.Json)
+                       └──────────────────────────────────┘
+
+  Layer 1 — IDataFormat: A single generic interface: T Deserialize<T>(Stream) / void Serialize<T>(T, Stream). Two implementations. No game knowledge.
+
+  Layer 2 — DTOs and assemblers: Serialization-safe records that mirror domain types, plus assemblers that translate in both directions. The DTO layer is the
+  schema boundary — when the domain changes, you update the assembler, not the domain class. This is where versioning lives.
+
+  Layer 3 — GameDataRepository: Knows about directories, filename templates, the new-game flow, the NPC template factory, and save file enumeration. This is
+  what the application calls.
+
+  ---
+  What gets serialized (and what doesn't)
+
+  ┌───────────────────────────────────────┬────────┬──────────────────────────────────┬─────────────────────────────────────────┐
+  │                 Data                  │ Format │       Serializable as-is?        │                  Notes                  │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ ItemDef, QuestDef, FactionDef         │ YAML   │ Yes — clean init props           │ Direct DTO mapping                      │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ DialogueTree + nodes                  │ YAML   │ Careful — polymorphic node types │ Need type discriminator field           │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ NPC template definitions              │ YAML   │ No — behaviors are delegates     │ Template name + params only             │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ Starting world layout                 │ YAML   │ No (same reason)                 │ NPC placements: templateId + position   │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ Player state (inventory, quests, rep) │ JSON   │ Yes — clean mutable state        │ Item slots store item IDs, not ItemDefs │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ NPC instance state                    │ JSON   │ Partial                          │ Position, HP, mode, dialogue cooldowns  │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ ActionQueue / live tasks              │ —      │ Never                            │ Re-initialize from template on load     │
+  ├───────────────────────────────────────┼────────┼──────────────────────────────────┼─────────────────────────────────────────┤
+  │ BehaviorRule delegates                │ —      │ Never                            │ Reconstructed by template factory       │
+  └───────────────────────────────────────┴────────┴──────────────────────────────────┴─────────────────────────────────────────┘
+
+  ---
+  The NPC template problem in detail
+
+  Each NPC's ActorComponent is built by a template factory today (GuardTemplate.BuildGuardActor). For save/load to work:
+
+  1. Assign every NPC a template ID at creation time and store it on the object (e.g., Actor.TemplateId = "Guard").
+  2. Register an INpcTemplateFactory that maps (templateId, params) → WorldObjectMoveable (same code that lives in GuardTemplate today).
+  3. Save file: { "templateId": "Guard", "params": { "patrolRadius": 4 }, "position": { "x": 10, "y": 5 }, "hp": 80, "mode": "Work", "cooldowns": {...} }
+  4. Load: call factory → get a fully-wired NPC → apply overrides.
+
+  If you rename a template, saves break. Mitigate: keep a stable templateId string separate from the C# class name, and add a migration table for renames.
+
+  ---
+  Dialogue tree serialization — the tricky part
+
+  DialogueNode has four subtypes: Line, Choice, Pool, Sequence. YAML and JSON both need a type discriminator to deserialize polymorphic nodes. System.Text.Json
+   supports this natively with [JsonPolymorphic] and [JsonDerivedType] in .NET 7+. YamlDotNet needs a custom type converter.
+
+  DialoguePoolEntry.Requires and Forbids are Dictionary<string, MinMax> with OrdinalIgnoreCase comparer. The case-insensitive comparer won't round-trip through
+   JSON by default — you'll need to reconstruct it on deserialization rather than serialize the comparer itself.
+
+  ---
+  Player save file structure
+
+  {
+    "version": 1,
+    "savedAt": "2024-06-01T12:00:00Z",
+    "username": "Alice",
+    "characterName": "Warrior",
+    "player": {
+      "position": { "x": 10, "y": 20 },
+      "hp": 85,
+      "inventory": [
+        { "itemId": "iron_sword", "quantity": 1 },
+        { "itemId": "gold_coin",  "quantity": 42 }
+      ],
+      "quests": {
+        "active":    ["find_sword"],
+        "completed": ["kill_rats"]
+      },
+      "reputation": {
+        "guards":   120,
+        "thieves": -50
+      }
+    },
+    "world": {
+      "npcs": [
+        {
+          "templateId": "Guard",
+          "params": { "patrolRadius": 4 },
+          "position": { "x": 15, "y": 8 },
+          "hp": 100,
+          "mode": "Work",
+          "dialogueCooldowns": { "guard_greet_0": 1240 }
+        }
+      ],
+      "droppedItems": [
+        { "itemId": "iron_ore", "quantity": 3, "position": { "x": 5, "y": 5 } }
+      ]
+    }
+  }
+
+  version is critical. Every save file must have it, and GameDataRepository.Load must check it before deserializing. Start at version 1 now.
+
+  ---
+  The new-game flow
+
+  "Copy starting world data to player save" is not a file copy — the formats differ. It's:
+
+  1. Deserialize StartingWorld.yaml → StartingWorldDto
+  2. Deserialize StartingPlayer.yaml → PlayerDto
+  3. Merge into a WorldSaveDto
+  4. Serialize to Alice_Warrior_20240601T120000.json
+
+  The starting world YAML specifies which NPC templates to place where. It does not duplicate the template definitions.
+
+  ---
+  Recommended sub-phases
 
 
-  new things to add:
-  * when I left-click and hold, I want to be able to move the map.
+  ┌───────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │ Sub-phase │                                                   Scope                                                    │
+  ├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 13-A      │ IDataFormat, YamlFormat (YamlDotNet), JsonFormat (System.Text.Json); DTO records for all static types      │
+  ├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 13-B      │ Static data serialization: ItemDef, QuestDef, FactionDef → YAML roundtrip + unit tests                     │
+  ├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 13-C      │ DialogueTree → YAML roundtrip (polymorphic nodes, MinMax dictionaries); this is the hardest sub-phase      │
+  ├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 13-D      │ Player save DTO + assembler: inventory, quests, reputation, position, HP; JSON roundtrip + unit tests      │
+  ├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 13-E      │ NPC instance save: templateId, template params, instance state overrides; INpcTemplateFactory registration │
+  ├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 13-F      │ GameDataRepository: file path logic, new-game flow, save enumeration; integration tests                    │
+  ├───────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ 13-G      │ Starting world YAML replacing hardcoded WorldDataBuilder template calls                                    │
+  └───────────┴────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  I'd treat 13-C as the risk item that deserves a spike before committing to the rest. If DialogueTree YAML becomes too cumbersome (due to the polymorphic
+  nodes and MinMax dictionaries), you might decide dialogue trees stay in code and only get the YAML file path reference, which significantly simplifies the
+  overall effort.
+
+  ---
+  Package choices
+
+  - YAML: YamlDotNet (only serious option for .NET; actively maintained)
+  - JSON: System.Text.Json — already in .NET 8, no dependency to add, [JsonPolymorphic] support covers the node types
+
+  ---
+  Want to proceed with 13-A, or discuss any of these concerns further before starting?
+
+----------------------------------------------------------------------------------------------------------------------------------
+Answers to your assessment:
+"WorldObjectMoveable"
+See my "Circling back to the lambda serialization problem" point below.
+"Inconsistency in #3"
+You are right, my inconsistency stems from the fact that I know the save state needs to be in JSON but I do want the starting game save state in YAML.  We will need to read in the starting game state using YAML and persist it to the save file as JSON.
+"Bracket characters in filenames"
+Let's use underscores, and use a double underscore to escape user input underscores.
+"Save timestamps"
+Let's use hyphens so they are easier for humans to read.
+
+"Domain mapping"
+What does domain mapping and DTO mean (in this context)?  Is this for converting types that are not directly convertable to YAML or JSON?  If yes, I have handled this in the past by marking properties that aren't directly serializable with a [Ignore] type attribute (depending on the serializer) and adding another property whose get/set methods do the conversion.  Thoughts?
+
+"What gets serialized (and what doesn't)"
+I think all state information (i.e. ActionQueue / live tasks) need to get serialized.  When the game is loaded, all NPC's and mobs should resume what they were previously doing.  Thoughts?
+
+"The NPC template problem in detail"
+I don't think we need to save any information about the NPC templates.  We can just save the current state of the NPC (position, HP, mode, dialogue cooldowns) and then on load we can 
+reconstruct the NPC from the template based on its position in the world and overlay the saved state.  This way we don't have to worry about template IDs or factories.  My intention when
+I created the template factory was to have an easy way to create a world that I can use to test the Core game engine.  Once the serialization is done, I will PROBABLY just switch to using
+YAML/JSON for my testing templates.  So I think it's best if we keep that logic in code and not try to serialize it.
+Thoughts?
+
+"Dialogue tree serialization — the tricky part"
+Makes sense.  Please go ahead with the custom type converter for YamlDotNet.  For the case-insensitive comparer, I think we can just serialize the dictionary as a list of key-value 
+pairs and then reconstruct the dictionary with the correct comparer on deserialization.  Thoughts?
+
+"The new-game flow"
+Sounds good.
+
+"Recommended sub-phases"
+Please make sure you leave the Templates in place.  After this work is done, the unit tests will still be using the templates.  We can add more tests later that utilize the YAML/JSON loading instead of the templates, but for now let's keep the templates in place and just add the YAML/JSON loading as an additional way to create the world.
+
+Circling back to the lambda serialization problem, I think it might be best if we created a state token to place in the action queue that contains the name of the action and any parameters needed to execute it.  
+Then we can have a mapping ([Singleton] class MoveableActionsFactory?)of action name → lambda that we can use to reconstruct the ActionQueue on load.  
+This way we can serialize the state token instead of the lambda itself, which should be straightforward.  Thoughts?
+
+One thing to add to our worklist:
+* when I left-click and hold, I want to be able to move the map.
+
+Create a new phase for this, maybe Phase 14 — Map Interaction.  
+
+I'll review your answers to my questions here before we proceed.
+----------------------------------------------------------------------------------------------------------------------------------
+
+Domain mapping / DTO                                                                                                                                         
+Yes — DTOs are just plain data classes designed to be serialization-friendly. Your shadow-property approach is the right call for this codebase. Simpler,      less ceremony, and keeps the serialization concern inside the class. The only place I'd push back is for types with many non-serializable members (like
+DialogueTree) — there a separate save-record class might be cleaner. But that's case-by-case.
+
+---
+What gets serialized
+
+Agreed — full state. The key insight that simplifies this significantly: template state vs. runtime state:
+
+- Template state — ReactiveRules, DialogueTree, Schedule, ShopComponent stock: NOT serialized. Comes from template reconstruction on load. The lambdas in
+BehaviorRule.Trigger / ActionFactory are in this category — no serialization needed for them at all.
+- Runtime state — ActionQueue, Mode, position, HP, inventory, cooldowns, faction rep, quest progress: IS serialized.
+
+This eliminates the lambda problem for BehaviorRule. The only lambdas left to worry about are in SubTask.OnComplete, which leads to your point below.
+
+---
+Lambda serialization / MoveableActionsFactory
+
+Your token + factory approach is exactly right, and it maps cleanly to what's already in the code. My proposed design:
+
+ITaskToken        — serializable record: { TaskType, Priority, MaxTurns, ...task-specific params }
+IActorTask        — adds: ITaskToken ToToken()
+MoveableActionsFactory [Singleton] — maps task type name → Func<ITaskToken, IActorTask>
+
+On save: queue.Select(t => t.ToToken()) → serialize list of tokens.
+On load: factory.Create(token) → task.Begin(ctx) → enqueue.
+
+The key question is mid-execution state: TurnsElapsed, CurrentSubTaskNode position, TurnsRemainingInCurrentSubTask. For tasks like WanderTask (which doesn't
+use SubTasks at all — it overrides TickNoSubTasks), the only interesting mid-execution state is _ticksUntilNextWaypoint. For SubTask-based tasks, restarting
+from Begin() is fine — the player won't notice. I'd recommend: restart all tasks from tick 0 on load for now, and only add mid-subtask restoration later if
+specific tasks need it. The tokens just need to capture constructor parameters.
+
+For _ticksUntilNextWaypoint and similar private runtime fields: include them in the token as optional, and add an internal Restore(ITaskToken) method to the
+task. Not required for v1.
+
+---
+NPC template problem
+
+Your approach is sound. The one open question: what identifier maps saved state back to the template NPC? I'd suggest adding a TemplateKey string property to
+WorldObjectMoveable, set at template creation time (e.g., "blacksmith", "farmer_east"). The save record includes TemplateKey as the lookup key, and current
+state (position, HP, mode, etc.) as the payload. Load flow:
+
+1. Build world from templates (each NPC has its TemplateKey)
+2. For each save record: find NPC by TemplateKey → overlay position, HP, mode, ActionQueue tokens, cooldowns
+3. Call Begin() on restored tasks
+
+If you don't want to touch WorldObjectMoveable yet, Character.Name works as a fallback (assuming unique names per world).
+
+---
+Case-insensitive dictionary (CooldownTracker)
+
+Serialize as List<KeyValuePair<string, int>>, reconstruct with new Dictionary<string, int>(pairs, StringComparer.OrdinalIgnoreCase). Clean.
+
+---
+Sub-phases / templates
+
+Templates stay. New YAML/JSON loading is additive. Unit tests keep using templates.
+
+---
+Phase 14 — Map Interaction
+
+Will create a note for this. The left-click drag pan is a pure Editor/UI feature.
+
+---
+Let me save these design decisions to memory and add the Phase 14 note:
+
+Recalled 1 memory, wrote 3 memories (ctrl+o to expand)
+
+● Design decisions saved. A few things I want to flag before we start coding:
+
+One open question on NPC identity: TemplateKey works great for named NPCs (blacksmith, farmer). But for mobs (enemies that spawn dynamically, may have         multiples of the same template), how do you want to handle identity? Options:
+1. Skip mobs from save entirely — respawn fresh from world definition on load                                                                                  2. Give each spawned mob instance a unique ID at runtime (e.g., "guard_01", "guard_02")
+3. Save mob state keyed by their current position (fragile but simple)
+
+Option 1 is probably the right call for mobs — they're hostile actors without persistent narrative state. Worth confirming.
+
+Also: once you're ready to start building, the natural first sub-phase would be the YAML world loader (reading a .yaml file into WorldData instead of the
+template code). Want me to scope that out, or do you want to do a full planning pass first?
+
+----------------------------------------------------------------------------------------------------------------------------------
+
+"Domain mapping / DTO"
+Thanks for explaining DTO.  
+One strategy I have used in the past to get around serialization issues is to have a separate property for serialization that converts to/from the actual property.  
+For example, in class DialogueTree:
+        [JsonPropertyName("nodes")]
+        private readonly Dictionary<string, DialogueNode> _nodes = new();
+
+        [JsonIgnore]
+        public IReadOnlyDictionary<string, DialogueNode> Nodes => _nodes;
+Thoughts?
+
+"Lambda serialization / MoveableActionsFactory"
+Your proposal is fine.  Add to future work to look again at mid-execution state restoration.  Maybe even a generic serialization optimization phase.
+
+"what identifier maps saved state back to the template NPC?"
+I don't want to have any dependency on the template in the save file.  The template is just a factory for building the NPCs in the world, but once they're built, they exist independently.  
+Assume that at some point I will remove the templates completely and just use YAML/JSON to define the world.  
+
+"One open question on NPC identity"
+I think every instance of a WorldObject in the world should have a unique ID, including mobs.  This way we can save the state of every object in the world without worrying about how to 
+identify them.  The ID can be a simple integer that increments with each new object created.  This will allow us to save and load the state of mobs, items (maybe they will have state changes such 
+as damage (requiring repairing or sharpening), .etc. We will still be able to create new WorldObjects (bumping the id).
+
+Once you confirm these points, you can proceed with the implementation.  You can order/prioritize the sub-phases as you see fit.
+
+----------------------------------------------------------------------------------------------------------------------------------
+
+Before we proceed, I want to confirm a few points:
+* I updated a number of the unit tests to use Assert.HasCount.
+* for unit test AddNpcLine_WithCondition_ConditionStoredOnNode, should trigger be false?
+* for unit test AddNpcLine_WithOnEnterEffect_EffectStoredOnNode, should fired be false?

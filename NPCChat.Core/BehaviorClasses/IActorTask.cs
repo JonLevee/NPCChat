@@ -45,5 +45,11 @@ namespace NPCChat.Core.BehaviorClasses
         /// Use to cancel pending move commands or clean up state.
         /// </summary>
         void Interrupt(in SimContext ctx);
+
+        /// <summary>
+        /// Returns a serializable snapshot of this task's constructor parameters.
+        /// Used by the save system to persist the ActionQueue.
+        /// </summary>
+        ITaskToken ToToken();
     }
 }

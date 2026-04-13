@@ -627,3 +627,32 @@ Before we proceed, I want to confirm a few points:
 * I updated a number of the unit tests to use Assert.HasCount.
 * for unit test AddNpcLine_WithCondition_ConditionStoredOnNode, should trigger be false?
 * for unit test AddNpcLine_WithOnEnterEffect_EffectStoredOnNode, should fired be false?
+
+----------------------------------------------------------------------------------------------------------------------------------
+Phase 14 — Map Interaction (next)
+  - Left-click drag to pan/scroll the map in the Editor                                                                                                          - Pure WPF change — no Core work needed
+
+  ---
+  Deferred from Phase 13
+  - Mid-execution task state restoration: tasks currently restart from Begin() on load, losing any in-progress sub-task state (e.g. a guard mid-patrol resumes
+  from the first waypoint). Noted as acceptable for now.
+  - Explicit WorldIds in YAML world definitions: currently WorldId is assigned by construction order, so save files are brittle if the world definition
+  changes. Future: embed stable IDs in the YAML.
+
+  ---
+  NPC scenario richness (long horizon, per README)
+  The README outlines much richer NPC behavior not yet implemented:
+  - Multi-phase crafting modes (heating → hammering → quenching → wrapping)
+  - Shop hours (open 9–5, closed otherwise)
+  - Resource-fetching errands (gone ~10 min)
+  - Blacksmith with assistant
+  - Trader with 2 assistants
+  - NPC residences (go home in the evening, interruptable at home)
+  - Town gossip NPC archetype
+  - Expanded mood axes (irritability, trust, greed, secrecy, stress, diplomacy, resentment, familiarity, paranoia, etc.)
+
+  ---
+  The project is described as "~13 phases" in CLAUDE.md, and Phase 13 is now complete. Phase 14 (map drag-pan) is the one confirmed remaining feature. The NPC
+  scenarios in the README appear to be a future content/design phase beyond the infrastructure work.
+
+  ----------------------------------------------------------------------------------------------------------------------------------

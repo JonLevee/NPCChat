@@ -40,6 +40,12 @@ namespace NPCChat
         private Point lastMousePosition;
         private Point lastMouseDownPosition;
 
+        // Drag-to-pan state
+        private Point  _panOrigin;          // cursor pos (relative to MapScrollViewer) at LMB press
+        private Point  _scrollOrigin;       // scroll offsets at LMB press
+        private bool   _panning;            // true once drag has exceeded threshold
+        private const double PanThreshold = 5.0; // px before pan engages
+
         private readonly UserSettingsRepository _userSettingsRepository;
         private readonly ChunkInfo _chunkInfo;
         private GridRenderer _gridRenderer = null!;
@@ -343,8 +349,25 @@ namespace NPCChat
                 _chunkInfo.ChunkSize = size;
         }
 
+        private void MapCanvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            // Record starting position so MouseMove can detect a drag.
+            _panOrigin    = e.GetPosition(MapScrollViewer);
+            _scrollOrigin = new Point(MapScrollViewer.HorizontalOffset, MapScrollViewer.VerticalOffset);
+            _panning      = false;
+        }
+
         private void MapCanvas_MouseUp(object sender, MouseButtonEventArgs e)
         {
+            if (_panning && e.ChangedButton == MouseButton.Left)
+            {
+                _panning = false;
+                MapCanvas.ReleaseMouseCapture();
+                MapCanvas.Cursor = null;
+                e.Handled = true;   // suppress ClearSelection when releasing after a pan
+                return;
+            }
+
             lastMouseDownPosition = e.GetPosition(this.MapCanvas);
             UpdateTitle();
         }
@@ -353,6 +376,24 @@ namespace NPCChat
         {
             lastMousePosition = e.GetPosition(this.MapCanvas);
             UpdateTitle();
+
+            if (e.LeftButton != MouseButtonState.Pressed) return;
+
+            var current = e.GetPosition(MapScrollViewer);
+            var delta   = new Vector(current.X - _panOrigin.X, current.Y - _panOrigin.Y);
+
+            if (!_panning)
+            {
+                if (delta.Length < PanThreshold) return;
+                // Threshold crossed — start panning.
+                _panning = true;
+                MapCanvas.CaptureMouse();
+                MapCanvas.Cursor = System.Windows.Input.Cursors.SizeAll;
+            }
+
+            MapScrollViewer.ScrollToHorizontalOffset(_scrollOrigin.X - delta.X);
+            MapScrollViewer.ScrollToVerticalOffset(_scrollOrigin.Y - delta.Y);
+            e.Handled = true;
         }
 
         private void MapCanvas_MouseRightButtonUp(object sender, MouseButtonEventArgs e)

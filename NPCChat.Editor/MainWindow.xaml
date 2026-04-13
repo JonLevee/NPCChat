@@ -99,7 +99,8 @@
 
             <!-- Map area + dialogue overlay in the same cell -->
             <Grid Grid.Column="1" Margin="4,0,12,12">
-                <ScrollViewer HorizontalScrollBarVisibility="Auto"
+                <ScrollViewer x:Name="MapScrollViewer"
+                              HorizontalScrollBarVisibility="Auto"
                               VerticalScrollBarVisibility="Auto">
                     <Border BorderBrush="#334155"
                             BorderThickness="1"
@@ -107,6 +108,7 @@
                             Padding="8">
                         <Canvas
                             x:Name="MapCanvas"
+                            MouseLeftButtonDown="MapCanvas_MouseLeftButtonDown"
                             MouseUp="MapCanvas_MouseUp"
                             MouseMove="MapCanvas_MouseMove"
                             MouseRightButtonUp="MapCanvas_MouseRightButtonUp"

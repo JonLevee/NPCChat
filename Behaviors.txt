@@ -509,3 +509,109 @@ Create a new phase for this, maybe Phase 14 — Map Interaction.
 I'll review your answers to my questions here before we proceed.
 ----------------------------------------------------------------------------------------------------------------------------------
 
+Domain mapping / DTO                                                                                                                                         
+Yes — DTOs are just plain data classes designed to be serialization-friendly. Your shadow-property approach is the right call for this codebase. Simpler,      less ceremony, and keeps the serialization concern inside the class. The only place I'd push back is for types with many non-serializable members (like
+DialogueTree) — there a separate save-record class might be cleaner. But that's case-by-case.
+
+---
+What gets serialized
+
+Agreed — full state. The key insight that simplifies this significantly: template state vs. runtime state:
+
+- Template state — ReactiveRules, DialogueTree, Schedule, ShopComponent stock: NOT serialized. Comes from template reconstruction on load. The lambdas in
+BehaviorRule.Trigger / ActionFactory are in this category — no serialization needed for them at all.
+- Runtime state — ActionQueue, Mode, position, HP, inventory, cooldowns, faction rep, quest progress: IS serialized.
+
+This eliminates the lambda problem for BehaviorRule. The only lambdas left to worry about are in SubTask.OnComplete, which leads to your point below.
+
+---
+Lambda serialization / MoveableActionsFactory
+
+Your token + factory approach is exactly right, and it maps cleanly to what's already in the code. My proposed design:
+
+ITaskToken        — serializable record: { TaskType, Priority, MaxTurns, ...task-specific params }
+IActorTask        — adds: ITaskToken ToToken()
+MoveableActionsFactory [Singleton] — maps task type name → Func<ITaskToken, IActorTask>
+
+On save: queue.Select(t => t.ToToken()) → serialize list of tokens.
+On load: factory.Create(token) → task.Begin(ctx) → enqueue.
+
+The key question is mid-execution state: TurnsElapsed, CurrentSubTaskNode position, TurnsRemainingInCurrentSubTask. For tasks like WanderTask (which doesn't
+use SubTasks at all — it overrides TickNoSubTasks), the only interesting mid-execution state is _ticksUntilNextWaypoint. For SubTask-based tasks, restarting
+from Begin() is fine — the player won't notice. I'd recommend: restart all tasks from tick 0 on load for now, and only add mid-subtask restoration later if
+specific tasks need it. The tokens just need to capture constructor parameters.
+
+For _ticksUntilNextWaypoint and similar private runtime fields: include them in the token as optional, and add an internal Restore(ITaskToken) method to the
+task. Not required for v1.
+
+---
+NPC template problem
+
+Your approach is sound. The one open question: what identifier maps saved state back to the template NPC? I'd suggest adding a TemplateKey string property to
+WorldObjectMoveable, set at template creation time (e.g., "blacksmith", "farmer_east"). The save record includes TemplateKey as the lookup key, and current
+state (position, HP, mode, etc.) as the payload. Load flow:
+
+1. Build world from templates (each NPC has its TemplateKey)
+2. For each save record: find NPC by TemplateKey → overlay position, HP, mode, ActionQueue tokens, cooldowns
+3. Call Begin() on restored tasks
+
+If you don't want to touch WorldObjectMoveable yet, Character.Name works as a fallback (assuming unique names per world).
+
+---
+Case-insensitive dictionary (CooldownTracker)
+
+Serialize as List<KeyValuePair<string, int>>, reconstruct with new Dictionary<string, int>(pairs, StringComparer.OrdinalIgnoreCase). Clean.
+
+---
+Sub-phases / templates
+
+Templates stay. New YAML/JSON loading is additive. Unit tests keep using templates.
+
+---
+Phase 14 — Map Interaction
+
+Will create a note for this. The left-click drag pan is a pure Editor/UI feature.
+
+---
+Let me save these design decisions to memory and add the Phase 14 note:
+
+Recalled 1 memory, wrote 3 memories (ctrl+o to expand)
+
+● Design decisions saved. A few things I want to flag before we start coding:
+
+One open question on NPC identity: TemplateKey works great for named NPCs (blacksmith, farmer). But for mobs (enemies that spawn dynamically, may have         multiples of the same template), how do you want to handle identity? Options:
+1. Skip mobs from save entirely — respawn fresh from world definition on load                                                                                  2. Give each spawned mob instance a unique ID at runtime (e.g., "guard_01", "guard_02")
+3. Save mob state keyed by their current position (fragile but simple)
+
+Option 1 is probably the right call for mobs — they're hostile actors without persistent narrative state. Worth confirming.
+
+Also: once you're ready to start building, the natural first sub-phase would be the YAML world loader (reading a .yaml file into WorldData instead of the
+template code). Want me to scope that out, or do you want to do a full planning pass first?
+
+----------------------------------------------------------------------------------------------------------------------------------
+
+"Domain mapping / DTO"
+Thanks for explaining DTO.  
+One strategy I have used in the past to get around serialization issues is to have a separate property for serialization that converts to/from the actual property.  
+For example, in class DialogueTree:
+        [JsonPropertyName("nodes")]
+        private readonly Dictionary<string, DialogueNode> _nodes = new();
+
+        [JsonIgnore]
+        public IReadOnlyDictionary<string, DialogueNode> Nodes => _nodes;
+Thoughts?
+
+"Lambda serialization / MoveableActionsFactory"
+Your proposal is fine.  Add to future work to look again at mid-execution state restoration.  Maybe even a generic serialization optimization phase.
+
+"what identifier maps saved state back to the template NPC?"
+I don't want to have any dependency on the template in the save file.  The template is just a factory for building the NPCs in the world, but once they're built, they exist independently.  
+Assume that at some point I will remove the templates completely and just use YAML/JSON to define the world.  
+
+"One open question on NPC identity"
+I think every instance of a WorldObject in the world should have a unique ID, including mobs.  This way we can save the state of every object in the world without worrying about how to 
+identify them.  The ID can be a simple integer that increments with each new object created.  This will allow us to save and load the state of mobs, items (maybe they will have state changes such 
+as damage (requiring repairing or sharpening), .etc. We will still be able to create new WorldObjects (bumping the id).
+
+Once you confirm these points, you can proceed with the implementation.  You can order/prioritize the sub-phases as you see fit.
+

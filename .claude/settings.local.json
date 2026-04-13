@@ -17,7 +17,8 @@
       "Bash(grep -v \"^$\")",
       "Bash(dotnet:*)",
       "Bash(find:*)",
-      "Bash(grep -r \"TestMethod\" /d/Source/NPCChat/NPCChat.Tests/*.cs)"
+      "Bash(grep -r \"TestMethod\" /d/Source/NPCChat/NPCChat.Tests/*.cs)",
+      "Bash(git:*)"
     ]
   }
 }

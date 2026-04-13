@@ -623,3 +623,7 @@ Once you confirm these points, you can proceed with the implementation.  You can
 
 ----------------------------------------------------------------------------------------------------------------------------------
 
+Before we proceed, I want to confirm a few points:
+* I updated a number of the unit tests to use Assert.HasCount.
+* for unit test AddNpcLine_WithCondition_ConditionStoredOnNode, should trigger be false?
+* for unit test AddNpcLine_WithOnEnterEffect_EffectStoredOnNode, should fired be false?

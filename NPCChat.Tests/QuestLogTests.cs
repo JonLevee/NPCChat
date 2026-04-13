@@ -13,7 +13,7 @@ namespace NPCChat.Tests
         public void ActiveQuests_InitiallyEmpty()
         {
             var log = new QuestLog();
-            Assert.AreEqual(0, log.ActiveQuests.Count);
+            Assert.IsEmpty(log.ActiveQuests);
         }
 
         [TestMethod]
@@ -44,7 +44,7 @@ namespace NPCChat.Tests
         {
             var log = new QuestLog();
             log.StartQuest(Def("q1"));
-            Assert.AreEqual(1, log.ActiveQuests.Count);
+            Assert.HasCount(1, log.ActiveQuests);
             Assert.IsTrue(log.HasActiveQuest("q1"));
         }
 
@@ -54,7 +54,7 @@ namespace NPCChat.Tests
             var log = new QuestLog();
             log.StartQuest(Def("q1"));
             log.StartQuest(Def("q1"));
-            Assert.AreEqual(1, log.ActiveQuests.Count);
+            Assert.HasCount(1, log.ActiveQuests);
         }
 
         [TestMethod]
@@ -64,7 +64,7 @@ namespace NPCChat.Tests
             log.StartQuest(Def("q1"));
             log.TryComplete("q1");
             log.StartQuest(Def("q1"));         // should be ignored
-            Assert.AreEqual(0, log.ActiveQuests.Count);
+            Assert.IsEmpty(log.ActiveQuests);
             Assert.IsTrue(log.HasCompletedQuest("q1"));
         }
 
@@ -101,7 +101,7 @@ namespace NPCChat.Tests
             var log = new QuestLog();
             log.StartQuest(Def("q1"));
             log.TryComplete("q1");
-            Assert.AreEqual(0, log.ActiveQuests.Count);
+            Assert.IsEmpty(log.ActiveQuests);
             Assert.IsFalse(log.HasActiveQuest("q1"));
         }
 
@@ -159,7 +159,7 @@ namespace NPCChat.Tests
             log.StartQuest(Def("q1"));
             log.StartQuest(Def("q2"));
             log.StartQuest(Def("q3"));
-            Assert.AreEqual(3, log.ActiveQuests.Count);
+            Assert.HasCount(3, log.ActiveQuests);
         }
     }
 }

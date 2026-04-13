@@ -29,7 +29,7 @@ namespace NPCChat.Tests
             state.Path.Enqueue(new Point(2, 2));
             state.ClearMovement();
             Assert.IsFalse(state.IsMoving);
-            Assert.AreEqual(0, state.Path.Count);
+            Assert.IsEmpty(state.Path);
         }
 
         [TestMethod]

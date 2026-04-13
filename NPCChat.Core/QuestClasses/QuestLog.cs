@@ -48,7 +48,9 @@ namespace NPCChat.Core.QuestClasses
         public void RestoreState(
             IEnumerable<string> activeIds,
             IEnumerable<string> completedIds,
+#pragma warning disable CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
             Func<string, QuestDef?> getQuest)
+#pragma warning restore CS8632 // The annotation for nullable reference types should only be used in code within a '#nullable' annotations context.
         {
             _active.Clear();
             _completedIds.Clear();

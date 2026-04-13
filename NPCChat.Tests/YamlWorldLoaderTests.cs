@@ -89,7 +89,7 @@ objects:
             loader.LoadFromYaml(MinimalYaml);
 
             // Player (1 moveable) + carryable item = 2 world objects
-            Assert.AreEqual(2, handles.ActiveHandles.Count);
+            Assert.HasCount(2, handles.ActiveHandles);
         }
 
         [TestMethod]
@@ -102,7 +102,7 @@ objects:
             loader.LoadFromYaml(NpcYaml);
 
             // Player + 2 guards/farmers = 3 moveables
-            Assert.AreEqual(3, handles.ActiveHandles.Count);
+            Assert.HasCount(3, handles.ActiveHandles);
         }
 
         [TestMethod]
@@ -129,7 +129,7 @@ objects:
 
             loader.LoadFromYaml(yaml);
 
-            Assert.AreEqual(1, handles.ActiveHandles.Count);
+            Assert.HasCount(1, handles.ActiveHandles);
         }
 
         [TestMethod]

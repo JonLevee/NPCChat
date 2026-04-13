@@ -53,22 +53,22 @@ namespace NPCChat.Tests
             // Mob with CombatStats for HP round-trip test.
             builder.World.AddObject(new WorldObjectMoveable
             {
-                Kind     = WorldObjectKind.NPC,
-                Handle   = ObjectHandle.None,
-                Bounds   = new Bounds(30, 30, 32, 32),
+                Kind = WorldObjectKind.NPC,
+                Handle = ObjectHandle.None,
+                Bounds = new Bounds(30, 30, 32, 32),
                 MaxSpeed = 4f,
-                Actor    = new ActorComponent { Mode = "Idle" },
-                Combat   = new CombatStats(maxHp: 100),
+                Actor = new ActorComponent { Mode = "Idle" },
+                Combat = new CombatStats(maxHp: 100),
             });
 
             // Loose item for carryable quantity test.
             var coin = builder.StaticData.GetItem("gold_coin")!;
             builder.World.AddObject(new WorldObjectCarryable
             {
-                Kind     = WorldObjectKind.Item,
-                Handle   = ObjectHandle.None,
-                Bounds   = new Bounds(40, 40, 41, 41),
-                ItemDef  = coin,
+                Kind = WorldObjectKind.Item,
+                Handle = ObjectHandle.None,
+                Bounds = new Bounds(40, 40, 41, 41),
+                ItemDef = coin,
                 Quantity = 15,
             });
         }
@@ -118,9 +118,9 @@ namespace NPCChat.Tests
             using var scope2 = Services.CreateScope();
             var sp2 = scope2.ServiceProvider;
             BuildWorld(sp2);
-            var world2    = sp2.Get<WorldData>()!;
-            var handles2  = sp2.Get<ObjectHandleManager>()!;
-            var static2   = sp2.Get<StaticData>()!;
+            var world2 = sp2.Get<WorldData>()!;
+            var handles2 = sp2.Get<ObjectHandleManager>()!;
+            var static2 = sp2.Get<StaticData>()!;
             sp2.Get<LoadGameService>()!.Restore(json, world2, handles2, static2);
 
             Assert.AreEqual(42, GetCoin(world2).Quantity);
@@ -137,10 +137,10 @@ namespace NPCChat.Tests
             {
                 var sp1 = scope1.ServiceProvider;
                 BuildWorld(sp1);
-                var world1   = sp1.Get<WorldData>()!;
+                var world1 = sp1.Get<WorldData>()!;
                 var handles1 = sp1.Get<ObjectHandleManager>()!;
-                var guard    = GetGuard(world1);
-                movedBounds  = new Bounds(50, 50, 52, 52);
+                var guard = GetGuard(world1);
+                movedBounds = new Bounds(50, 50, 52, 52);
                 world1.MoveDynamicObjectBetweenChunks(guard.Handle, movedBounds);
                 json = sp1.Get<SaveGameService>()!.Serialize(world1, handles1);
             }
@@ -149,9 +149,9 @@ namespace NPCChat.Tests
             using var scope2 = Services.CreateScope();
             var sp2 = scope2.ServiceProvider;
             BuildWorld(sp2);
-            var world2   = sp2.Get<WorldData>()!;
+            var world2 = sp2.Get<WorldData>()!;
             var handles2 = sp2.Get<ObjectHandleManager>()!;
-            var static2  = sp2.Get<StaticData>()!;
+            var static2 = sp2.Get<StaticData>()!;
             sp2.Get<LoadGameService>()!.Restore(json, world2, handles2, static2);
 
             Assert.AreEqual(movedBounds, GetGuard(world2).Bounds);
@@ -176,9 +176,9 @@ namespace NPCChat.Tests
             using var scope2 = Services.CreateScope();
             var sp2 = scope2.ServiceProvider;
             BuildWorld(sp2);
-            var world2   = sp2.Get<WorldData>()!;
+            var world2 = sp2.Get<WorldData>()!;
             var handles2 = sp2.Get<ObjectHandleManager>()!;
-            var static2  = sp2.Get<StaticData>()!;
+            var static2 = sp2.Get<StaticData>()!;
             sp2.Get<LoadGameService>()!.Restore(json, world2, handles2, static2);
 
             Assert.AreEqual(70, GetMob(world2).Combat!.CurrentHp);
@@ -192,11 +192,11 @@ namespace NPCChat.Tests
             // ── Save ──────────────────────────────────────────────────────────────
             using (var scope1 = Services.CreateScope())
             {
-                var sp1   = scope1.ServiceProvider;
+                var sp1 = scope1.ServiceProvider;
                 BuildWorld(sp1);
                 var world1 = sp1.Get<WorldData>()!;
                 var player = GetPlayer(world1);
-                var iron   = sp1.Get<StaticData>()!.GetItem("iron_ore")!;
+                var iron = sp1.Get<StaticData>()!.GetItem("iron_ore")!;
                 player.Inventory!.TryAdd(iron, 7, out _);
                 json = sp1.Get<SaveGameService>()!.Serialize(world1, sp1.Get<ObjectHandleManager>()!);
             }
@@ -205,13 +205,13 @@ namespace NPCChat.Tests
             using var scope2 = Services.CreateScope();
             var sp2 = scope2.ServiceProvider;
             BuildWorld(sp2);
-            var world2   = sp2.Get<WorldData>()!;
+            var world2 = sp2.Get<WorldData>()!;
             var handles2 = sp2.Get<ObjectHandleManager>()!;
-            var static2  = sp2.Get<StaticData>()!;
+            var static2 = sp2.Get<StaticData>()!;
             sp2.Get<LoadGameService>()!.Restore(json, world2, handles2, static2);
 
             var inv = GetPlayer(world2).Inventory!;
-            Assert.AreEqual(1, inv.Slots.Count);
+            Assert.HasCount(1, inv.Slots);
             Assert.AreEqual("iron_ore", inv.Slots[0].Item.Id);
             Assert.AreEqual(7, inv.Slots[0].Quantity);
         }
@@ -224,12 +224,12 @@ namespace NPCChat.Tests
             // ── Save ──────────────────────────────────────────────────────────────
             using (var scope1 = Services.CreateScope())
             {
-                var sp1   = scope1.ServiceProvider;
+                var sp1 = scope1.ServiceProvider;
                 BuildWorld(sp1);
                 var world1 = sp1.Get<WorldData>()!;
                 var staticData = sp1.Get<StaticData>()!;
                 var player = GetPlayer(world1);
-                var quest  = staticData.GetQuest("fetch_iron_ore")!;
+                var quest = staticData.GetQuest("fetch_iron_ore")!;
                 player.QuestLog!.StartQuest(quest);
                 json = sp1.Get<SaveGameService>()!.Serialize(world1, sp1.Get<ObjectHandleManager>()!);
             }
@@ -238,9 +238,9 @@ namespace NPCChat.Tests
             using var scope2 = Services.CreateScope();
             var sp2 = scope2.ServiceProvider;
             BuildWorld(sp2);
-            var world2   = sp2.Get<WorldData>()!;
+            var world2 = sp2.Get<WorldData>()!;
             var handles2 = sp2.Get<ObjectHandleManager>()!;
-            var static2  = sp2.Get<StaticData>()!;
+            var static2 = sp2.Get<StaticData>()!;
             sp2.Get<LoadGameService>()!.Restore(json, world2, handles2, static2);
 
             var log = GetPlayer(world2).QuestLog!;
@@ -259,7 +259,7 @@ namespace NPCChat.Tests
                 BuildWorld(sp1);
                 var world1 = sp1.Get<WorldData>()!;
                 var player = GetPlayer(world1);
-                var quest  = sp1.Get<StaticData>()!.GetQuest("fetch_iron_ore")!;
+                var quest = sp1.Get<StaticData>()!.GetQuest("fetch_iron_ore")!;
                 player.QuestLog!.StartQuest(quest);
                 player.QuestLog!.TryComplete("fetch_iron_ore");
                 json = sp1.Get<SaveGameService>()!.Serialize(world1, sp1.Get<ObjectHandleManager>()!);
@@ -269,13 +269,13 @@ namespace NPCChat.Tests
             using var scope2 = Services.CreateScope();
             var sp2 = scope2.ServiceProvider;
             BuildWorld(sp2);
-            var world2   = sp2.Get<WorldData>()!;
+            var world2 = sp2.Get<WorldData>()!;
             var handles2 = sp2.Get<ObjectHandleManager>()!;
-            var static2  = sp2.Get<StaticData>()!;
+            var static2 = sp2.Get<StaticData>()!;
             sp2.Get<LoadGameService>()!.Restore(json, world2, handles2, static2);
 
             var log = GetPlayer(world2).QuestLog!;
-            Assert.IsFalse(log.HasActiveQuest("fetch_iron_ore"),  "Quest should not be active after completion.");
+            Assert.IsFalse(log.HasActiveQuest("fetch_iron_ore"), "Quest should not be active after completion.");
             Assert.IsTrue(log.HasCompletedQuest("fetch_iron_ore"), "Quest should appear in completed list.");
         }
 
@@ -298,9 +298,9 @@ namespace NPCChat.Tests
             using var scope2 = Services.CreateScope();
             var sp2 = scope2.ServiceProvider;
             BuildWorld(sp2);
-            var world2   = sp2.Get<WorldData>()!;
+            var world2 = sp2.Get<WorldData>()!;
             var handles2 = sp2.Get<ObjectHandleManager>()!;
-            var static2  = sp2.Get<StaticData>()!;
+            var static2 = sp2.Get<StaticData>()!;
             sp2.Get<LoadGameService>()!.Restore(json, world2, handles2, static2);
 
             Assert.AreEqual(150, GetPlayer(world2).ReputationLog!.GetReputation("townsfolk"));
@@ -327,9 +327,9 @@ namespace NPCChat.Tests
             using var scope2 = Services.CreateScope();
             var sp2 = scope2.ServiceProvider;
             BuildWorld(sp2);
-            var world2   = sp2.Get<WorldData>()!;
+            var world2 = sp2.Get<WorldData>()!;
             var handles2 = sp2.Get<ObjectHandleManager>()!;
-            var static2  = sp2.Get<StaticData>()!;
+            var static2 = sp2.Get<StaticData>()!;
             sp2.Get<LoadGameService>()!.Restore(json, world2, handles2, static2);
 
             var guard2 = GetGuard(world2);
@@ -342,7 +342,7 @@ namespace NPCChat.Tests
         public void RoundTrip_NpcCooldowns()
         {
             string json;
-            const string selfKey  = "npc_h1||entryA";
+            const string selfKey = "npc_h1||entryA";
             const string groupKey = "npc_h1||G||greetings";
             const double timestamp = 500.0;
 
@@ -352,7 +352,7 @@ namespace NPCChat.Tests
                 var sp1 = scope1.ServiceProvider;
                 BuildWorld(sp1);
                 var world1 = sp1.Get<WorldData>()!;
-                var guard  = GetGuard(world1);
+                var guard = GetGuard(world1);
                 // Seed cooldown state directly via RestoreState (bypasses needing a live session).
                 guard.Actor!.DialogueCooldowns.RestoreState(
                     new[] { new KeyValuePair<string, double>(selfKey, timestamp) },
@@ -364,16 +364,16 @@ namespace NPCChat.Tests
             using var scope2 = Services.CreateScope();
             var sp2 = scope2.ServiceProvider;
             BuildWorld(sp2);
-            var world2   = sp2.Get<WorldData>()!;
+            var world2 = sp2.Get<WorldData>()!;
             var handles2 = sp2.Get<ObjectHandleManager>()!;
-            var static2  = sp2.Get<StaticData>()!;
+            var static2 = sp2.Get<StaticData>()!;
             sp2.Get<LoadGameService>()!.Restore(json, world2, handles2, static2);
 
             var (self, group) = GetGuard(world2).Actor!.DialogueCooldowns.SaveState();
-            Assert.IsTrue(self.TryGetValue(selfKey, out var selfTs),   "Self cooldown key should be restored.");
-            Assert.AreEqual(timestamp, selfTs,  1e-9,                  "Self cooldown timestamp should match.");
+            Assert.IsTrue(self.TryGetValue(selfKey, out var selfTs), "Self cooldown key should be restored.");
+            Assert.AreEqual(timestamp, selfTs, 1e-9, "Self cooldown timestamp should match.");
             Assert.IsTrue(group.TryGetValue(groupKey, out var groupTs), "Group cooldown key should be restored.");
-            Assert.AreEqual(timestamp, groupTs, 1e-9,                  "Group cooldown timestamp should match.");
+            Assert.AreEqual(timestamp, groupTs, 1e-9, "Group cooldown timestamp should match.");
         }
 
         [TestMethod]
@@ -385,11 +385,11 @@ namespace NPCChat.Tests
             // ── Save ──────────────────────────────────────────────────────────────
             using (var scope1 = Services.CreateScope())
             {
-                var sp1      = scope1.ServiceProvider;
+                var sp1 = scope1.ServiceProvider;
                 BuildWorld(sp1);
-                var world1   = sp1.Get<WorldData>()!;
+                var world1 = sp1.Get<WorldData>()!;
                 var handles1 = sp1.Get<ObjectHandleManager>()!;
-                savedNextId  = handles1.NextWorldId;
+                savedNextId = handles1.NextWorldId;
                 json = sp1.Get<SaveGameService>()!.Serialize(world1, handles1);
             }
 
@@ -397,9 +397,9 @@ namespace NPCChat.Tests
             using var scope2 = Services.CreateScope();
             var sp2 = scope2.ServiceProvider;
             BuildWorld(sp2);
-            var world2   = sp2.Get<WorldData>()!;
+            var world2 = sp2.Get<WorldData>()!;
             var handles2 = sp2.Get<ObjectHandleManager>()!;
-            var static2  = sp2.Get<StaticData>()!;
+            var static2 = sp2.Get<StaticData>()!;
             sp2.Get<LoadGameService>()!.Restore(json, world2, handles2, static2);
 
             Assert.AreEqual(savedNextId, handles2.NextWorldId,

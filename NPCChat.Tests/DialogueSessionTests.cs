@@ -20,8 +20,8 @@ namespace NPCChat.Tests
             string? entryNode = null,
             float[]? npcMood = null)
         {
-            var npc     = TestActorFactory.MakeNpc(tree, moodVector: npcMood);
-            var ctx     = TestActorFactory.MakeCtx(npc);
+            var npc = TestActorFactory.MakeNpc(tree, moodVector: npcMood);
+            var ctx = TestActorFactory.MakeCtx(npc);
             var session = new DialogueSession(npc, entryNode ?? tree.RootNodeId);
             return (session, ctx);
         }
@@ -49,7 +49,7 @@ namespace NPCChat.Tests
         {
             var (session, ctx) = MakeSession(LineTree("Hello there."));
             session.Advance(ctx);
-            Assert.AreEqual(0, session.VisibleChoices.Count);
+            Assert.IsEmpty(session.VisibleChoices);
         }
 
         [TestMethod]
@@ -111,7 +111,7 @@ namespace NPCChat.Tests
 
             var (session, ctx) = MakeSession(tree);
             session.Advance(ctx);
-            Assert.AreEqual(2, session.VisibleChoices.Count);
+            Assert.HasCount(2, session.VisibleChoices);
         }
 
         [TestMethod]
@@ -128,7 +128,7 @@ namespace NPCChat.Tests
 
             var (session, ctx) = MakeSession(tree);
             session.Advance(ctx);
-            Assert.AreEqual(1, session.VisibleChoices.Count);
+            Assert.HasCount(1, session.VisibleChoices);
             Assert.AreEqual("Always visible", session.VisibleChoices[0].Choice.Label);
         }
 
@@ -318,7 +318,7 @@ namespace NPCChat.Tests
         public void NpcName_ReflectsCharacterName()
         {
             var tree = LineTree("Hi");
-            var npc  = TestActorFactory.MakeNpc(tree, name: "Brutus");
+            var npc = TestActorFactory.MakeNpc(tree, name: "Brutus");
             var session = new DialogueSession(npc, "start");
             Assert.AreEqual("Brutus", session.NpcName);
         }
@@ -328,10 +328,10 @@ namespace NPCChat.Tests
         {
             var tree = LineTree("Hi");
             var actor = new ActorComponent { DialogueTree = tree };
-            var npc   = new WorldObjectMoveable
+            var npc = new WorldObjectMoveable
             {
                 Handle = new ObjectHandle(2, 1),
-                Actor  = actor
+                Actor = actor
                 // Character = null intentionally
             };
             var session = new DialogueSession(npc, "start");

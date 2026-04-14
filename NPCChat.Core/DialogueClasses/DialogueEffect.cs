@@ -1,3 +1,5 @@
+using System;
+
 namespace NPCChat.Core.DialogueClasses
 {
     /// <summary>

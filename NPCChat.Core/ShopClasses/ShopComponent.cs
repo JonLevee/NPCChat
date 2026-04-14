@@ -12,7 +12,7 @@ namespace NPCChat.Core.ShopClasses
     public sealed class ShopComponent
     {
         /// <summary>Items available for the player to buy.</summary>
-        public List<ShopEntry> Stock { get; } = [];
+        public List<ShopEntry> Stock { get; } = new List<ShopEntry>();
 
         /// <summary>
         /// Fraction of BaseValue the shop pays when the player sells an item (0–1).

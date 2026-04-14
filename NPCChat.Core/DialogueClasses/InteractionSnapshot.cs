@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using NPCChat.Core.WorldClasses;
 
 namespace NPCChat.Core.DialogueClasses
@@ -32,6 +33,6 @@ namespace NPCChat.Core.DialogueClasses
         public string? ActorName { get; init; }
 
         /// <summary>Visible interaction options, ordered by priority then label. Max 9.</summary>
-        public InteractionOption[] Options { get; init; } = [];
+        public InteractionOption[] Options { get; init; } = Array.Empty<InteractionOption>();
     }
 }

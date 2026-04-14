@@ -1,4 +1,7 @@
 #nullable enable
+using System;
+using System.Collections.Generic;
+
 namespace NPCChat.Core.DialogueClasses
 {
     /// <summary>
@@ -9,7 +12,7 @@ namespace NPCChat.Core.DialogueClasses
     {
         private readonly string _id;
         private string _rootNodeId = string.Empty;
-        private string[] _moodAxes = [];
+        private string[] _moodAxes = Array.Empty<string>();
         private readonly Dictionary<string, DialogueNode> _nodes = new();
         private int _poolEntryCounter;
 
@@ -36,7 +39,7 @@ namespace NPCChat.Core.DialogueClasses
                 Text           = text,
                 NextNodeId     = nextNodeId,
                 Condition      = condition,
-                OnEnterEffects = onEnter ?? []
+                OnEnterEffects = onEnter ?? Array.Empty<DialogueEffect>()
             };
             return this;
         }
@@ -63,7 +66,7 @@ namespace NPCChat.Core.DialogueClasses
                 NpcText        = npcText,
                 Choices        = cb.Choices.AsReadOnly(),
                 Condition      = condition,
-                OnEnterEffects = onEnter ?? []
+                OnEnterEffects = onEnter ?? Array.Empty<DialogueEffect>()
             };
             return this;
         }
@@ -83,7 +86,7 @@ namespace NPCChat.Core.DialogueClasses
                 Entries        = pb.Entries.AsReadOnly(),
                 NextNodeId     = nextNodeId,
                 Condition      = condition,
-                OnEnterEffects = onEnter ?? []
+                OnEnterEffects = onEnter ?? Array.Empty<DialogueEffect>()
             };
             return this;
         }
@@ -101,7 +104,7 @@ namespace NPCChat.Core.DialogueClasses
                 NodeIds        = nodeIds,
                 NextNodeId     = nextNodeId,
                 Condition      = condition,
-                OnEnterEffects = onEnter ?? []
+                OnEnterEffects = onEnter ?? Array.Empty<DialogueEffect>()
             };
             return this;
         }

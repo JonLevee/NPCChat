@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using NPCChat.Core.DialogueClasses;
 using NPCChat.Core.WorldClasses;
@@ -22,7 +23,7 @@ namespace NPCChat.Core.BehaviorClasses
         public ActorSchedule Schedule { get; } = new();
 
         /// <summary>Reactive rules evaluated each tick in priority order.</summary>
-        public List<BehaviorRule> ReactiveRules { get; } = [];
+        public List<BehaviorRule> ReactiveRules { get; } = new List<BehaviorRule>();
 
         /// <summary>Priority-ordered queue of tasks to execute.</summary>
         public ActionQueue ActionQueue { get; } = new();
@@ -54,7 +55,7 @@ namespace NPCChat.Core.BehaviorClasses
         /// Named entry points into DialogueTree exposed to nearby players.
         /// Evaluated by the sim thread each tick; results published via InteractionSnapshot.
         /// </summary>
-        public List<InteractionEntry> Interactions { get; } = [];
+        public List<InteractionEntry> Interactions { get; } = new List<InteractionEntry>();
 
         /// <summary>
         /// Per-actor cooldown state for DialoguePoolNode picks.

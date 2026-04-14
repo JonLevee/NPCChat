@@ -39,7 +39,7 @@ namespace NPCChat.Core.DialogueClasses
         /// Visible player choices in the current ChoiceNode, ordered 1–9.
         /// Empty when State != PlayerChoice.
         /// </summary>
-        public IReadOnlyList<(int Index, DialogueChoice Choice)> VisibleChoices { get; private set; } = [];
+        public IReadOnlyList<(int Index, DialogueChoice Choice)> VisibleChoices { get; private set; } = new (int, DialogueChoice)[0];
 
         public DialogueSessionState State { get; private set; } = DialogueSessionState.NpcLine;
 
@@ -112,7 +112,7 @@ namespace NPCChat.Core.DialogueClasses
                 {
                     case DialogueLineNode line:
                         DisplayText    = line.Text;
-                        VisibleChoices = [];
+                        VisibleChoices = new (int, DialogueChoice)[0];
                         State          = DialogueSessionState.NpcLine;
                         if (line.NextNodeId is not null)
                             _pending.Push(line.NextNodeId);
@@ -121,7 +121,7 @@ namespace NPCChat.Core.DialogueClasses
                     case DialoguePoolNode pool:
                         var entry = PickPoolEntry(pool, ctx);
                         DisplayText    = entry?.Text ?? "(...)";
-                        VisibleChoices = [];
+                        VisibleChoices = new (int, DialogueChoice)[0];
                         State          = DialogueSessionState.NpcLine;
                         var next = entry?.NextNodeId ?? pool.NextNodeId;
                         if (next is not null) _pending.Push(next);
@@ -157,7 +157,7 @@ namespace NPCChat.Core.DialogueClasses
             var character = ctx.Actor.Character;
             return _picker.PickOne(
                 pool,
-                character?.MoodVector ?? [],
+                character?.MoodVector ?? Array.Empty<float>(),
                 (IReadOnlyDictionary<string, float>?)character?.Stats
                     ?? new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase),
                 desiredIntent: null,

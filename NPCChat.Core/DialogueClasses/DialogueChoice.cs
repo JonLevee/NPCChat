@@ -1,4 +1,7 @@
 #nullable enable
+using System;
+using System.Collections.Generic;
+
 namespace NPCChat.Core.DialogueClasses
 {
     /// <summary>
@@ -17,6 +20,6 @@ namespace NPCChat.Core.DialogueClasses
         public string? NextNodeId { get; init; }
 
         /// <summary>Side effects applied the moment this choice is selected.</summary>
-        public IReadOnlyList<DialogueEffect> OnSelectEffects { get; init; } = [];
+        public IReadOnlyList<DialogueEffect> OnSelectEffects { get; init; } = new List<DialogueEffect>();
     }
 }

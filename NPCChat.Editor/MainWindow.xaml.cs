@@ -692,12 +692,12 @@ namespace NPCChat
             if (entry is null) return;
 
             _world.EnqueueShopTransaction(new ShopTransactionCommand(
-                PlayerHandle: player.Handle,
-                ItemId:       itemId,
-                ItemDef:      entry.ItemDef,
-                Quantity:     1,
-                GoldCost:     entry.BuyPrice,
-                IsBuy:        true));
+                playerHandle: player.Handle,
+                itemId:       itemId,
+                itemDef:      entry.ItemDef,
+                quantity:     1,
+                goldCost:     entry.BuyPrice,
+                isBuy:        true));
         }
 
         private void OnShopSellOne(string itemId)
@@ -715,13 +715,13 @@ namespace NPCChat
             int sellPrice = Math.Max(1, (int)Math.Floor(item.BaseValue * _shopActor.Shop.SellMultiplier));
 
             _world.EnqueueShopTransaction(new ShopTransactionCommand(
-                PlayerHandle: player.Handle,
-                ItemId:       itemId,
-                ItemDef:      _staticData.GetItem(itemId)!,
-                Quantity:     1,
-                GoldCost:     sellPrice,
-                IsBuy:        false,
-                GoldItemDef:  goldDef));
+                playerHandle: player.Handle,
+                itemId:       itemId,
+                itemDef:      _staticData.GetItem(itemId)!,
+                quantity:     1,
+                goldCost:     sellPrice,
+                isBuy:        false,
+                goldItemDef:  goldDef));
         }
     }
 }

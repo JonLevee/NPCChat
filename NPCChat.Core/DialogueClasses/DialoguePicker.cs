@@ -1,4 +1,7 @@
 #nullable enable
+using System;
+using System.Collections.Generic;
+
 namespace NPCChat.Core.DialogueClasses
 {
     /// <summary>
@@ -27,7 +30,7 @@ namespace NPCChat.Core.DialogueClasses
             float exponent = 2.0f,
             Random? rng = null)
         {
-            rng ??= Random.Shared;
+            rng ??= new Random();
 
             // First pass: full scoring with mood affinity.
             var scored = Score(node.Entries, npcMoodUnit, npcStats01, desiredIntent,

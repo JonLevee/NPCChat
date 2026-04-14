@@ -17,7 +17,7 @@ namespace NPCChat.Core.PathfindingClasses
         // Cardinal directions (cost 1) then diagonal directions (cost √2).
         // Order: N, E, S, W, NE, SE, SW, NW
         private static readonly (int dx, int dy, float cost)[] Neighbors =
-        [
+        {
             ( 0, -1, 1f),
             ( 1,  0, 1f),
             ( 0,  1, 1f),
@@ -26,7 +26,7 @@ namespace NPCChat.Core.PathfindingClasses
             ( 1,  1, 1.4142136f),
             (-1,  1, 1.4142136f),
             (-1, -1, 1.4142136f),
-        ];
+        };
 
         /// <summary>
         /// Finds a path from <paramref name="source"/> to <paramref name="target"/> on the given grid.
@@ -40,7 +40,7 @@ namespace NPCChat.Core.PathfindingClasses
         public List<Point> FindPath(PathGrid grid, Point source, Point target, int maxIterations)
         {
             if (source == target)
-                return [];
+                return new List<Point>();
 
             if (!grid.IsPassable(target.X, target.Y))
                 return null;

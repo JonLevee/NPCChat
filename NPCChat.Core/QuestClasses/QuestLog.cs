@@ -11,7 +11,7 @@ namespace NPCChat.Core.QuestClasses
     /// </summary>
     public sealed class QuestLog
     {
-        private readonly List<QuestRecord> _active = [];
+        private readonly List<QuestRecord> _active = new List<QuestRecord>();
         private readonly HashSet<string> _completedIds =
             new(StringComparer.OrdinalIgnoreCase);
 

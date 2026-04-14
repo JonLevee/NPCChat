@@ -24,7 +24,7 @@ namespace NPCChat.Core.LoadingProviderClasses
 
         public void RegisterItem(ItemDef item)
         {
-            ArgumentNullException.ThrowIfNull(item);
+            if (item == null) throw new ArgumentNullException(nameof(item));
             _items[item.Id] = item;
         }
 
@@ -33,7 +33,7 @@ namespace NPCChat.Core.LoadingProviderClasses
 
         public void RegisterQuest(QuestDef quest)
         {
-            ArgumentNullException.ThrowIfNull(quest);
+            if (quest == null) throw new ArgumentNullException(nameof(quest));
             _quests[quest.Id] = quest;
         }
 
@@ -42,7 +42,7 @@ namespace NPCChat.Core.LoadingProviderClasses
 
         public void RegisterFaction(FactionDef faction)
         {
-            ArgumentNullException.ThrowIfNull(faction);
+            if (faction == null) throw new ArgumentNullException(nameof(faction));
             _factions[faction.Id] = faction;
         }
 
@@ -50,8 +50,8 @@ namespace NPCChat.Core.LoadingProviderClasses
             => _factions.TryGetValue(id, out var def) ? def : null;
 
         // Legacy: may be populated by future YAML loaders.
-        public Dictionary<string, byte> DispositionIds { get; set; } = [];
-        public byte[] MoodIds { get; set; } = [];
-        public byte[] GateIds  { get; set; } = [];
+        public Dictionary<string, byte> DispositionIds { get; set; } = new Dictionary<string, byte>();
+        public byte[] MoodIds { get; set; } = Array.Empty<byte>();
+        public byte[] GateIds  { get; set; } = Array.Empty<byte>();
     }
 }

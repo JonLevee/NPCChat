@@ -1,4 +1,7 @@
 #nullable enable
+using System;
+using System.Collections.Generic;
+
 namespace NPCChat.Core.CharacterClasses
 {
     public class Character
@@ -17,7 +20,7 @@ namespace NPCChat.Core.CharacterClasses
         /// Used by DialoguePicker for dot-product affinity scoring.
         /// Index i maps to DialogueTree.MoodAxes[i].
         /// </summary>
-        public float[] MoodVector { get; set; } = [];
+        public float[] MoodVector { get; set; } = Array.Empty<float>();
 
         /// <summary>
         /// Current stat values in 0..1 space.
@@ -25,6 +28,6 @@ namespace NPCChat.Core.CharacterClasses
         /// Used by DialoguePicker for requires/forbids gate evaluation.
         /// </summary>
         public Dictionary<string, float> Stats { get; set; } =
-            new(StringComparer.OrdinalIgnoreCase);
+            new Dictionary<string, float>(StringComparer.OrdinalIgnoreCase);
     }
 }

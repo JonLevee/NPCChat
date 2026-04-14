@@ -14,13 +14,13 @@ namespace NPCChat.Core.WorldClasses
     public sealed class ObjectHandleManager
     {
         // slot-id indexed storage
-        public readonly List<ObjectSlot> Slots = [];
+        public readonly List<ObjectSlot> Slots = new List<ObjectSlot>();
 
         // free slot ids available for reuse
-        public readonly Stack<int> FreeSlotIds = new();
+        public readonly Stack<int> FreeSlotIds = new Stack<int>();
 
         // packed list of currently active handles, if you later want iteration
-        public readonly HashSet<ObjectHandle> ActiveHandles = [];
+        public readonly HashSet<ObjectHandle> ActiveHandles = new HashSet<ObjectHandle>();
 
         // Non-recycling world ID counter. 0 is reserved (means unassigned).
         private int _nextWorldId = 1;

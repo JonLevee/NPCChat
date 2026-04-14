@@ -21,7 +21,7 @@ namespace NPCChat.Core.BehaviorClasses.Tasks
         public WanderTask(int wanderRadius, int priority = 0, Random? rng = null) : base(priority)
         {
             _wanderRadius = wanderRadius;
-            _rng = rng ?? Random.Shared;
+            _rng = rng ?? new Random();
         }
 
         public override void Begin(in SimContext ctx)

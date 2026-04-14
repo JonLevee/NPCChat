@@ -655,5 +655,63 @@ Phase 14 — Map Interaction (next)
   The project is described as "~13 phases" in CLAUDE.md, and Phase 13 is now complete. Phase 14 (map drag-pan) is the one confirmed remaining feature. The NPC
   scenarios in the README appear to be a future content/design phase beyond the infrastructure work.
 
-  ----------------------------------------------------------------------------------------------------------------------------------
+----------------------------------------------------------------------------------------------------------------------------------
 Please summarize the remaining work.
+
+I have installed jetbrains rider and opened the NPCChat project with it.  Our last conversation in the VS Ide was to audit the project for .NET 8.0 references and update the 
+NPCChat.Core project to netstandard2.1.  This has been done, project compiles and unit tests pass.
+We decided that:
+ * we will use procedural map creation in Unity.
+ * we will add post-build logic to copy the NPCChat.Core assemblies to NPCChat.Unity/Assets/Plugins (I think this is the location)
+ * we will create a unity project in the same git-hub repository as NPCChat currently has.
+----------------------------------------------------------------------------------------------------------------------------------
+ 
+Use Unity Hub
+
+  Definitely create it through Unity Hub. A Unity project contains binary Library caches, GUID-tracked .meta files, and package lock files that Unity generates on first open. If I scaffolded the folder structure manually, Unity would regenerate most of it anyway and you'd risk GUID mismatches. The right
+  workflow is:
+
+  1. You create it in Unity Hub → Unity generates the canonical structure
+  2. We configure the .gitignore, post-build copy, assembly definitions, etc. afterward
+
+  ---
+  3D Characters on an Isometric Map — Yes, Absolutely
+
+  This is a well-established technique. The key is the camera setup, not the asset type:
+
+  ┌────────────────┬───────────────────────────────────────┬─────────────────────────┬────────────────────────────┬─────────────────────────────────────────────┐
+  │    Approach    │                Camera                 │           Map           │         Characters         │                Example Games                │
+  ├────────────────┼───────────────────────────────────────┼─────────────────────────┼────────────────────────────┼─────────────────────────────────────────────┤
+  │ Pure 2D sprite │ Orthographic                          │ 2D isometric tiles      │ Sprites drawn at iso angle │ Original Fallout, Baldur's Gate             │
+  ├────────────────┼───────────────────────────────────────┼─────────────────────────┼────────────────────────────┼─────────────────────────────────────────────┤
+  │ 3D on iso      │ Orthographic, ~30° tilt, 45° rotation │ 2D tiles or 3D geometry │ Full 3D models             │ Divinity: Original Sin, Pillars of Eternity │
+  ├────────────────┼───────────────────────────────────────┼─────────────────────────┼────────────────────────────┼─────────────────────────────────────────────┤
+  │ 2.5D hybrid    │ Orthographic iso                      │ 2D tiles                │ 3D models                  │ Many modern indie isometric RPGs            │
+  └────────────────┴───────────────────────────────────────┴─────────────────────────┴────────────────────────────┴─────────────────────────────────────────────┘
+
+  The orthographic + isometric angle approach is the sweet spot for your case — you get proper depth sorting, 3D character animations, and lighting, while keeping the classic isometric look. Unity has native support for this.
+
+  ---
+  Recommendation for Unity Hub Setup
+
+  When creating the project, choose the 3D (URP) template:
+  - Gives you Universal Render Pipeline for better lighting/shaders
+  - 3D models for characters work natively
+  - You configure the camera to orthographic isometric after creation
+  - Unity's 2D Tilemap system works fine in a 3D project for the map tiles
+
+  Unity version: Use the latest LTS (currently 6000.x / Unity 6 LTS, or 2022.3 LTS if you want more stability).
+
+  ---
+  Go ahead and create the project as NPCChat.Unity inside your D:\Source\NPCChat repo directory. Once it's created, come back and we'll:
+  1. Add a .gitignore for Unity
+  2. Wire up the post-build DLL copy from NPCChat.Core
+  3. Set up the isometric camera
+
+❯ Unity Hub is recommending I create the new project using Unity 6.4 (6000.4.2f1) Supported.  Next choice is Unity 6.3 LTS (6000.3.13f1) LTS.  Which version should I use?                                                                                                                                         
+                                                                                                                                                                           
+● Use Unity 6.3 LTS (6000.3.13f1).                                                                                                                                                                                                                                                                                 
+                                                                                                                                                                                                                                                                                                                   
+  LTS (Long Term Support) means Unity commits to backporting bug fixes for 2 years. The non-LTS 6.4 release gets fixes only until the next version ships. For a project you're building seriously, LTS is always the right call — you won't get surprise breaking changes mid-development.                         
+   
+ 

@@ -399,3 +399,17 @@ FodyWeavers.xsd
 
 # solution zip file
 NPCChat.zip
+
+# Unity
+NPCChat.Unity/NPCGame/[Ll]ibrary/
+NPCChat.Unity/NPCGame/[Tt]emp/
+NPCChat.Unity/NPCGame/[Bb]uilds/
+NPCChat.Unity/NPCGame/[Mm]emory[Cc]aptures/
+NPCChat.Unity/NPCGame/[Uu]ser[Ss]ettings/
+NPCChat.Unity/NPCGame/[Aa]ssets/[Aa]sset[Ss]tore[Tt]ools*
+NPCChat.Unity/NPCGame/sysinfo.txt
+NPCChat.Unity/NPCGame/*.apk
+NPCChat.Unity/NPCGame/*.unitypackage
+
+# Unity .meta files must be committed — override the *.meta rule above
+!NPCChat.Unity/**/*.meta

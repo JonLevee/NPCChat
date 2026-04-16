@@ -1,4 +1,5 @@
 #nullable enable
+using System;
 using System.Collections.Generic;
 using NPCChat.Core.BehaviorClasses;
 
@@ -18,7 +19,7 @@ namespace NPCChat.Core.SaveClasses
         public string SavedAt     { get; init; } = "";
         /// <summary>Restore into ObjectHandleManager so new objects get unique IDs.</summary>
         public int    NextWorldId { get; init; }
-        public ObjectSaveRecord[] Objects { get; init; } = [];
+        public ObjectSaveRecord[] Objects { get; init; } = Array.Empty<ObjectSaveRecord>();
     }
 
     // ── Per-object save record ───────────────────────────────────────────────────
@@ -35,7 +36,7 @@ namespace NPCChat.Core.SaveClasses
         public int    WorldId { get; init; }
 
         /// <summary>Current bounds as [left, top, right, bottom].</summary>
-        public int[]  Bounds  { get; init; } = [];
+        public int[]  Bounds  { get; init; } = Array.Empty<int>();
 
         // ── Carryable ────────────────────────────────────────────────────────────
         public string? ItemId   { get; init; }
@@ -80,8 +81,8 @@ namespace NPCChat.Core.SaveClasses
     /// <summary>Quest journal snapshot.</summary>
     public sealed class QuestLogSave
     {
-        public string[] ActiveIds    { get; init; } = [];
-        public string[] CompletedIds { get; init; } = [];
+        public string[] ActiveIds    { get; init; } = Array.Empty<string>();
+        public string[] CompletedIds { get; init; } = Array.Empty<string>();
     }
 
     /// <summary>One faction reputation score.</summary>

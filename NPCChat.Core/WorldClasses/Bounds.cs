@@ -4,7 +4,7 @@ using System.Drawing;
 
 namespace NPCChat.Core.WorldClasses
 {
-    public readonly record struct Bounds
+    public readonly struct Bounds : IEquatable<Bounds>
     {
         public static readonly Bounds None = new();
 
@@ -52,6 +52,13 @@ namespace NPCChat.Core.WorldClasses
                    Top < other.Bottom &&
                    Bottom > other.Top;
         }
+
+        public bool Equals(Bounds other) =>
+            Left == other.Left && Top == other.Top && Right == other.Right && Bottom == other.Bottom;
+        public override bool Equals(object obj) => obj is Bounds other && Equals(other);
+        public override int GetHashCode() => HashCode.Combine(Left, Top, Right, Bottom);
+        public static bool operator ==(Bounds left, Bounds right) => left.Equals(right);
+        public static bool operator !=(Bounds left, Bounds right) => !left.Equals(right);
 
         public override string ToString()
             => $"[{Left},{Top}]..[{Right},{Bottom}]";

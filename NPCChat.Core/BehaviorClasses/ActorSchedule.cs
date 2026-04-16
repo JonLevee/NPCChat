@@ -8,7 +8,7 @@ namespace NPCChat.Core.BehaviorClasses
     /// </summary>
     public sealed class ActorSchedule
     {
-        private readonly List<(GameTimeRange Range, string Mode)> _entries = [];
+        private readonly List<(GameTimeRange Range, string Mode)> _entries = new List<(GameTimeRange, string)>();
 
         public ActorSchedule Add(GameTimeRange range, string mode)
         {

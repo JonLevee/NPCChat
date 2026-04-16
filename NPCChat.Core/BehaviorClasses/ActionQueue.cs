@@ -10,7 +10,7 @@ namespace NPCChat.Core.BehaviorClasses
     public sealed class ActionQueue
     {
         // Stored as a sorted list; small N makes linear insertion acceptable.
-        private readonly List<IActorTask> _tasks = [];
+        private readonly List<IActorTask> _tasks = new List<IActorTask>();
 
         public bool IsEmpty => _tasks.Count == 0;
 

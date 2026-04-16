@@ -14,8 +14,6 @@ namespace NPCChat.Core.Validation
     /// </summary>
     public static class Require
     {
-        private readonly record struct ExpressionData(string Name, string Value);
-
         public static void IsNull<T>(
             T value,
             string message = "",
@@ -26,7 +24,7 @@ namespace NPCChat.Core.Validation
             InternalAssert(
                 value is null,
                 message,
-                () => [Param(value, valueExpression)]);
+                () => new string[] { Param(value, valueExpression) });
         }
 
         public static void IsNotNull<T>(
@@ -39,7 +37,7 @@ namespace NPCChat.Core.Validation
             InternalAssert(
                 value is not null,
                 message,
-                () => [Param(value, valueExpression)]);
+                () => new string[] { Param(value, valueExpression) });
         }
 
         public static void AreNotEqual<T>(
@@ -55,7 +53,7 @@ namespace NPCChat.Core.Validation
             InternalAssert(
                 !EqualityComparer<T>.Default.Equals(expected, actual),
                 message,
-                () => [Param(expected, expectedExpression), Param(actual, actualExpression)]);
+                () => new string[] { Param(expected, expectedExpression), Param(actual, actualExpression) });
         }
 
         public static void IsGreaterThan<T>(
@@ -71,7 +69,7 @@ namespace NPCChat.Core.Validation
             InternalAssert(
                 Comparer<T>.Default.Compare(lowerBound, value) < 0,
                 message,
-                () => [Param(lowerBound, lowerBoundExpression), Param(value, valueExpression)]);
+                () => new string[] { Param(lowerBound, lowerBoundExpression), Param(value, valueExpression) });
         }
 
         private static void InternalAssert(

@@ -19,9 +19,9 @@ namespace NPCChat.Core.YamlImport
 
     public sealed class YamlStaticDataDef
     {
-        public List<YamlItemDef>    Items    { get; set; } = [];
-        public List<YamlFactionDef> Factions { get; set; } = [];
-        public List<YamlQuestDef>   Quests   { get; set; } = [];
+        public List<YamlItemDef>    Items    { get; set; } = new List<YamlItemDef>();
+        public List<YamlFactionDef> Factions { get; set; } = new List<YamlFactionDef>();
+        public List<YamlQuestDef>   Quests   { get; set; } = new List<YamlQuestDef>();
     }
 
     public sealed class YamlItemDef
@@ -49,8 +49,8 @@ namespace NPCChat.Core.YamlImport
         public string                      Id          { get; set; } = "";
         public string                      Name        { get; set; } = "";
         public string                      Description { get; set; } = "";
-        public List<YamlQuestObjectiveDef> Objectives  { get; set; } = [];
-        public List<YamlQuestRewardDef>    Rewards     { get; set; } = [];
+        public List<YamlQuestObjectiveDef> Objectives  { get; set; } = new List<YamlQuestObjectiveDef>();
+        public List<YamlQuestRewardDef>    Rewards     { get; set; } = new List<YamlQuestRewardDef>();
     }
 
     public sealed class YamlQuestObjectiveDef
@@ -73,9 +73,9 @@ namespace NPCChat.Core.YamlImport
     public sealed class YamlObjectsDef
     {
         public YamlPlayerDef?          Player    { get; set; }
-        public List<YamlStaticObjDef>  Static    { get; set; } = [];
-        public List<YamlNpcDef>        Npcs      { get; set; } = [];
-        public List<YamlCarryableDef>  Carryable { get; set; } = [];
+        public List<YamlStaticObjDef>  Static    { get; set; } = new List<YamlStaticObjDef>();
+        public List<YamlNpcDef>        Npcs      { get; set; } = new List<YamlNpcDef>();
+        public List<YamlCarryableDef>  Carryable { get; set; } = new List<YamlCarryableDef>();
     }
 
     public sealed class YamlPlayerDef

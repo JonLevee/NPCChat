@@ -21,9 +21,9 @@ namespace NPCChat.Core.WorldClasses
     [Scoped]
     public sealed class WorldData : IDisposable
     {
-        private readonly Dictionary<ChunkPosition, ChunkData> _chunks = [];
-        private readonly List<WorldObjectMoveable>  _moveableObjects  = [];
-        private readonly List<WorldObjectCarryable> _carryableObjects = [];
+        private readonly Dictionary<ChunkPosition, ChunkData> _chunks = new Dictionary<ChunkPosition, ChunkData>();
+        private readonly List<WorldObjectMoveable>  _moveableObjects  = new List<WorldObjectMoveable>();
+        private readonly List<WorldObjectCarryable> _carryableObjects = new List<WorldObjectCarryable>();
         private readonly Queue<MoveCommand> _pendingPathCommands = new();
         private readonly IWorldOptions _options;
         private readonly ObjectHandleManager _handleManager;
@@ -523,7 +523,7 @@ namespace NPCChat.Core.WorldClasses
 
         public ObjectHandle AddObject(WorldObject obj)
         {
-            ArgumentNullException.ThrowIfNull(obj);
+            if (obj == null) throw new ArgumentNullException(nameof(obj));
 
             if (!obj.Handle.IsDefault)
                 throw new InvalidOperationException("Object already has a handle assigned.");

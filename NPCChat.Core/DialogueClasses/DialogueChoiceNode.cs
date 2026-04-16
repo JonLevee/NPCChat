@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace NPCChat.Core.DialogueClasses
 {
     /// <summary>
@@ -11,6 +13,6 @@ namespace NPCChat.Core.DialogueClasses
 
         /// <summary>Available choices. Shown in order; hidden when Condition returns false.
         /// Maximum 9 (keyboard shortcuts 1–9).</summary>
-        public IReadOnlyList<DialogueChoice> Choices { get; init; } = [];
+        public IReadOnlyList<DialogueChoice> Choices { get; init; } = new List<DialogueChoice>();
     }
 }

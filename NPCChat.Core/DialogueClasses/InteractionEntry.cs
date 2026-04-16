@@ -1,4 +1,6 @@
 #nullable enable
+using System;
+
 namespace NPCChat.Core.DialogueClasses
 {
     /// <summary>

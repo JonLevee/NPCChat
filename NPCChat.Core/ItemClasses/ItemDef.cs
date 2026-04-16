@@ -18,9 +18,9 @@ namespace NPCChat.Core.ItemClasses
     public sealed class ItemDef
     {
         /// <summary>Unique string identifier (e.g. "iron_sword"). Case-insensitive lookup.</summary>
-        public required string Id { get; init; }
+        public string Id { get; init; } = string.Empty;
 
-        public required string Name { get; init; }
+        public string Name { get; init; } = string.Empty;
 
         public ItemKind Kind { get; init; }
 

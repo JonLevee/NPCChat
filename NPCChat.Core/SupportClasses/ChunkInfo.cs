@@ -10,7 +10,7 @@ namespace NPCChat.Core.SupportClasses
     [Singleton]
     public class ChunkInfo
     {
-        private List<int> _chunkSizes = [4, 8, 16, 32, 64, 128];
+        private List<int> _chunkSizes = new List<int> { 4, 8, 16, 32, 64, 128 };
         public IReadOnlyList<int> ChunkSizes => _chunkSizes.AsReadOnly();
         private int _chunkSizeIndex = 0;
         public int MaxChunkSize => ChunkSizes[_chunkSizeIndex];

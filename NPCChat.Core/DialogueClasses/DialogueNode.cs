@@ -1,4 +1,7 @@
 #nullable enable
+using System;
+using System.Collections.Generic;
+
 namespace NPCChat.Core.DialogueClasses
 {
     /// <summary>
@@ -13,7 +16,7 @@ namespace NPCChat.Core.DialogueClasses
     public abstract class DialogueNode
     {
         /// <summary>Unique identifier within the owning DialogueTree.</summary>
-        public required string Id { get; init; }
+        public string Id { get; init; } = string.Empty;
 
         /// <summary>
         /// Optional gate evaluated before entering this node.
@@ -23,6 +26,6 @@ namespace NPCChat.Core.DialogueClasses
         public Func<DialogueContext, bool>? Condition { get; init; }
 
         /// <summary>Effects applied when this node is entered.</summary>
-        public IReadOnlyList<DialogueEffect> OnEnterEffects { get; init; } = [];
+        public IReadOnlyList<DialogueEffect> OnEnterEffects { get; init; } = new List<DialogueEffect>();
     }
 }

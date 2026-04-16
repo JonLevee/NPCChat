@@ -1,3 +1,5 @@
+using System;
+
 namespace NPCChat.Core.QuestClasses
 {
     /// <summary>
@@ -8,7 +10,7 @@ namespace NPCChat.Core.QuestClasses
         public string Id { get; init; } = string.Empty;
         public string Name { get; init; } = string.Empty;
         public string Description { get; init; } = string.Empty;
-        public QuestObjectiveDef[] Objectives { get; init; } = [];
-        public QuestRewardDef[] Rewards { get; init; } = [];
+        public QuestObjectiveDef[] Objectives { get; init; } = Array.Empty<QuestObjectiveDef>();
+        public QuestRewardDef[] Rewards { get; init; } = Array.Empty<QuestRewardDef>();
     }
 }

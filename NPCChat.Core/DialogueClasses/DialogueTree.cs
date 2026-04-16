@@ -1,4 +1,7 @@
 #nullable enable
+using System;
+using System.Collections.Generic;
+
 namespace NPCChat.Core.DialogueClasses
 {
     /// <summary>
@@ -16,7 +19,7 @@ namespace NPCChat.Core.DialogueClasses
         /// Ordered mood axis names shared by all DialoguePoolNodes in this tree.
         /// Index i here maps to index i in DialoguePoolEntry.MoodVector and Character.MoodVector.
         /// </summary>
-        public string[] MoodAxes { get; init; } = [];
+        public string[] MoodAxes { get; init; } = Array.Empty<string>();
 
         public IReadOnlyDictionary<string, DialogueNode> Nodes { get; init; } =
             new Dictionary<string, DialogueNode>();

@@ -9,8 +9,8 @@ namespace NPCChat.Core.ShopClasses
     /// </summary>
     public sealed class ShopEntry
     {
-        public required string  ItemId          { get; init; }
-        public required ItemDef ItemDef         { get; init; }
+        public string  ItemId          { get; init; } = string.Empty;
+        public ItemDef ItemDef         { get; init; } = null!;
 
         /// <summary>Multiplier applied to ItemDef.BaseValue to get the buy price.</summary>
         public float PriceMultiplier { get; init; } = 1.0f;

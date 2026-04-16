@@ -15,7 +15,7 @@ namespace NPCChat.Core.WorldClasses
         public override WorldObjectCategory Category => WorldObjectCategory.Carryable;
 
         /// <summary>Item definition. Must be set before the object is added to the world.</summary>
-        public required ItemDef ItemDef { get; init; }
+        public ItemDef ItemDef { get; init; } = null!;
 
         /// <summary>
         /// The handle of the WorldObjectMoveable currently carrying this item.

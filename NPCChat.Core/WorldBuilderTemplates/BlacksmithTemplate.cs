@@ -225,12 +225,12 @@ namespace NPCChat.Core.WorldBuilderTemplates
 
                             // Consume ore and grant gold via the sim-thread command channel
                             world.EnqueueQuestReward(new QuestRewardCommand(
-                                ctx.Player.Handle, oreId, ItemDef: null, oreReq, IsRemoval: true));
+                                ctx.Player.Handle, oreId, itemDef: null, oreReq, isRemoval: true));
 
                             var goldDef = staticData.GetItem("gold_coin");
                             if (goldDef is not null)
                                 world.EnqueueQuestReward(new QuestRewardCommand(
-                                    ctx.Player.Handle, "gold_coin", goldDef, Quantity: 10, IsRemoval: false));
+                                    ctx.Player.Handle, "gold_coin", goldDef, quantity: 10, isRemoval: false));
                         })
                     ])
 

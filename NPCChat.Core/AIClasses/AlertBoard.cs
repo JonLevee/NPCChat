@@ -11,7 +11,7 @@ namespace NPCChat.Core.AIClasses
     /// </summary>
     public sealed class AlertBoard
     {
-        private AlertEvent[] _readBuffer  = [];
+        private AlertEvent[] _readBuffer  = Array.Empty<AlertEvent>();
         private readonly List<AlertEvent> _writeBuffer = new();
 
         /// <summary>
@@ -19,7 +19,7 @@ namespace NPCChat.Core.AIClasses
         /// </summary>
         public void BeginTick()
         {
-            _readBuffer = _writeBuffer.Count > 0 ? _writeBuffer.ToArray() : [];
+            _readBuffer = _writeBuffer.Count > 0 ? _writeBuffer.ToArray() : Array.Empty<AlertEvent>();
             _writeBuffer.Clear();
         }
 
@@ -34,7 +34,7 @@ namespace NPCChat.Core.AIClasses
         /// </summary>
         public AlertEvent[] GetNearbyAlerts(Point center, int radius)
         {
-            if (_readBuffer.Length == 0) return [];
+            if (_readBuffer.Length == 0) return Array.Empty<AlertEvent>();
 
             var result = new List<AlertEvent>();
             foreach (var a in _readBuffer)
@@ -45,7 +45,7 @@ namespace NPCChat.Core.AIClasses
                 if (dist <= radius)
                     result.Add(a);
             }
-            return result.Count > 0 ? result.ToArray() : [];
+            return result.Count > 0 ? result.ToArray() : Array.Empty<AlertEvent>();
         }
     }
 }

@@ -413,3 +413,6 @@ NPCChat.Unity/NPCGame/*.unitypackage
 
 # Unity .meta files must be committed — override the *.meta rule above
 !NPCChat.Unity/**/*.meta
+
+# don't check in plugins we generate ourselves
+NPCChat.Unity/NPCGame/Assets/Plugins/

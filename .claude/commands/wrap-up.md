@@ -1,4 +1,4 @@
-Stop your current train of thought and execute the following three steps in order. Do not ask for confirmation — just do all three.
+﻿Stop your current train of thought and execute the following three steps in order. Do not ask for confirmation â€” just do all three.
 
 ---
 
@@ -14,7 +14,7 @@ Print a concise bullet-point summary covering:
 
 ## Step 2: Save to Memory
 
-Save one or more memory files to the auto-memory directory for this project (check the system prompt for the memory path — it is machine-specific) capturing anything that would be non-obvious to a future version of me starting a new conversation. Prioritize:
+Save one or more memory files to the auto-memory directory for this project (check the system prompt for the memory path â€” it is machine-specific) capturing anything that would be non-obvious to a future version of me starting a new conversation. Prioritize:
 - Key architectural decisions made this session (with the "why")
 - Changes to the phase plan or direction
 - Any user preferences or feedback revealed this session
@@ -28,7 +28,7 @@ Use type `project` for decisions/plans, type `feedback` for preferences/correcti
 Write (overwrite if it exists) `PLANNING.md` in the project root directory with the following structure:
 
 ```
-# NPCChat — Planning
+# NPCChat â€” Planning
 
 ## Current Phase
 [Phase name and one-line goal]
@@ -51,4 +51,4 @@ Write (overwrite if it exists) `PLANNING.md` in the project root directory with 
 - ...
 ```
 
-Keep it factual and terse — this file is a reference, not a narrative.
+Keep it factual and terse â€” this file is a reference, not a narrative.

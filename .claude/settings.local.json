@@ -18,7 +18,8 @@
       "Bash(dotnet:*)",
       "Bash(find:*)",
       "Bash(grep -r \"TestMethod\" /d/Source/NPCChat/NPCChat.Tests/*.cs)",
-      "Bash(git:*)"
+      "Bash(git:*)",
+      "Bash(python3:*)"
     ]
   }
 }

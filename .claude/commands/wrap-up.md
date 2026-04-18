@@ -1,42 +1,54 @@
+Stop your current train of thought and execute the following three steps in order. Do not ask for confirmation — just do all three.
 
+---
 
-&#x20; Stop your current train of thought and do the following three things in order:
+## Step 1: Status Summary
 
+Print a concise bullet-point summary covering:
+- What we accomplished this session
+- Current state: what is working, what is not yet done
+- Concrete next steps in priority order (what to do first when we resume)
+- Any open questions or blockers that need a decision
 
+---
 
-&#x20; 1. \*\*Status summary\*\*: Give a concise (bullet-point) summary of:
+## Step 2: Save to Memory
 
-&#x20;    - What we accomplished this session
+Save one or more memory files to the auto-memory directory for this project (check the system prompt for the memory path — it is machine-specific) capturing anything that would be non-obvious to a future version of me starting a new conversation. Prioritize:
+- Key architectural decisions made this session (with the "why")
+- Changes to the phase plan or direction
+- Any user preferences or feedback revealed this session
 
-&#x20;    - The current state (what's working, what's not)
+Use type `project` for decisions/plans, type `feedback` for preferences/corrections. Update existing memory files rather than creating duplicates. Always update `MEMORY.md` if you write or change any file.
 
-&#x20;    - The concrete next steps in priority order
+---
 
+## Step 3: Update PLANNING.md
 
+Write (overwrite if it exists) `PLANNING.md` in the project root directory with the following structure:
 
-&#x20; 2. \*\*Save to memory\*\*: Save a compressed project memory with:
+```
+# NPCChat — Planning
 
-&#x20;    - What phase of work we're in
+## Current Phase
+[Phase name and one-line goal]
 
-&#x20;    - Any key decisions made this session
+## Completed (this session)
+- ...
 
-&#x20;    - Any open questions or blockers
+## Completed (prior sessions)
+- ...
 
-&#x20;    Use type "project" and name it descriptively.
+## Next Steps (ordered)
+1. ...
+2. ...
+3. ...
 
+## Open Questions / Decisions Needed
+- ...
 
+## Key Architecture Decisions
+- ...
+```
 
-&#x20; 3. \*\*Update PLANNING.md\*\*: Write/overwrite `NPCChat\\PLANNING.md` with:
-
-&#x20;    - Current phase and goal
-
-&#x20;    - Completed steps (this session + prior)
-
-&#x20;    - Next steps (ordered)
-
-&#x20;    - Open questions
-
-
-
-&#x20; Do not ask for confirmation — just execute all three steps.
-
+Keep it factual and terse — this file is a reference, not a narrative.

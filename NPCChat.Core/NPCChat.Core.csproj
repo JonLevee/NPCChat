@@ -23,9 +23,11 @@
 		<ItemGroup>
 			<UnityPluginFiles Include="$(OutputPath)*.dll" />
 		</ItemGroup>
-		<Copy SourceFiles="@(UnityPluginFiles)"
-		      DestinationFolder="$(MSBuildProjectDirectory)\..\NPCChat.Unity\NPCGame\Assets\Plugins"
-		      SkipUnchangedFiles="true" />
+		<Copy SourceFiles="@(UnityPluginFiles)" DestinationFolder="$(MSBuildProjectDirectory)\..\NPCChat.Unity\NPCGame\Assets\Plugins" SkipUnchangedFiles="true" />
+	</Target>
+
+	<Target Name="PostBuild" AfterTargets="PostBuildEvent">
+	  <Exec Command="set outDir=$(OutDir)&#xD;&#xA;set outDir=%25outdir:~0,-1%25&#xD;&#xA;set solutionDir=$(SolutionDir)&#xD;&#xA;&#xD;&#xA;set source=%25CD%25\%25OutDir%25&#xD;&#xA;set target=%25SolutionDir%25NPCChat.Unity\Assets\Plugins&#xD;&#xA;&#xD;&#xA;IF &quot;%25outdir:~-14%25&quot;==&quot;netstandard2.1&quot; (&#xD;&#xA;  robocopy &quot;%25source%25&quot; &quot;%25target%25&quot; /s &#xD;&#xA;)&#xD;&#xA;exit /b 0&#xD;&#xA;" />
 	</Target>
 
 </Project>

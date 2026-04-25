@@ -39,19 +39,49 @@ namespace NPCChat.Core.YamlImport
 
         // ── Public API ───────────────────────────────────────────────────────────
 
-        /// <summary>Reads a YAML file from disk and builds the world.</summary>
+        /// <summary>
+        /// Reads a YAML file from disk, resolves any <c>includes:</c> entries relative
+        /// to that file's directory, merges all defs, then builds the world.
+        /// </summary>
         public WorldData LoadFromFile(string yamlPath)
         {
-            var yaml = File.ReadAllText(yamlPath);
-            return LoadFromYaml(yaml);
+            var def = LoadAndMerge(Path.GetFullPath(yamlPath));
+            Apply(def);
+            return _builder.World;
         }
 
-        /// <summary>Builds the world from an already-loaded YAML string.</summary>
+        /// <summary>Builds the world from an already-loaded YAML string (no include resolution).</summary>
         public WorldData LoadFromYaml(string yaml)
         {
             var def = Deserializer.Deserialize<YamlWorldDef>(yaml);
             Apply(def);
             return _builder.World;
+        }
+
+        private static YamlWorldDef LoadAndMerge(string fullPath)
+        {
+            var def = Deserializer.Deserialize<YamlWorldDef>(File.ReadAllText(fullPath));
+            if (def.Includes.Count == 0) return def;
+
+            var dir = Path.GetDirectoryName(fullPath)!;
+            foreach (var include in def.Includes)
+            {
+                var included = LoadAndMerge(Path.GetFullPath(Path.Combine(dir, include)));
+                Merge(def, included);
+            }
+            return def;
+        }
+
+        private static void Merge(YamlWorldDef target, YamlWorldDef source)
+        {
+            target.StaticData.Items.AddRange(source.StaticData.Items);
+            target.StaticData.Factions.AddRange(source.StaticData.Factions);
+            target.StaticData.Quests.AddRange(source.StaticData.Quests);
+            target.Objects.Static.AddRange(source.Objects.Static);
+            target.Objects.Npcs.AddRange(source.Objects.Npcs);
+            target.Objects.Carryable.AddRange(source.Objects.Carryable);
+            if (target.Objects.Player is null && source.Objects.Player is not null)
+                target.Objects.Player = source.Objects.Player;
         }
 
         // ── Private helpers ──────────────────────────────────────────────────────

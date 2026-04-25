@@ -1,0 +1,27 @@
+objects:
+
+  npcs:
+    # Blacksmith — creates both the NPC and its shop building at shop_x/shop_y.
+    - behavior_type: blacksmith
+      x: 8
+      y: 14
+      params:
+        shop_x: "2"
+        shop_y: "2"
+
+    - behavior_type: farmer
+      x: 24
+      y: 14
+
+    # Two guards patrol near the town centre, within alert range of each other.
+    - behavior_type: guard
+      x: 10
+      y: 10
+      params:
+        patrol_radius: "3"
+
+    - behavior_type: guard
+      x: 18
+      y: 10
+      params:
+        patrol_radius: "3"

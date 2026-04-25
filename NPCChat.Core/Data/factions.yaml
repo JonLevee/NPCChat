@@ -1,0 +1,8 @@
+static_data:
+
+  factions:
+    - id: townsfolk
+      name: Townsfolk
+      description: The ordinary people of the town — merchants, farmers, and craftspeople.
+      friendly_threshold: 50
+      hostile_threshold: -25

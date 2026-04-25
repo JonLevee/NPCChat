@@ -27,7 +27,10 @@ public sealed class UserSettingsRepository
         double Height,
         WindowState WindowState,
         WindowStyle WindowStyle,
-        ResizeMode ResizeMode);
+        ResizeMode ResizeMode)
+    {
+        public string? DataRootPath { get; init; }
+    };
 
 
     public void RestoreWindow(Window window)
@@ -69,6 +72,28 @@ public sealed class UserSettingsRepository
     public string GetUserSettingsText(Window window)
     {
         return $"Left:{window.Left}, Top = {window.Top}, Width = {window.Width}, Height = {window.Height}, State = {window.WindowState}, Style = {window.WindowStyle}, Mode = {window.ResizeMode}";
+    }
+
+    public string GetDataRootPath()
+    {
+        if (File.Exists(_userSettingsPath))
+        {
+            var saved = JsonSerializer.Deserialize<UserSettings>(File.ReadAllText(_userSettingsPath), _jsonOptions);
+            if (!string.IsNullOrWhiteSpace(saved.DataRootPath))
+                return saved.DataRootPath;
+        }
+        return Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Data");
+    }
+
+    public void SaveDataRootPath(string path)
+    {
+        UserSettings existing = File.Exists(_userSettingsPath)
+            ? JsonSerializer.Deserialize<UserSettings>(File.ReadAllText(_userSettingsPath), _jsonOptions)
+            : default;
+        var updated = existing with { DataRootPath = path };
+        if (!Directory.Exists(_userSettingsDirectory))
+            Directory.CreateDirectory(_userSettingsDirectory);
+        File.WriteAllText(_userSettingsPath, JsonSerializer.Serialize(updated, _jsonOptions));
     }
 
     public bool IsUsableWindowBounds(Rect rect)

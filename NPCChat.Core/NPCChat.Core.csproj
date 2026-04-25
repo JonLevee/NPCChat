@@ -24,7 +24,6 @@
 			<UnityPluginFiles Include="$(OutputPath)*.dll" />
 			<UnityPluginFiles Include="$(OutputPath)*.pdb" />
 			<UnityPluginFiles Include="$(OutputPath)*.json" />
-			<UnityPluginFiles Include="$(OutputPath)*.meta" />
 		</ItemGroup>
 		<Copy SourceFiles="@(UnityPluginFiles)" DestinationFolder="$(MSBuildProjectDirectory)\..\NPCChat.Unity\Assets\Plugins" SkipUnchangedFiles="true" />
 	</Target>

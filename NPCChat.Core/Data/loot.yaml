@@ -1,0 +1,17 @@
+objects:
+
+  carryable:
+    - item_id: gold_coin
+      x: 19
+      y: 14
+      quantity: 10
+
+    - item_id: health_potion
+      x: 16
+      y: 16
+      quantity: 2
+
+    - item_id: iron_ore
+      x: 18
+      y: 15
+      quantity: 3

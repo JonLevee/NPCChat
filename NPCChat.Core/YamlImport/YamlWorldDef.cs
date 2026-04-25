@@ -11,6 +11,7 @@ namespace NPCChat.Core.YamlImport
     /// <summary>Root of a world definition YAML file.</summary>
     public sealed class YamlWorldDef
     {
+        public List<string>      Includes   { get; set; } = new();
         public YamlStaticDataDef StaticData { get; set; } = new();
         public YamlObjectsDef    Objects    { get; set; } = new();
     }

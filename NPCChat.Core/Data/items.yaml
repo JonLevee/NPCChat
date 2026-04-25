@@ -1,0 +1,60 @@
+static_data:
+
+  items:
+    - id: iron_sword
+      name: Iron Sword
+      kind: Weapon
+      max_stack: 1
+      weight: 3.0
+      base_value: 40
+
+    - id: leather_armour
+      name: Leather Armour
+      kind: Armour
+      max_stack: 1
+      weight: 5.0
+      base_value: 30
+
+    - id: health_potion
+      name: Health Potion
+      kind: Consumable
+      max_stack: 10
+      weight: 0.5
+      base_value: 15
+      description: Restores health.
+
+    - id: iron_ore
+      name: Iron Ore
+      kind: Material
+      max_stack: 50
+      weight: 2.0
+      base_value: 5
+
+    - id: gold_coin
+      name: Gold Coin
+      kind: Currency
+      max_stack: 9999
+      weight: 0.01
+      base_value: 1
+
+    - id: arrow
+      name: Arrow
+      kind: Weapon
+      max_stack: 99
+      weight: 0.1
+      base_value: 1
+
+    - id: wood_plank
+      name: Wood Plank
+      kind: Material
+      max_stack: 50
+      weight: 1.0
+      base_value: 2
+
+    - id: bread
+      name: Bread
+      kind: Consumable
+      max_stack: 10
+      weight: 0.3
+      base_value: 3
+      description: Simple food.

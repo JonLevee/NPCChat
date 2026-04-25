@@ -21,6 +21,7 @@ using NPCChat.Core.Builders;
 using NPCChat.Core.Extensions;
 using NPCChat.Core.WorldBuilderTemplates;
 using NPCChat.Core.WorldClasses;
+using NPCChat.Core.YamlImport;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using Point = System.Windows.Point;
 
@@ -255,8 +256,9 @@ namespace NPCChat
         {
             ClearWorld();
 
-            using var templates = _worldBuilder.GetTemplates();
-            templates.AddSmallTown();
+            var yamlLoader = serviceScope.ServiceProvider.GetRequiredService<YamlWorldLoader>();
+            var worldYaml  = Path.Combine(_userSettingsRepository.GetDataRootPath(), "world.yaml");
+            yamlLoader.LoadFromFile(worldYaml);
 
             RefreshWorld();
         }
@@ -315,8 +317,9 @@ namespace NPCChat
                 _world.StopSimulationProcessing();
 
                 ClearWorld();
-                using var templates = _worldBuilder.GetTemplates();
-                templates.AddSmallTown();
+                var yamlLoader = serviceScope.ServiceProvider.GetRequiredService<YamlWorldLoader>();
+                var worldYaml  = Path.Combine(_userSettingsRepository.GetDataRootPath(), "world.yaml");
+                yamlLoader.LoadFromFile(worldYaml);
 
                 var loadService = serviceScope.ServiceProvider.Get<LoadGameService>()!;
                 var handles     = serviceScope.ServiceProvider.Get<ObjectHandleManager>()!;

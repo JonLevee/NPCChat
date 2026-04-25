@@ -1,0 +1,48 @@
+
+
+stock_responses:
+
+  - id: shop_blacksmith_greet_01
+    text: "Do you need any [armor] today?"
+    context: shop
+    role: blacksmith
+    speaker_target: pc
+    mood_vec: [ 0.8, -0.2, 0.2, 0.2, 0.0, 0.1, 0.0, 0.0, 0.0, 0.0, 0.0, 0.2, 0.0, -0.1, 0.1, 0.0, 0.0 ]
+    min_affinity: 0.25
+    weight: 1.0
+
+  - id: shop_blacksmith_busy_01
+    text: "If you're buying, speak up. I'm busy."
+    context: shop
+    role: blacksmith
+    speaker_target: pc
+    mood_vec: [ -0.3, 0.9, -0.2, -0.2, 0.2, 0.2, 0.0, 0.0, 0.2, -0.2, 0.5, -0.4, 0.0, 0.2, -0.1, 0.0, 0.1 ]
+    min_affinity: 0.35
+    weight: 1.1
+
+  - id: shop_blacksmith_special_01
+    text: "For you? I might have something special in the back."
+    context: shop
+    role: blacksmith
+    speaker_target: pc
+    mood_vec: [ 0.9, -0.4, 0.7, 0.1, 0.0, 0.1, 0.0, 0.2, 0.0, 0.0, -0.1, 0.2, 0.3, -0.4, 0.4, 0.0, 0.0 ]
+    min_affinity: 0.45
+    weight: 1.2
+
+  - id: town_guard_official_01
+    text: "Stand aside. Official business."
+    context: town
+    role: guard
+    speaker_target: pc
+    mood_vec: [ -0.2, 0.3, 0.0, -0.2, 0.9, 0.0, 0.0, 0.2, 0.2, 0.0, 0.2, -0.4, 0.0, 0.1, 0.0, 0.0, 0.1 ]
+    min_affinity: 0.40
+    weight: 1.0
+
+  - id: gossip_villager_whisper_01
+    text: "Keep your voice down. Not here."
+    context: gossip
+    role: villager
+    speaker_target: npc
+    mood_vec: [ -0.1, 0.2, -0.2, -0.2, 0.0, 0.0, 0.0, 0.9, 0.1, 0.0, 0.3, -0.1, 0.0, 0.0, 0.0, 0.0, 0.8 ]
+    min_affinity: 0.45
+    weight: 1.05

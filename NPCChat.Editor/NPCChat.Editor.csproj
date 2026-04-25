@@ -24,6 +24,12 @@
 	</ItemGroup>
 
 	<ItemGroup>
+		<Content Include="..\NPCChat.Core\Data\**\*.yaml" Link="Data\%(RecursiveDir)%(Filename)%(Extension)">
+			<CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+		</Content>
+	</ItemGroup>
+
+	<ItemGroup>
 		<Compile Update="Settings.Designer.cs">
 			<DesignTimeSharedInput>True</DesignTimeSharedInput>
 			<AutoGen>True</AutoGen>

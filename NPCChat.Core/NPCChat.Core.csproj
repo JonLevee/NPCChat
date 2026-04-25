@@ -26,5 +26,9 @@
 			<UnityPluginFiles Include="$(OutputPath)*.json" />
 		</ItemGroup>
 		<Copy SourceFiles="@(UnityPluginFiles)" DestinationFolder="$(MSBuildProjectDirectory)\..\NPCChat.Unity\Assets\Plugins" SkipUnchangedFiles="true" />
+		<ItemGroup>
+			<UnityDataFiles Include="$(ProjectDir)\Data\*.yaml" />
+		</ItemGroup>
+		<Copy SourceFiles="@(UnityDataFiles)" DestinationFolder="$(MSBuildProjectDirectory)\..\NPCChat.Unity\Assets\StreamingAssets\Data" SkipUnchangedFiles="true" />
 	</Target>
 </Project>

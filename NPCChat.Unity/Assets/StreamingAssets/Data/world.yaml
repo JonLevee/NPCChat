@@ -1,0 +1,15 @@
+# world.yaml — New-game world definition root.
+# Includes sub-files; each contributes to the merged world def before loading.
+
+includes:
+  - items.yaml
+  - factions.yaml
+  - quests.yaml
+  - layout.yaml
+  - npcs.yaml
+  - loot.yaml
+
+objects:
+  player:
+    x: 16
+    y: 14

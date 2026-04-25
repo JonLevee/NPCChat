@@ -19,7 +19,11 @@
       "Bash(find:*)",
       "Bash(grep -r \"TestMethod\" /d/Source/NPCChat/NPCChat.Tests/*.cs)",
       "Bash(git:*)",
-      "Bash(python3:*)"
+      "Bash(python3:*)",
+      "Skill(update-config)",
+      "Bash(cp \"D:/Source/NPCChat/.claude/commands/wrap-up.md\" \"D:/Source/NPCChat/.claude/commands/save.md\")",
+      "Bash(rm \"D:/Source/NPCChat/.claude/commands/wrap-up.md\")",
+      "Bash(claude doctor *)"
     ]
   }
 }

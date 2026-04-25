@@ -1,0 +1,21 @@
+dispositions:
+  gates:
+    - irritability
+    - trust
+    - greed
+    - secrecy
+    - stress
+    - diplomacy
+    - resentment
+    - familiarity
+
+  moods:
+    - friendliness
+    - sociability
+    - authority
+    - curiosity
+    - vigilance
+    - morale
+    - gratitude
+    - nostalgia
+    - paranoia

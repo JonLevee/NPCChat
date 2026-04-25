@@ -1,0 +1,15 @@
+static_data:
+
+  quests:
+    - id: fetch_iron_ore
+      name: Iron Ore Delivery
+      description: The blacksmith needs iron ore for his forge.
+      objectives:
+        - id: collect_iron_ore
+          kind: CollectItem
+          description: Collect iron ore
+          target_id: iron_ore
+          required_count: 5
+      rewards:
+        - item_id: gold_coin
+          quantity: 10

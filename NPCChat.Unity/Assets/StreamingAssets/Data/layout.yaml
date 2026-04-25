@@ -1,0 +1,46 @@
+objects:
+
+  # Static buildings.
+  # Note: the blacksmith's shop building is created automatically by the blacksmith NPC entry.
+  static:
+    - kind: Building
+      x: 10
+      y: 2
+      w: 5
+      h: 3
+
+    - kind: Building
+      x: 18
+      y: 2
+      w: 5
+      h: 3
+
+    - kind: Building
+      x: 2
+      y: 8
+      w: 5
+      h: 3
+
+    - kind: Building
+      x: 12
+      y: 9
+      w: 5
+      h: 3
+
+    - kind: Building
+      x: 22
+      y: 8
+      w: 5
+      h: 3
+
+    - kind: Building
+      x: 6
+      y: 16
+      w: 5
+      h: 3
+
+    - kind: Building
+      x: 20
+      y: 16
+      w: 5
+      h: 3
